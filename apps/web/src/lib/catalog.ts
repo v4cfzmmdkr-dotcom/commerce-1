@@ -156,23 +156,98 @@ export async function listProducts(query: CatalogQuery) {
 
 const homeFirstBrands = ["dewalt", "makita", "milwaukee", "ryobi"]
 
+export type HomeCollection = { handle: string, title: string, imageUrl: string | null }
+
+export type HomeCollectionGroup = {
+  id: "brands" | "fit" | "home"
+  heading: string
+  intro: string
+  layout: "brands" | "mosaic" | "grid"
+  collections: HomeCollection[]
+}
+
+function collectionKey(collection: { handle: string, title: string }) {
+  return `${collection.handle} ${collection.title}`.toLowerCase()
+}
+
 function homeCollectionRank(collection: { handle: string, title: string }) {
-  const haystack = `${collection.handle} ${collection.title}`.toLowerCase()
+  const haystack = collectionKey(collection)
   const index = homeFirstBrands.findIndex((brand) => haystack.includes(brand))
   return index === -1 ? homeFirstBrands.length : index
 }
 
+function isBrandCollection(collection: HomeCollection) {
+  return homeFirstBrands.some((brand) => collectionKey(collection).includes(brand))
+}
+
+function isFitCollection(collection: HomeCollection) {
+  const haystack = collectionKey(collection)
+  if (haystack.includes("yamaha")) return false
+  return ["adapter", "jig", "insert", "wall-mount", "wall mount", "home-tool", "home tool"]
+    .some((term) => haystack.includes(term))
+    || collection.handle === "gears"
+    || collection.title.toLowerCase() === "gears"
+}
+
+const fitOrder = ["adapter", "jig", "insert", "wall", "home tool", "home-tool", "gear"]
+
+function fitRank(collection: HomeCollection) {
+  const haystack = collectionKey(collection)
+  const index = fitOrder.findIndex((term) => haystack.includes(term))
+  return index === -1 ? fitOrder.length : index
+}
+
+export function groupHomeCollections(collections: HomeCollection[]): HomeCollectionGroup[] {
+  const brands = collections.filter(isBrandCollection).sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
+  const fit = collections.filter((collection) => !isBrandCollection(collection) && isFitCollection(collection))
+    .sort((left, right) => fitRank(left) - fitRank(right) || left.title.localeCompare(right.title))
+  const used = new Set([...brands, ...fit].map((collection) => collection.handle))
+  const home = collections
+    .filter((collection) => !used.has(collection.handle))
+    .sort((left, right) => left.title.localeCompare(right.title))
+
+  const groups: HomeCollectionGroup[] = []
+  if (brands.length) {
+    groups.push({
+      id: "brands",
+      heading: "Shop by brand",
+      intro: "Parts for the tools already in the shed.",
+      layout: "brands",
+      collections: brands,
+    })
+  }
+  if (fit.length) {
+    groups.push({
+      id: "fit",
+      heading: "Made to fit",
+      intro: "Adapters, jigs, inserts, and mounts we print to order.",
+      layout: "mosaic",
+      collections: fit,
+    })
+  }
+  if (home.length) {
+    groups.push({
+      id: "home",
+      heading: "Around the home",
+      intro: "Coffee, networking, gaming, and the odd one-off.",
+      layout: "grid",
+      collections: home,
+    })
+  }
+  return groups
+}
+
 export async function listHomeCollections() {
-  if (!databaseConfigured()) return []
+  if (!databaseConfigured()) return [] as HomeCollection[]
   try {
     const sql = getSql()
-    const rows = await sql<Array<{ handle: string, title: string, imageUrl: string | null }>>`
+    const rows = await sql<HomeCollection[]>`
       select handle, title, image_url as "imageUrl"
       from collections
       where published = true and show_on_home = true
       order by position asc, title asc
     `
-    return [...rows].sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
+    return rows
   } catch {
     return []
   }

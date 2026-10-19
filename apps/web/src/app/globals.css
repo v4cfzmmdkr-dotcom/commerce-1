@@ -56,10 +56,14 @@ html {
   scroll-behavior: smooth;
   font-size: 100%;
   color-scheme: light dark;
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
@@ -67,6 +71,17 @@ body {
   line-height: 1.47;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+.shop-frame {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.shop-frame #content {
+  flex: 1 0 auto;
 }
 
 a { color: inherit; }
@@ -104,6 +119,12 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   min-height: 44px;
   min-width: 44px;
   text-decoration: none;
+}
+
+.header-cart {
+  padding: 0 0.9rem;
+  border: 1px solid #ffffff;
+  border-radius: 999px;
 }
 
 .collection-nav {
@@ -181,7 +202,9 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   overflow: hidden;
   background: #111111;
   color: #ffffff;
+  font-family: var(--font-hadid), sans-serif;
   font-size: 0.8125rem;
+  font-weight: 400;
   line-height: 1.35;
   padding: 0.5rem 0;
 }
@@ -207,14 +230,52 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   white-space: nowrap;
 }
 
+.announcement-accent {
+  color: #ff3b30;
+}
+
 @keyframes announcement-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
 
 .hero {
-  background: #111111;
-  color: #ffffff;
+  background: #f3f3f3;
+  color: #111111;
+}
+
+.hero-kicker {
+  font-family: var(--font-hero), "Futura PT", Futura, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  margin-top: 0.65rem;
+  max-width: 22ch;
+  font-family: var(--font-hero), "Futura PT", Futura, sans-serif;
+  font-size: var(--hero);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+}
+
+.hero-lede {
+  margin-top: 1.25rem;
+  max-width: 36rem;
+  font-family: var(--font-hero-meta), ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+
+.hero .btn {
+  font-family: var(--font-hero-btn), "Futura PT", Futura, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .hero-social {
@@ -229,14 +290,14 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #111111;
+  border: 1px solid rgba(17, 17, 17, 0.35);
   border-radius: 999px;
   text-decoration: none;
 }
 
 .hero-social a:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(17, 17, 17, 0.06);
 }
 
 .hero-social svg {
@@ -282,6 +343,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .site-footer {
+  margin-top: auto;
   color-scheme: light;
   background: #ffffff;
   color: #3a3a3c;
@@ -437,6 +499,42 @@ label:has(> input[type="radio"]) {
 }
 @media (min-width: 800px) {
   .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.collection-group {
+  padding-top: var(--section);
+}
+
+.collection-group + .collection-group {
+  padding-top: 2.25rem;
+}
+
+.collection-group-title {
+  font-family: var(--font-hero), "Futura PT", Futura, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+.collection-mosaic {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+@media (min-width: 768px) {
+  .collection-mosaic {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .collection-tile-wide {
+    grid-column: span 2;
+  }
+
+  .collection-tile-wide .product-media {
+    aspect-ratio: 4 / 3;
+  }
 }
 
 .product-media {

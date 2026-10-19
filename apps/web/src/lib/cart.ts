@@ -93,13 +93,8 @@ export async function getCart() {
 
 export async function cartCount() {
   try {
-    const id = await cartId()
-    if (!id) return 0
-    const sql = getSql()
-    const rows = await sql<{ count: number }[]>`
-      select coalesce(sum(quantity), 0)::int as count from cart_items where cart_id = ${id}
-    `
-    return rows[0]?.count ?? 0
+    const cart = await getCart()
+    return cart.lines.reduce((sum, line) => sum + line.quantity, 0)
   } catch {
     return 0
   }

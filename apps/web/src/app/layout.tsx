@@ -1,8 +1,9 @@
-import type { Metadata, Viewport } from "next"
-import { Archivo, IBM_Plex_Sans, Inter } from "next/font/google"
 import { getSettings } from "@/lib/settings"
 import { siteUrl } from "@/lib/site"
 import { themeCss } from "@/lib/theme"
+import type { Metadata, Viewport } from "next"
+import { Archivo, IBM_Plex_Mono, IBM_Plex_Sans, Inter } from "next/font/google"
+import localFont from "next/font/local"
 import "./globals.css"
 
 const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo" })
@@ -12,6 +13,29 @@ const plex = IBM_Plex_Sans({
   variable: "--font-plex",
 })
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const futuraBook = localFont({
+  src: "../fonts/FuturaCyrillicBook.ttf",
+  variable: "--font-hero",
+  display: "swap",
+  weight: "400",
+})
+const futuraDemi = localFont({
+  src: "../fonts/FuturaCyrillicDemi.ttf",
+  variable: "--font-hero-btn",
+  display: "swap",
+  weight: "600",
+})
+const zahaHadid = localFont({
+  src: "../fonts/ZahaHadid-Sans.otf",
+  variable: "--font-hadid",
+  display: "swap",
+  weight: "400",
+})
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-hero-meta",
+})
 
 export const dynamic = "force-dynamic"
 
@@ -36,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en-AU"
-      className={`${archivo.variable} ${plex.variable} ${inter.variable}`}
+      className={`${archivo.variable} ${plex.variable} ${inter.variable} ${futuraBook.variable} ${futuraDemi.variable} ${zahaHadid.variable} ${plexMono.variable}`}
       data-font={theme.font}
       data-density={theme.density}
       data-radius={theme.radius}

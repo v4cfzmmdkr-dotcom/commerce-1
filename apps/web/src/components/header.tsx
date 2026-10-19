@@ -1,9 +1,27 @@
+import { CollectionNav } from "@/components/collection-nav"
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
+function AnnouncementCopy({ text }: { text: string }) {
+  const parts = text.split(/(48 hours)/gi)
+  return (
+    <>
+      {parts.map((part, index) => (
+        part.toLowerCase() === "48 hours" ? (
+          <span key={index} className="announcement-accent">{part}</span>
+        ) : (
+          part
+        )
+      ))}
+    </>
+  )
+}
+
 function Announcement({ text }: { text: string }) {
   const items = Array.from({ length: 8 }, (_, index) => (
-    <span key={index} className="announcement-item">{text}</span>
+    <span key={index} className="announcement-item">
+      <AnnouncementCopy text={text} />
+    </span>
   ))
   return (
     <div className="announcement" role="status">
@@ -39,20 +57,18 @@ export function Header({
           <label className="sr-only" htmlFor="header-search">Search parts</label>
           <input id="header-search" name="q" placeholder="Search parts" className="field" enterKeyHint="search" />
         </form>
-        <Link href="/cart" className="tap-link justify-center">
+        <Link href="/cart" className="header-cart tap-link justify-center">
           Cart{cartCount > 0 ? ` (${cartCount})` : ""}
         </Link>
       </div>
-      <nav className="collection-nav" aria-label="Collections">
-        <div className="collection-nav-scroller">
-          <Link href="/search" className="collection-nav-link">All parts</Link>
-          {collections.map((collection) => (
-            <Link key={collection.handle} href={`/collections/${collection.handle}`} className="collection-nav-link">
-              {collection.title}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <CollectionNav>
+        <Link href="/search" className="collection-nav-link">All parts</Link>
+        {collections.map((collection) => (
+          <Link key={collection.handle} href={`/collections/${collection.handle}`} className="collection-nav-link">
+            {collection.title}
+          </Link>
+        ))}
+      </CollectionNav>
     </header>
   )
 }

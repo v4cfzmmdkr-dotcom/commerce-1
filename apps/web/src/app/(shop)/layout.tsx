@@ -12,7 +12,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     databaseReady(),
   ])
   return (
-    <>
+    <div className="shop-frame">
       {!ready ? (
         <p className="bg-[var(--fg)] px-4 py-2 text-center text-sm text-[var(--bg)]">
           The shop database is not ready. Add DATABASE_URL and run pnpm web:setup.
@@ -21,6 +21,6 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <Header settings={settings} collections={collections} cartCount={count} />
       <main id="content">{children}</main>
       <Footer settings={settings} />
-    </>
+    </div>
   )
 }
