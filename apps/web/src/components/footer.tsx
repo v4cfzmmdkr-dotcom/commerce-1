@@ -3,18 +3,18 @@ import type { StoreSettings } from "@/lib/settings"
 
 export function Footer({ settings }: { settings: StoreSettings }) {
   return (
-    <footer className="mt-[var(--section)] bg-[var(--fg)] text-[var(--bg)]">
+    <footer className="site-footer mt-[var(--section)] pb-[env(safe-area-inset-bottom)]">
       <div className="wrap grid gap-8 py-12 md:grid-cols-3">
         <div>
-          <p className="text-sm tracking-[0.18em]">{settings.name.toUpperCase()}</p>
-          <p className="mt-3 max-w-xs text-sm opacity-80">{settings.tagline}</p>
+          <p className="text-sm font-semibold">{settings.name}</p>
+          <p className="mt-3 max-w-xs text-sm">{settings.tagline}</p>
         </div>
-        <div className="flex flex-col gap-2 text-sm">
-          <Link href="/search">Shop</Link>
-          <Link href="/about">About</Link>
-          <Link href="/shipping">Shipping</Link>
-          <Link href="/orders/lookup">Track an order</Link>
-        </div>
+        <nav className="flex flex-col text-sm" aria-label="Shop">
+          <Link className="nav-link" href="/search">Shop</Link>
+          <Link className="nav-link" href="/about">About</Link>
+          <Link className="nav-link" href="/shipping">Shipping</Link>
+          <Link className="nav-link" href="/orders/lookup">Track an order</Link>
+        </nav>
         <div className="text-sm">
           {settings.supportEmail ? <p>{settings.supportEmail}</p> : <p>Prices in AUD and include GST unless a product says otherwise.</p>}
         </div>

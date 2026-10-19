@@ -1,8 +1,8 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Archivo, IBM_Plex_Sans, Inter } from "next/font/google"
 import { getSettings } from "@/lib/settings"
 import { siteUrl } from "@/lib/site"
-import { themeStyle } from "@/lib/theme"
+import { themeCss } from "@/lib/theme"
 import "./globals.css"
 
 const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo" })
@@ -14,6 +14,12 @@ const plex = IBM_Plex_Sans({
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const dynamic = "force-dynamic"
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings()
@@ -34,9 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-font={theme.font}
       data-density={theme.density}
       data-radius={theme.radius}
-      style={themeStyle(theme)}
     >
       <body>
+        <style dangerouslySetInnerHTML={{ __html: themeCss(theme) }} />
         <a className="skip-link" href="#content">Skip to content</a>
         {children}
       </body>

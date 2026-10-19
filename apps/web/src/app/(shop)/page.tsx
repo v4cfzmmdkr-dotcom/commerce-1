@@ -11,7 +11,7 @@ export default async function HomePage() {
   ])
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-[var(--fg)] text-[var(--bg)]">
+      <section className="hero relative isolate overflow-hidden">
         {settings.bannerUrl && settings.bannerKind === "video" ? (
           <video
             className="hero-video absolute inset-0 h-full w-full object-cover"
@@ -28,17 +28,17 @@ export default async function HomePage() {
         ) : null}
         {settings.bannerUrl ? <div className="absolute inset-0 bg-black/45" /> : null}
         <div className="wrap relative py-[var(--section)]">
-          <p className="text-xs uppercase tracking-[0.22em]">{settings.name}</p>
+          <p className="text-xs font-semibold">{settings.name}</p>
           <h1 className="mt-4 max-w-3xl font-semibold tracking-tight" style={{ fontSize: "var(--hero)", lineHeight: 1.05 }}>
             {settings.tagline}
           </h1>
           <p className="mt-5 max-w-xl text-sm opacity-80">{settings.announcement}</p>
-          <Link href="/search" className="btn btn-invert mt-8">Browse parts</Link>
+          <Link href="/search" className="btn btn-on-dark mt-8">Browse parts</Link>
         </div>
       </section>
       {collections.length > 0 ? (
         <section className="wrap py-[var(--section)]">
-          <h2 className="mb-6 text-xs uppercase tracking-[0.18em]">Collections</h2>
+          <h2 className="mb-6 text-sm font-semibold">Collections</h2>
           <div className="grid grid-cols-2 gap-[var(--gap)] md:grid-cols-3">
             {collections.map((collection) => (
               <Link key={collection.handle} href={`/collections/${collection.handle}`} className="no-underline">
@@ -57,7 +57,7 @@ export default async function HomePage() {
       ) : null}
       <section className="wrap pb-[var(--section)]">
         <div className="mb-6 flex items-end justify-between">
-          <h2 className="text-xs uppercase tracking-[0.18em]">Parts</h2>
+          <h2 className="text-sm font-semibold">Parts</h2>
           <Link href="/search" className="text-sm">View all</Link>
         </div>
         <ProductGrid products={products} currency={settings.currency} />

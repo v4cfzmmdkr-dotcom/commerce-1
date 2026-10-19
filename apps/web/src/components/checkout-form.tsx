@@ -104,7 +104,7 @@ export function CheckoutForm({
             </label>
           ))}
         </fieldset>
-        {state?.error ? <p className="text-sm">{state.error}</p> : null}
+        {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
         <PayButton />
       </div>
       <aside className="h-fit border border-[var(--border)] p-4 text-sm">

@@ -3,7 +3,7 @@ import { includedTaxCents, parseMoneyToCents } from "@/lib/money"
 import { quoteOrder } from "@/lib/pricing"
 import { decodeCsvBuffer, parseShopifyCsv } from "@/lib/shopify/parse"
 import { assertPublicHttps } from "@/lib/shopify/collections"
-import { parseTheme } from "@/lib/theme"
+import { darkTheme, defaultTheme, parseTheme } from "@/lib/theme"
 
 const headers = [
   "Handle", "Title", "Body (HTML)", "Vendor", "Type", "Tags", "Published",
@@ -162,8 +162,13 @@ describe("money", () => {
 
 describe("theme and store url", () => {
   it("keeps valid colours and rejects a private store url", () => {
+    expect(parseTheme({ background: "#000000", font: "nope" }).font).toBe("system")
     expect(parseTheme({ background: "#000000", font: "nope" }).background).toBe("#000000")
     expect(parseTheme({ background: "red" }).background).toBe("#ffffff")
+    expect(defaultTheme.font).toBe("system")
+    expect(darkTheme(defaultTheme).background).toBe("#000000")
+    expect(darkTheme(defaultTheme).foreground).toBe("#f5f5f7")
+    expect(darkTheme({ ...defaultTheme, background: "#000000", foreground: "#ffffff" }).background).toBe("#000000")
     expect(assertPublicHttps("https://nicheparts.com.au/collections")).toBe("https://nicheparts.com.au")
     expect(() => assertPublicHttps("http://nicheparts.com.au")).toThrow()
     expect(() => assertPublicHttps("https://127.0.0.1")).toThrow()

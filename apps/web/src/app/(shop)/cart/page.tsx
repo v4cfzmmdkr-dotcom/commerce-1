@@ -20,7 +20,7 @@ export default async function CartPage() {
             {cart.lines.map((line) => (
               <li key={line.id} className="grid grid-cols-[88px_1fr] gap-4 border-b border-[var(--border)] pb-6">
                 <div className="product-media">
-                  {line.imageUrl ? <img src={line.imageUrl} alt="" /> : null}
+                  {line.imageUrl ? <img src={line.imageUrl} alt={line.productTitle} /> : null}
                 </div>
                 <div>
                   <Link href={`/products/${line.productHandle}`} className="font-medium no-underline">{line.productTitle}</Link>

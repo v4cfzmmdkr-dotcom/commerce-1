@@ -298,14 +298,11 @@ export async function saveCollection(formData: FormData) {
   const id = text(formData, "id")
   const title = text(formData, "title")
   const sql = getSql()
+  const current = await sql<{ image_path: string | null }[]>`
+    select image_path from collections where id = ${id}
+  `
+  const previousPath = current[0]?.image_path ?? null
   const image = await readImage(formData.get("image"))
-  let imageUrl: string | null = null
-  let imagePath: string | null = null
-  if (image) {
-    const saved = await saveObject(`collections/${id}.${extensionFor(image.type)}`, image.bytes, image.type)
-    imageUrl = saved.url
-    imagePath = saved.path
-  }
   await sql`
     update collections set
       title = ${title},
@@ -314,19 +311,34 @@ export async function saveCollection(formData: FormData) {
       position = ${Number(text(formData, "position") || 0)},
       published = ${formData.get("published") === "on"},
       show_on_home = ${formData.get("showOnHome") === "on"},
-      image_url = coalesce(${imageUrl}, image_url),
-      image_path = coalesce(${imagePath}, image_path),
       updated_at = now()
     where id = ${id}
   `
+  if (image) {
+    const saved = await saveObject(`collections/${id}-${Date.now()}.${extensionFor(image.type)}`, image.bytes, image.type)
+    await sql`
+      update collections set image_url = ${saved.url}, image_path = ${saved.path}, updated_at = now()
+      where id = ${id}
+    `
+    if (previousPath && previousPath !== saved.path) await deleteObject(previousPath)
+  } else if (formData.get("removeImage") === "on") {
+    await sql`
+      update collections set image_url = null, image_path = null, updated_at = now()
+      where id = ${id}
+    `
+    await deleteObject(previousPath)
+  }
   revalidatePath("/", "layout")
   redirect(`/admin/collections/${id}?saved=1`)
 }
 
 export async function deleteCollection(formData: FormData) {
   await requireAdmin()
+  const id = text(formData, "id")
   const sql = getSql()
-  await sql`delete from collections where id = ${text(formData, "id")}`
+  const rows = await sql<{ image_path: string | null }[]>`select image_path from collections where id = ${id}`
+  await deleteObject(rows[0]?.image_path ?? null)
+  await sql`delete from collections where id = ${id}`
   redirect("/admin/collections")
 }
 

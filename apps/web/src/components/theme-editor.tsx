@@ -34,7 +34,7 @@ export function ThemeEditor({ theme }: { theme: ThemeSettings }) {
             <option value="archivo">Archivo</option>
             <option value="plex">IBM Plex Sans</option>
             <option value="inter">Inter</option>
-            <option value="system">System</option>
+            <option value="system">System (San Francisco on Apple)</option>
           </select>
         </label>
         <label className="label">

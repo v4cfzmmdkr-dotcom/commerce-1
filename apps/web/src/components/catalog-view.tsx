@@ -88,10 +88,10 @@ export function CatalogView({
         ) : null}
         <ProductGrid products={products} currency={currency} />
         {pageCount > 1 ? (
-          <nav className="mt-8 flex gap-3 text-sm" aria-label="Pagination">
-            {page > 1 ? <Link href={href(page - 1)}>Previous</Link> : null}
+          <nav className="mt-8 flex items-center gap-3 text-sm" aria-label="Pagination">
+            {page > 1 ? <Link className="nav-link" href={href(page - 1)}>Previous</Link> : null}
             <span>Page {page} of {pageCount}</span>
-            {page < pageCount ? <Link href={href(page + 1)}>Next</Link> : null}
+            {page < pageCount ? <Link className="nav-link" href={href(page + 1)}>Next</Link> : null}
           </nav>
         ) : null}
       </section>

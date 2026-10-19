@@ -69,8 +69,8 @@ export function PurchaseBox({
         <input className="field normal-case" name="quantity" type="number" min={1} max={99} defaultValue={1} />
       </label>
       <SubmitButton disabled={!purchasable} label={purchasable ? "Add to cart" : "Sold out"} />
-      {state?.error ? <p className="text-sm">{state.error}</p> : null}
-      {state?.ok ? <p className="text-sm">Added to cart.</p> : null}
+      {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
+      {state?.ok ? <p className="text-sm" role="status">Added to cart.</p> : null}
     </form>
   )
 }

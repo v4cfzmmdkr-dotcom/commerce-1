@@ -48,8 +48,25 @@ export default async function EditCollectionPage({
         <label className="label">Position<input className="field normal-case" name="position" defaultValue={collection.position} /></label>
         <label className="flex items-center gap-2 text-sm normal-case"><input type="checkbox" name="published" defaultChecked={collection.published} /> Published</label>
         <label className="flex items-center gap-2 text-sm normal-case"><input type="checkbox" name="showOnHome" defaultChecked={collection.showOnHome} /> Show on homepage</label>
-        {collection.imageUrl ? <img src={collection.imageUrl} alt="" className="h-32 w-32 object-cover" /> : null}
-        <input name="image" type="file" accept="image/*" />
+        <div className="grid gap-3">
+          <p className="text-sm font-semibold">Image</p>
+          {collection.imageUrl ? (
+            <img src={collection.imageUrl} alt={collection.title} className="h-40 w-40 rounded-[var(--radius)] object-cover" />
+          ) : (
+            <p className="text-sm">No image yet. The homepage shows a plain block until you add one.</p>
+          )}
+          <label className="label">
+            Replace image
+            <input className="normal-case" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+          </label>
+          <p className="text-sm">JPEG, PNG, WebP, or GIF up to 12MB. Saving with a new file replaces the current image.</p>
+          {collection.imageUrl ? (
+            <label className="flex items-center gap-2 text-sm normal-case">
+              <input type="checkbox" name="removeImage" />
+              Remove the current image
+            </label>
+          ) : null}
+        </div>
         <button className="btn w-fit" type="submit">Save collection</button>
       </form>
       <form action={addToCollection} className="flex gap-2">
