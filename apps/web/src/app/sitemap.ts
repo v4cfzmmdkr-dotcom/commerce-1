@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: base, changeFrequency: "daily", priority: 1 },
     { url: `${base}/search`, changeFrequency: "daily", priority: 0.8 },
-    { url: `${base}/about`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${base}/contact`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/shipping`, changeFrequency: "monthly", priority: 0.3 },
     ...handles.collections.map((handle) => ({
       url: `${base}/collections/${handle}`,

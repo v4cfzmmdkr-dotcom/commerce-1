@@ -26,4 +26,5 @@ export async function updateCart(formData: FormData) {
   if (!itemId) return
   await updateCartQuantity(itemId, Number.isFinite(quantity) ? quantity : 0)
   revalidatePath("/cart")
+  revalidatePath("/", "layout")
 }

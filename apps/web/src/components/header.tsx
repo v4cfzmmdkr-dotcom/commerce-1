@@ -1,6 +1,20 @@
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
+function Announcement({ text }: { text: string }) {
+  const items = Array.from({ length: 8 }, (_, index) => (
+    <span key={index} className="announcement-item">{text}</span>
+  ))
+  return (
+    <div className="announcement" role="status">
+      <div className="announcement-track">
+        <div className="announcement-group">{items}</div>
+        <div className="announcement-group" aria-hidden="true">{items}</div>
+      </div>
+    </div>
+  )
+}
+
 export function Header({
   settings,
   collections,
@@ -12,11 +26,7 @@ export function Header({
 }) {
   return (
     <header className="border-b border-[var(--border)] bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
-      {settings.announcement ? (
-        <div className="announcement">
-          {settings.announcement}
-        </div>
-      ) : null}
+      {settings.announcement ? <Announcement text={settings.announcement} /> : null}
       <div className="wrap flex flex-wrap items-center gap-4" style={{ minHeight: "var(--header-h)" }}>
         <Link href="/" className="tap-link gap-3">
           {settings.logoUrl ? (
@@ -33,11 +43,11 @@ export function Header({
           Cart{cartCount > 0 ? ` (${cartCount})` : ""}
         </Link>
       </div>
-      <nav className="border-t border-[var(--border)]" aria-label="Collections">
-        <div className="wrap flex gap-4 overflow-x-auto text-sm">
-          <Link href="/search" className="nav-link shrink-0">All parts</Link>
+      <nav className="collection-nav" aria-label="Collections">
+        <div className="collection-nav-scroller">
+          <Link href="/search" className="collection-nav-link">All parts</Link>
           {collections.map((collection) => (
-            <Link key={collection.handle} href={`/collections/${collection.handle}`} className="nav-link shrink-0">
+            <Link key={collection.handle} href={`/collections/${collection.handle}`} className="collection-nav-link">
               {collection.title}
             </Link>
           ))}

@@ -11,7 +11,7 @@ export function Footer({ settings }: { settings: StoreSettings }) {
         </div>
         <nav className="flex flex-col text-sm" aria-label="Shop">
           <Link className="nav-link" href="/search">Shop</Link>
-          <Link className="nav-link" href="/about">About</Link>
+          <Link className="nav-link" href="/contact">Contact</Link>
           <Link className="nav-link" href="/shipping">Shipping</Link>
           <Link className="nav-link" href="/orders/lookup">Track an order</Link>
         </nav>

@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useActionState, useMemo, useState } from "react"
 import { useFormStatus } from "react-dom"
 import { placeOrder } from "@/app/(shop)/checkout/actions"
@@ -16,6 +17,11 @@ type Rate = {
   minSubtotalCents: number | null
   maxSubtotalCents: number | null
 }
+
+const AddressFinder = dynamic(
+  () => import("@/components/address-finder").then((mod) => mod.AddressFinder),
+  { ssr: false },
+)
 
 function PayButton() {
   const pending = useFormStatus()
@@ -38,8 +44,13 @@ export function CheckoutForm({
   cancelled: boolean
 }) {
   const [country, setCountry] = useState("AU")
+  const [line1, setLine1] = useState("")
+  const [line2, setLine2] = useState("")
+  const [city, setCity] = useState("")
+  const [region, setRegion] = useState("")
+  const [postcode, setPostcode] = useState("")
   const [rateId, setRateId] = useState("")
-  const [state, action] = useActionState(placeOrder, null)
+  const [formState, action] = useActionState(placeOrder, null)
   const subtotalCents = merchandiseSubtotal(lines)
   const available = useMemo(() => {
     return rates.filter((rate) => shippingRateApplies(rate, subtotalCents, country))
@@ -60,14 +71,24 @@ export function CheckoutForm({
         {cancelled ? <p className="text-sm">Payment was cancelled. Your cart is still here.</p> : null}
         <label className="label">Email<input className="field normal-case" name="email" type="email" required autoComplete="email" /></label>
         <label className="label">Full name<input className="field normal-case" name="name" required autoComplete="name" /></label>
-        <label className="label">Address<input className="field normal-case" name="line1" required autoComplete="address-line1" /></label>
-        <label className="label">Apartment, suite (optional)<input className="field normal-case" name="line2" autoComplete="address-line2" /></label>
+        <AddressFinder
+          onSelect={(address) => {
+            setLine1(address.line1)
+            setLine2(address.line2)
+            setCity(address.city)
+            setRegion(address.state)
+            setPostcode(address.postcode)
+            if (address.country === "AU" || address.country === "NZ") setCountry(address.country)
+          }}
+        />
+        <label className="label">Address<input className="field normal-case" name="line1" required autoComplete="address-line1" value={line1} onChange={(event) => setLine1(event.target.value)} /></label>
+        <label className="label">Apartment, suite (optional)<input className="field normal-case" name="line2" autoComplete="address-line2" value={line2} onChange={(event) => setLine2(event.target.value)} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="label">City<input className="field normal-case" name="city" required autoComplete="address-level2" /></label>
-          <label className="label">State<input className="field normal-case" name="state" required autoComplete="address-level1" /></label>
+          <label className="label">City<input className="field normal-case" name="city" required autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)} /></label>
+          <label className="label">State<input className="field normal-case" name="state" required autoComplete="address-level1" value={region} onChange={(event) => setRegion(event.target.value)} /></label>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="label">Postcode<input className="field normal-case" name="postcode" required autoComplete="postal-code" /></label>
+          <label className="label">Postcode<input className="field normal-case" name="postcode" required autoComplete="postal-code" value={postcode} onChange={(event) => setPostcode(event.target.value)} /></label>
           <label className="label">
             Country
             <select className="select normal-case" name="country" value={country} onChange={(event) => setCountry(event.target.value)}>
@@ -104,7 +125,7 @@ export function CheckoutForm({
             </label>
           ))}
         </fieldset>
-        {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
+        {formState?.error ? <p className="text-sm" role="alert">{formState.error}</p> : null}
         <PayButton />
       </div>
       <aside className="h-fit border border-[var(--border)] p-4 text-sm">

@@ -154,16 +154,25 @@ export async function listProducts(query: CatalogQuery) {
   }
 }
 
+const homeFirstBrands = ["dewalt", "makita", "milwaukee", "ryobi"]
+
+function homeCollectionRank(collection: { handle: string, title: string }) {
+  const haystack = `${collection.handle} ${collection.title}`.toLowerCase()
+  const index = homeFirstBrands.findIndex((brand) => haystack.includes(brand))
+  return index === -1 ? homeFirstBrands.length : index
+}
+
 export async function listHomeCollections() {
   if (!databaseConfigured()) return []
   try {
     const sql = getSql()
-    return await sql<Array<{ handle: string, title: string, imageUrl: string | null }>>`
+    const rows = await sql<Array<{ handle: string, title: string, imageUrl: string | null }>>`
       select handle, title, image_url as "imageUrl"
       from collections
       where published = true and show_on_home = true
       order by position asc, title asc
     `
+    return [...rows].sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
   } catch {
     return []
   }

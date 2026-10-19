@@ -75,7 +75,9 @@ export async function getSettings() {
     if (!rows[0]) return defaultSettings()
     return mapSettings(rows[0] as Record<string, unknown>)
   } catch (error) {
-    console.error(error)
+    const code = error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code) : ""
+    const detail = error instanceof Error && error.message ? error.message : "connection failed"
+    console.error(`Database unavailable${code ? ` (${code})` : ""}: ${detail}`)
     return defaultSettings()
   }
 }

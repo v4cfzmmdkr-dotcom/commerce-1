@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { updateCart } from "@/app/(shop)/cart/actions"
+import { CartQuantity } from "@/components/cart-quantity"
 import { getCart } from "@/lib/cart"
 import { formatMoney } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
@@ -26,12 +27,14 @@ export default async function CartPage() {
                   <Link href={`/products/${line.productHandle}`} className="font-medium no-underline">{line.productTitle}</Link>
                   {line.variantTitle ? <p className="text-sm">{line.variantTitle}</p> : null}
                   <p className="mt-1 text-sm">{formatMoney(line.unitPriceCents, settings.currency)}</p>
-                  <form action={updateCart} className="mt-3 flex items-center gap-2">
-                    <input type="hidden" name="itemId" value={line.id} />
-                    <label className="sr-only" htmlFor={`qty-${line.id}`}>Quantity</label>
-                    <input id={`qty-${line.id}`} className="field w-20" name="quantity" type="number" min={0} defaultValue={line.quantity} />
-                    <button className="btn-ghost" type="submit">Update</button>
-                  </form>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <CartQuantity itemId={line.id} quantity={line.quantity} />
+                    <form action={updateCart}>
+                      <input type="hidden" name="itemId" value={line.id} />
+                      <input type="hidden" name="quantity" value="0" />
+                      <button className="btn-ghost" type="submit">Remove</button>
+                    </form>
+                  </div>
                 </div>
               </li>
             ))}

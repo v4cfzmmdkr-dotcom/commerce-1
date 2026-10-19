@@ -49,7 +49,11 @@ export async function sendOrderEmail(order: EmailOrder) {
         <p><a href="${link}">View order status</a></p>`,
     }),
   })
-  if (!response.ok) return "failed"
+  if (!response.ok) {
+    const detail = await response.text()
+    console.error(`Resend ${response.status}: ${detail.slice(0, 240)}`)
+    return "failed"
+  }
   return "sent"
 }
 

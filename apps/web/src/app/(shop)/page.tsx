@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ProductGrid } from "@/components/product-grid"
+import { SocialLinks } from "@/components/social-links"
 import { listFeaturedProducts, listHomeCollections } from "@/lib/catalog"
 import { getSettings } from "@/lib/settings"
 
@@ -33,13 +34,16 @@ export default async function HomePage() {
             {settings.tagline}
           </h1>
           <p className="mt-5 max-w-xl text-sm opacity-80">{settings.announcement}</p>
-          <Link href="/search" className="btn btn-on-dark mt-8">Browse parts</Link>
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <Link href="/search" className="btn btn-on-dark">Browse parts</Link>
+            <SocialLinks />
+          </div>
         </div>
       </section>
       {collections.length > 0 ? (
         <section className="wrap py-[var(--section)]">
           <h2 className="mb-6 text-sm font-semibold">Collections</h2>
-          <div className="grid grid-cols-2 gap-[var(--gap)] md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-[var(--gap)] md:grid-cols-4">
             {collections.map((collection) => (
               <Link key={collection.handle} href={`/collections/${collection.handle}`} className="no-underline">
                 <div className="product-media bg-[var(--muted)]">
