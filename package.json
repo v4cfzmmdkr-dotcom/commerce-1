@@ -1,34 +1,36 @@
 {
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "prettier": "prettier --write --ignore-unknown .",
-    "prettier:check": "prettier --check --ignore-unknown .",
-    "test": "pnpm prettier:check"
+  "name": "dtc-starter-monorepo",
+  "private": false,
+  "packageManager": "pnpm@10.11.1",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
-  "dependencies": {
-    "@headlessui/react": "^2.2.0",
-    "@heroicons/react": "^2.2.0",
-    "clsx": "^2.1.1",
-    "geist": "^1.3.1",
-    "next": "15.6.0-canary.60",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "sonner": "^2.0.1"
+  "scripts": {
+    "dev": "pnpm --filter @dtc/web dev",
+    "build": "pnpm --filter @dtc/web build",
+    "start": "pnpm --filter @dtc/web start",
+    "lint": "pnpm --filter @dtc/web lint",
+    "test": "pnpm --filter @dtc/web test",
+    "web:setup": "pnpm --filter @dtc/web db:setup",
+    "web:import": "pnpm --filter @dtc/web import:shopify",
+    "backend:seed": "turbo seed --filter=@dtc/backend",
+    "backend:dev": "turbo dev --filter=@dtc/backend",
+    "storefront:dev": "turbo dev --filter=@dtc/storefront"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.0.5",
+      "@types/react-dom": "19.0.5",
+      "tsconfig-paths": "^4.2.0"
+    }
   },
   "devDependencies": {
-    "@tailwindcss/container-queries": "^0.1.1",
-    "@tailwindcss/postcss": "^4.0.14",
-    "@tailwindcss/typography": "^0.5.16",
-    "@types/node": "22.13.10",
-    "@types/react": "19.0.12",
-    "@types/react-dom": "19.0.4",
-    "postcss": "^8.5.3",
-    "prettier": "3.5.3",
-    "prettier-plugin-tailwindcss": "^0.6.11",
-    "tailwindcss": "^4.0.14",
-    "typescript": "5.8.2"
+    "@medusajs/eslint-plugin": "2.21.1",
+    "eslint": "^9.39.4",
+    "jiti": "^2.7.0",
+    "prettier": "^3.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "turbo": "^2.0.14"
   }
 }

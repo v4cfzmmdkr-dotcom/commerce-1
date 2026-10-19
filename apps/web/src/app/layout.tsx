@@ -1,0 +1,45 @@
+import type { Metadata } from "next"
+import { Archivo, IBM_Plex_Sans, Inter } from "next/font/google"
+import { getSettings } from "@/lib/settings"
+import { siteUrl } from "@/lib/site"
+import { themeStyle } from "@/lib/theme"
+import "./globals.css"
+
+const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo" })
+const plex = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plex",
+})
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings()
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: settings.name, template: `%s · ${settings.name}` },
+    description: settings.tagline,
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSettings()
+  const theme = settings.theme
+  return (
+    <html
+      lang="en-AU"
+      className={`${archivo.variable} ${plex.variable} ${inter.variable}`}
+      data-font={theme.font}
+      data-density={theme.density}
+      data-radius={theme.radius}
+      style={themeStyle(theme)}
+    >
+      <body>
+        <a className="skip-link" href="#content">Skip to content</a>
+        {children}
+      </body>
+    </html>
+  )
+}
