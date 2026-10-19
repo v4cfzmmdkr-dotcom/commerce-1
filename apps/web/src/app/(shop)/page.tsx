@@ -11,8 +11,23 @@ export default async function HomePage() {
   ])
   return (
     <>
-      <section className="bg-[var(--fg)] text-[var(--bg)]">
-        <div className="wrap py-[var(--section)]">
+      <section className="relative isolate overflow-hidden bg-[var(--fg)] text-[var(--bg)]">
+        {settings.bannerUrl && settings.bannerKind === "video" ? (
+          <video
+            className="hero-video absolute inset-0 h-full w-full object-cover"
+            src={settings.bannerUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-hidden="true"
+          />
+        ) : null}
+        {settings.bannerUrl && settings.bannerKind === "image" ? (
+          <img className="absolute inset-0 h-full w-full object-cover" src={settings.bannerUrl} alt="" />
+        ) : null}
+        {settings.bannerUrl ? <div className="absolute inset-0 bg-black/45" /> : null}
+        <div className="wrap relative py-[var(--section)]">
           <p className="text-xs uppercase tracking-[0.22em]">{settings.name}</p>
           <h1 className="mt-4 max-w-3xl font-semibold tracking-tight" style={{ fontSize: "var(--hero)", lineHeight: 1.05 }}>
             {settings.tagline}

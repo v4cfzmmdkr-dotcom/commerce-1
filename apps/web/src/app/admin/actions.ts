@@ -26,6 +26,17 @@ async function readImage(file: FormDataEntryValue | null) {
   return { bytes, type: file.type }
 }
 
+async function readBanner(file: File) {
+  const images = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+  const videos = ["video/mp4", "video/webm"]
+  const kind = images.includes(file.type) ? "image" as const : videos.includes(file.type) ? "video" as const : null
+  if (!kind) throw new Error("Upload a JPEG, PNG, WebP, GIF, MP4, or WebM")
+  const limit = kind === "video" ? 18_000_000 : 12_000_000
+  if (file.size > limit) throw new Error(kind === "video" ? "Video must be under 18MB" : "Images must be under 12MB")
+  const bytes = Buffer.from(await file.arrayBuffer())
+  return { bytes, type: file.type, kind }
+}
+
 export async function saveTheme(formData: FormData) {
   await requireAdmin()
   const theme = parseTheme({
@@ -50,6 +61,41 @@ export async function saveTheme(formData: FormData) {
     await sql`update store_settings set theme = ${sql.json(theme)}, logo_url = ${logoUrl}, updated_at = now() where id = 'default'`
   } else {
     await sql`update store_settings set theme = ${sql.json(theme)}, updated_at = now() where id = 'default'`
+  }
+  revalidatePath("/", "layout")
+  redirect("/admin/theme?saved=1")
+}
+
+export async function saveBanner(formData: FormData) {
+  await requireAdmin()
+  const sql = getSql()
+  const rows = await sql<{ banner_path: string | null }[]>`
+    select banner_path from store_settings where id = 'default'
+  `
+  const currentPath = rows[0]?.banner_path ?? null
+  const upload = formData.get("banner")
+  if (upload instanceof File && upload.size > 0) {
+    const banner = await readBanner(upload)
+    const saved = await saveObject(`brand/banner-${Date.now()}.${extensionFor(banner.type)}`, banner.bytes, banner.type)
+    await sql`
+      update store_settings set
+        banner_url = ${saved.url},
+        banner_path = ${saved.path},
+        banner_kind = ${banner.kind},
+        updated_at = now()
+      where id = 'default'
+    `
+    if (currentPath && currentPath !== saved.path) await deleteObject(currentPath)
+  } else if (formData.get("removeBanner") === "on") {
+    await sql`
+      update store_settings set
+        banner_url = null,
+        banner_path = null,
+        banner_kind = '',
+        updated_at = now()
+      where id = 'default'
+    `
+    await deleteObject(currentPath)
   }
   revalidatePath("/", "layout")
   redirect("/admin/theme?saved=1")

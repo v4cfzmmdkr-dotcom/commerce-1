@@ -14,6 +14,8 @@ export type StoreSettings = {
   aboutHtml: string
   shippingHtml: string
   logoUrl: string | null
+  bannerUrl: string | null
+  bannerKind: "" | "image" | "video"
 }
 
 export function defaultSettings(): StoreSettings {
@@ -31,6 +33,8 @@ export function defaultSettings(): StoreSettings {
     shippingHtml:
       "<p>Delivery options and prices are confirmed at checkout. Paid orders are dispatched within 48 hours.</p>",
     logoUrl: null,
+    bannerUrl: null,
+    bannerKind: "",
   }
 }
 
@@ -47,6 +51,8 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
     aboutHtml: String(row.about_html || ""),
     shippingHtml: String(row.shipping_html || ""),
     logoUrl: row.logo_url ? String(row.logo_url) : null,
+    bannerUrl: row.banner_url ? String(row.banner_url) : null,
+    bannerKind: row.banner_kind === "video" ? "video" : row.banner_kind === "image" ? "image" : "",
   }
 }
 

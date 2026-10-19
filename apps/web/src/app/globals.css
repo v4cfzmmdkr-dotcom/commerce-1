@@ -152,3 +152,7 @@ a { color: inherit; }
   object-fit: cover;
   display: block;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-video { display: none; }
+}
