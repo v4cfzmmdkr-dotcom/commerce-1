@@ -47,6 +47,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Nested clone used only for GitHub pushes
+/NicheParts.AU/
+
 # Local product image files
 apps/web/storage/
 
