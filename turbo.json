@@ -3,7 +3,26 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "env": [
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "AUTH_SECRET",
+        "DATABASE_URL",
+        "ORDERS_FROM_EMAIL",
+        "RESEND_API_KEY",
+        "STRIPE_MCP_KEY",
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "SUPABASE_JWKS_URL",
+        "SUPABASE_POOLER_HOST",
+        "SUPABASE_POOLER_PORT",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_URL"
+      ]
     },
     "dev": {
       "cache": false,
