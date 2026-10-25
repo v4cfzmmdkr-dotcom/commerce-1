@@ -66,9 +66,104 @@ function orderSql(sort: string | undefined, sql: ReturnType<typeof getSql>) {
   return sql`order by p.created_at desc`
 }
 
+function catalogViaHttps() {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY && (process.env.VERCEL || !databaseConfigured()))
+}
+
+async function supabaseRest<T>(path: string, extraHeaders: Record<string, string> = {}) {
+  const base = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!base || !key) return null
+  const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/${path}`, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      ...extraHeaders,
+    },
+    cache: "no-store",
+    signal: AbortSignal.timeout(12000),
+  })
+  if (!response.ok) {
+    console.error(`Supabase REST ${response.status}: ${path}`)
+    return null
+  }
+  return {
+    data: await response.json() as T,
+    total: Number((response.headers.get("content-range") || "").split("/")[1] || 0),
+  }
+}
+
+type RestProduct = {
+  id: string
+  handle: string
+  title: string
+  created_at?: string
+  product_images?: Array<{ url: string, alt: string | null, position: number }>
+  variants?: Array<{
+    price_cents: number
+    compare_at_cents: number | null
+    available: boolean
+    inventory_policy: string
+    inventory_qty: number
+  }>
+}
+
+function cardsFromRest(rows: RestProduct[]): ProductCard[] {
+  return rows.flatMap((row) => {
+    const variants = row.variants ?? []
+    if (!variants.length) return []
+    const prices = variants.map((variant) => Number(variant.price_cents))
+    const compares = variants.map((variant) => variant.compare_at_cents).filter((value): value is number => value != null)
+    const image = [...(row.product_images ?? [])].sort((left, right) => left.position - right.position)[0]
+    return [{
+      id: row.id,
+      handle: row.handle,
+      title: row.title,
+      priceCents: Math.min(...prices),
+      compareAtCents: compares.length ? Math.min(...compares.map(Number)) : null,
+      imageUrl: image?.url ?? null,
+      imageAlt: image?.alt ?? "",
+      purchasable: variants.some((variant) => variant.available && (variant.inventory_policy === "continue" || Number(variant.inventory_qty) > 0)),
+    }]
+  })
+}
+
+async function listProductsFromRest(query: CatalogQuery) {
+  const pageSize = query.pageSize ?? 24
+  const page = Math.max(1, query.page ?? 1)
+  const offset = (page - 1) * pageSize
+  const params = new URLSearchParams()
+  params.set("status", "eq.active")
+  params.set("select", "id,handle,title,created_at,product_images(url,alt,position),variants!inner(price_cents,compare_at_cents,available,inventory_policy,inventory_qty)")
+  params.set("order", "created_at.desc")
+  if (query.q?.trim()) {
+    const term = `*${query.q.trim().replace(/[,()]/g, "")}*`
+    params.set("or", `(title.ilike.${term},handle.ilike.${term})`)
+  }
+  const result = await supabaseRest<RestProduct[]>(`products?${params.toString()}`, {
+    Prefer: "count=exact",
+    Range: `${offset}-${offset + pageSize - 1}`,
+  })
+  if (!result) return null
+  const items = cardsFromRest(result.data)
+  const total = result.total || items.length
+  return {
+    items,
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  }
+}
+
 export async function listProducts(query: CatalogQuery) {
-  if (!databaseConfigured()) return { items: [] as ProductCard[], total: 0, page: 1, pageCount: 1 }
-  const sql = getSql()
+  if (catalogViaHttps()) {
+    return await listProductsFromRest(query) ?? { items: [] as ProductCard[], total: 0, page: 1, pageCount: 1 }
+  }
+  if (!databaseConfigured()) {
+    return { items: [] as ProductCard[], total: 0, page: 1, pageCount: 1 }
+  }
+  try {
+    const sql = getSql()
   const pageSize = query.pageSize ?? 24
   const page = Math.max(1, query.page ?? 1)
   const offset = (page - 1) * pageSize
@@ -151,6 +246,11 @@ export async function listProducts(query: CatalogQuery) {
     total,
     page,
     pageCount: Math.max(1, Math.ceil(total / pageSize)),
+  }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "query failed"
+    console.error(`Catalog query failed: ${detail}`)
+    return await listProductsFromRest(query) ?? { items: [] as ProductCard[], total: 0, page: 1, pageCount: 1 }
   }
 }
 
@@ -237,7 +337,13 @@ export function groupHomeCollections(collections: HomeCollection[]): HomeCollect
   return groups
 }
 
+async function homeCollectionsFromRest() {
+  const rest = await supabaseRest<Array<{ handle: string, title: string, image_url: string | null }>>("collections?published=eq.true&show_on_home=eq.true&select=handle,title,image_url&order=position.asc,title.asc")
+  return (rest?.data ?? []).map((row) => ({ handle: row.handle, title: row.title, imageUrl: row.image_url }))
+}
+
 export async function listHomeCollections() {
+  if (catalogViaHttps()) return homeCollectionsFromRest()
   if (!databaseConfigured()) return [] as HomeCollection[]
   try {
     const sql = getSql()
@@ -248,12 +354,19 @@ export async function listHomeCollections() {
       order by position asc, title asc
     `
     return rows
-  } catch {
-    return []
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "query failed"
+    console.error(`Home collections query failed: ${detail}`)
+    const rest = await supabaseRest<Array<{ handle: string, title: string, image_url: string | null }>>("collections?published=eq.true&show_on_home=eq.true&select=handle,title,image_url&order=position.asc,title.asc")
+    return (rest?.data ?? []).map((row) => ({ handle: row.handle, title: row.title, imageUrl: row.image_url }))
   }
 }
 
 export async function listNavCollections() {
+  if (catalogViaHttps()) {
+    const rest = await supabaseRest<Array<{ handle: string, title: string }>>("collections?published=eq.true&select=handle,title&order=position.asc,title.asc")
+    return rest?.data ?? []
+  }
   if (!databaseConfigured()) return []
   try {
     const sql = getSql()
@@ -268,22 +381,36 @@ export async function listNavCollections() {
 }
 
 export async function getCollection(handle: string) {
+  if (catalogViaHttps()) {
+    const rest = await supabaseRest<Array<{ id: string, handle: string, title: string, description_html: string, image_url: string | null }>>(`collections?handle=eq.${encodeURIComponent(handle)}&published=eq.true&select=id,handle,title,description_html,image_url&limit=1`)
+    const row = rest?.data?.[0]
+    if (!row) return null
+    return { id: row.id, handle: row.handle, title: row.title, descriptionHtml: row.description_html, imageUrl: row.image_url }
+  }
   if (!databaseConfigured()) return null
-  const sql = getSql()
-  const rows = await sql<Array<{ id: string, handle: string, title: string, descriptionHtml: string, imageUrl: string | null }>>`
-    select id, handle, title, description_html as "descriptionHtml", image_url as "imageUrl"
-    from collections
-    where handle = ${handle} and published = true
-    limit 1
-  `
-  return rows[0] ?? null
+  try {
+    const sql = getSql()
+    const rows = await sql<Array<{ id: string, handle: string, title: string, descriptionHtml: string, imageUrl: string | null }>>`
+      select id, handle, title, description_html as "descriptionHtml", image_url as "imageUrl"
+      from collections
+      where handle = ${handle} and published = true
+      limit 1
+    `
+    return rows[0] ?? null
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "query failed"
+    console.error(`Collection query failed: ${detail}`)
+    return null
+  }
 }
 
 export async function popularTags(collectionId?: string) {
+  if (catalogViaHttps()) return []
   if (!databaseConfigured()) return []
+  try {
   const sql = getSql()
   if (collectionId) {
-    return sql<{ tag: string, count: number }[]>`
+    return await sql<{ tag: string, count: number }[]>`
       select tag, count(*)::int as count
       from products p
       join collection_products cp on cp.product_id = p.id and cp.collection_id = ${collectionId}
@@ -294,7 +421,7 @@ export async function popularTags(collectionId?: string) {
       limit 30
     `
   }
-  return sql<{ tag: string, count: number }[]>`
+  return await sql<{ tag: string, count: number }[]>`
     select tag, count(*)::int as count
     from products p
     cross join lateral unnest(p.tags) as tag
@@ -303,9 +430,73 @@ export async function popularTags(collectionId?: string) {
     order by count desc, tag asc
     limit 30
   `
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "query failed"
+    console.error(`Tag query failed: ${detail}`)
+    return []
+  }
 }
 
 export async function getPublicProduct(handle: string): Promise<PublicProduct | null> {
+  if (catalogViaHttps()) {
+    const rest = await supabaseRest<Array<{
+      id: string
+      handle: string
+      title: string
+      description_html: string
+      tags: string[]
+      seo_title: string
+      seo_description: string
+      metadata: ProductMetadata
+      product_images?: Array<{ id: string, url: string, alt: string | null, position: number }>
+      variants?: Array<{
+        id: string
+        title: string
+        sku: string
+        option1_name: string
+        option1_value: string
+        option2_name: string
+        option2_value: string
+        option3_name: string
+        option3_value: string
+        price_cents: number
+        compare_at_cents: number | null
+        inventory_qty: number
+        inventory_policy: string
+        available: boolean
+      }>
+    }>>(`products?handle=eq.${encodeURIComponent(handle)}&status=eq.active&select=id,handle,title,description_html,tags,seo_title,seo_description,metadata,product_images(id,url,alt,position),variants(id,title,sku,option1_name,option1_value,option2_name,option2_value,option3_name,option3_value,price_cents,compare_at_cents,inventory_qty,inventory_policy,available)&limit=1`)
+    const product = rest?.data?.[0]
+    if (!product) return null
+    const images = [...(product.product_images ?? [])].sort((left, right) => left.position - right.position)
+    return {
+      id: product.id,
+      handle: product.handle,
+      title: product.title,
+      descriptionHtml: product.description_html,
+      tags: product.tags ?? [],
+      seoTitle: product.seo_title,
+      seoDescription: product.seo_description,
+      metadata: product.metadata ?? {},
+      images: images.map((image) => ({ id: image.id, url: image.url, alt: image.alt ?? "" })),
+      variants: (product.variants ?? []).map((variant) => ({
+        id: variant.id,
+        title: variant.title,
+        sku: variant.sku,
+        option1Name: variant.option1_name,
+        option1Value: variant.option1_value,
+        option2Name: variant.option2_name,
+        option2Value: variant.option2_value,
+        option3Name: variant.option3_name,
+        option3Value: variant.option3_value,
+        priceCents: Number(variant.price_cents),
+        compareAtCents: variant.compare_at_cents == null ? null : Number(variant.compare_at_cents),
+        inventoryQty: Number(variant.inventory_qty),
+        inventoryPolicy: variant.inventory_policy,
+        available: Boolean(variant.available),
+      })),
+    }
+  }
   if (!databaseConfigured()) return null
   const sql = getSql()
   const rows = await sql<Array<{
@@ -359,6 +550,10 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
 }
 
 export async function listFeaturedProducts() {
+  if (catalogViaHttps()) {
+    const latest = await listProductsFromRest({ pageSize: 8 })
+    return latest?.items ?? []
+  }
   if (!databaseConfigured()) return []
   try {
     const sql = getSql()

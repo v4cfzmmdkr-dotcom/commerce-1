@@ -57,17 +57,55 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
 }
 
 export async function databaseReady() {
-  if (!databaseConfigured()) return false
+  const base = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (base && key && process.env.VERCEL) {
+    try {
+      const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/products?select=id&limit=1`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        cache: "no-store",
+      })
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+  if (!databaseConfigured()) return Boolean(base && key)
   try {
     const sql = getSql()
     await sql`select 1 from store_settings limit 1`
     return true
   } catch {
-    return false
+    if (!base || !key) return false
+    try {
+      const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/products?select=id&limit=1`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        cache: "no-store",
+      })
+      return response.ok
+    } catch {
+      return false
+    }
   }
 }
 
 export async function getSettings() {
+  const base = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (base && key && (process.env.VERCEL || !databaseConfigured())) {
+    try {
+      const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/store_settings?id=eq.default&select=*&limit=1`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        cache: "no-store",
+      })
+      if (!response.ok) return defaultSettings()
+      const rows = await response.json() as Record<string, unknown>[]
+      if (!rows[0]) return defaultSettings()
+      return mapSettings(rows[0])
+    } catch {
+      return defaultSettings()
+    }
+  }
   if (!databaseConfigured()) return defaultSettings()
   try {
     const sql = getSql()
