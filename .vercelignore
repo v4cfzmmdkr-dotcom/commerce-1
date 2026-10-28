@@ -8,8 +8,6 @@ node_modules
 apps/web/.next
 apps/web/storage
 apps/web/storage/**
-apps/backend
-apps/storefront
 .import-q-*.txt
 .import-query-tmp
 .import-state

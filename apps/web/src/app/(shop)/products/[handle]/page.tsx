@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { ProductGallery } from "@/components/product-gallery"
 import { PurchaseBox } from "@/components/purchase-box"
 import { getPublicProduct, productPurchasable } from "@/lib/catalog"
 import { cleanHtml } from "@/lib/html"
@@ -44,14 +45,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   return (
     <article className="wrap grid gap-10 py-[var(--section)] lg:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="grid gap-3">
-        {product.images.length === 0 ? <div className="product-media" /> : null}
-        {product.images.map((image) => (
-          <div key={image.id} className="product-media">
-            <img src={image.url} alt={image.alt || product.title} />
-          </div>
-        ))}
-      </div>
+      <ProductGallery title={product.title} images={product.images} />
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
         <p className="mt-3 text-sm">{formatMoney(price, settings.currency)}</p>

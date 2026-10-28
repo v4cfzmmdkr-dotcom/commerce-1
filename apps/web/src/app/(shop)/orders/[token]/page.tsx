@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation"
-import { getSql } from "@/db/client"
-import { fulfillPaidOrder } from "@/lib/orders"
+import { fulfillPaidOrder, getOrderByPublicToken, getOrderItems } from "@/lib/orders"
 import { formatMoney } from "@/lib/money"
 import { getStripe, stripeConfigured } from "@/lib/stripe"
-import type { Address } from "@/lib/types"
 
 export const metadata = { title: "Order" }
 
@@ -16,28 +14,7 @@ export default async function OrderPage({
 }) {
   const { token } = await params
   const query = await searchParams
-  const sql = getSql()
-  const rows = await sql<Array<{
-    id: string
-    number: string
-    email: string
-    status: string
-    paymentStatus: string
-    fulfillmentStatus: string
-    totalCents: number
-    currency: string
-    shippingName: string
-    shippingAddress: Address
-    trackingCarrier: string
-    trackingNumber: string
-    inventoryWarning: boolean
-  }>>`
-    select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
-      total_cents as "totalCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
-      tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber", inventory_warning as "inventoryWarning"
-    from orders where public_token = ${token}
-  `
-  const order = rows[0]
+  const order = await getOrderByPublicToken(token)
   if (!order) notFound()
   if (query.session_id && stripeConfigured() && order.paymentStatus !== "paid") {
     try {
@@ -47,16 +24,8 @@ export default async function OrderPage({
       console.error(error)
     }
   }
-  const fresh = (await sql<typeof rows>`
-    select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
-      total_cents as "totalCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
-      tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber", inventory_warning as "inventoryWarning"
-    from orders where id = ${order.id}
-  `)[0]
-  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number }>>`
-    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents"
-    from order_items where order_id = ${order.id}
-  `
+  const fresh = await getOrderByPublicToken(token) ?? order
+  const items = await getOrderItems(fresh.id)
   const paid = fresh.paymentStatus === "paid"
   return (
     <div className="wrap max-w-2xl py-[var(--section)]">

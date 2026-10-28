@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getSql } from "@/db/client"
+import { findOrderToken } from "@/lib/orders"
 
 export const metadata = { title: "Track an order" }
 
@@ -7,14 +7,9 @@ async function lookup(formData: FormData) {
   "use server"
   const email = String(formData.get("email") || "").trim().toLowerCase()
   const number = String(formData.get("number") || "").trim().toUpperCase()
-  const sql = getSql()
-  const rows = await sql<{ token: string }[]>`
-    select public_token as token from orders
-    where lower(email) = ${email} and upper(number) = ${number}
-    limit 1
-  `
-  if (!rows[0]) redirect("/orders/lookup?error=1")
-  redirect(`/orders/${rows[0].token}`)
+  const token = await findOrderToken(email, number)
+  if (!token) redirect("/orders/lookup?error=1")
+  redirect(`/orders/${token}`)
 }
 
 export default async function LookupPage({

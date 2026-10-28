@@ -1,5 +1,6 @@
 import { getSql, databaseConfigured } from "@/db/client"
 import { isPurchasable } from "@/lib/money"
+import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
 import type { ProductMetadata } from "@/lib/types"
 
 export type ProductCard = {
@@ -67,30 +68,7 @@ function orderSql(sort: string | undefined, sql: ReturnType<typeof getSql>) {
 }
 
 function catalogViaHttps() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY && (process.env.VERCEL || !databaseConfigured()))
-}
-
-async function supabaseRest<T>(path: string, extraHeaders: Record<string, string> = {}) {
-  const base = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!base || !key) return null
-  const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/${path}`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      ...extraHeaders,
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(12000),
-  })
-  if (!response.ok) {
-    console.error(`Supabase REST ${response.status}: ${path}`)
-    return null
-  }
-  return {
-    data: await response.json() as T,
-    total: Number((response.headers.get("content-range") || "").split("/")[1] || 0),
-  }
+  return dataApiEnabled()
 }
 
 type RestProduct = {
@@ -132,23 +110,55 @@ async function listProductsFromRest(query: CatalogQuery) {
   const pageSize = query.pageSize ?? 24
   const page = Math.max(1, query.page ?? 1)
   const offset = (page - 1) * pageSize
+  let collectionIds: string[] | null = null
+  if (query.collectionId) {
+    const links = await supabaseRest<Array<{ product_id: string }>>(
+      `collection_products?collection_id=eq.${encodeURIComponent(query.collectionId)}&select=product_id&order=position.asc`,
+    )
+    if (!links) return null
+    collectionIds = links.data.map((row) => row.product_id)
+    if (!collectionIds.length) {
+      return { items: [] as ProductCard[], total: 0, page, pageCount: 1 }
+    }
+  }
   const params = new URLSearchParams()
   params.set("status", "eq.active")
   params.set("select", "id,handle,title,created_at,product_images(url,alt,position),variants!inner(price_cents,compare_at_cents,available,inventory_policy,inventory_qty)")
-  params.set("order", "created_at.desc")
+  if (query.sort === "price-asc") params.set("order", "variants(price_cents).asc")
+  else if (query.sort === "price-desc") params.set("order", "variants(price_cents).desc")
+  else if (query.sort === "title") params.set("order", "title.asc")
+  else params.set("order", "created_at.desc")
   if (query.q?.trim()) {
     const term = `*${query.q.trim().replace(/[,()]/g, "")}*`
     params.set("or", `(title.ilike.${term},handle.ilike.${term})`)
   }
+  if (query.tag) {
+    const tag = query.tag.replace(/[{},]/g, "")
+    params.set("tags", `cs.{${tag}}`)
+  }
+  if (collectionIds) {
+    params.set("id", `in.(${collectionIds.join(",")})`)
+  }
+  const useCollectionOrder = Boolean(collectionIds) && (!query.sort || query.sort === "newest")
   const result = await supabaseRest<RestProduct[]>(`products?${params.toString()}`, {
     Prefer: "count=exact",
-    Range: `${offset}-${offset + pageSize - 1}`,
+    ...(useCollectionOrder ? {} : { Range: `${offset}-${offset + pageSize - 1}` }),
   })
   if (!result) return null
-  const items = cardsFromRest(result.data)
-  const total = result.total || items.length
+  let items = cardsFromRest(result.data)
+  if (useCollectionOrder && collectionIds) {
+    const byId = new Map(items.map((item) => [item.id, item]))
+    items = collectionIds.flatMap((id) => {
+      const item = byId.get(id)
+      return item ? [item] : []
+    })
+  }
+  const total = collectionIds && !query.q?.trim() && !query.tag
+    ? collectionIds.length
+    : (result.total || items.length)
+  const paged = useCollectionOrder ? items.slice(offset, offset + pageSize) : items
   return {
-    items,
+    items: paged,
     total,
     page,
     pageCount: Math.max(1, Math.ceil(total / pageSize)),
