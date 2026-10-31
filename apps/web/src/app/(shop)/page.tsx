@@ -57,11 +57,11 @@ export default async function HomePage() {
           <p className="hero-kicker">{settings.name}</p>
           <h1 className="hero-title">{settings.tagline}</h1>
           <p className="hero-lede">{settings.announcement}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link href="/search" className="btn">Browse parts</Link>
-            <SocialLinks />
-          </div>
         </div>
+      </section>
+      <section className="hero-actions wrap">
+        <Link href="/search" className="btn hero-actions-btn">Browse parts</Link>
+        <SocialLinks />
       </section>
       {collectionGroups.map((group) => (
         <section key={group.id} className="wrap collection-group">
