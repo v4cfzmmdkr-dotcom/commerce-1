@@ -258,7 +258,15 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .hero-media {
+  object-fit: cover;
   object-position: center right;
+}
+
+@media (min-width: 768px) {
+  .hero-media {
+    object-fit: contain;
+    object-position: center;
+  }
 }
 
 .hero-scrim {

@@ -50,7 +50,7 @@ export default async function HomePage() {
           />
         ) : null}
         {settings.bannerUrl && settings.bannerKind === "image" ? (
-          <img className="hero-media absolute inset-0 h-full w-full object-cover" src={settings.bannerUrl} alt="" />
+          <img className="hero-media absolute inset-0 h-full w-full" src={settings.bannerUrl} alt="" />
         ) : null}
         {settings.bannerUrl ? <div className="hero-scrim absolute inset-0" /> : null}
         <div className="wrap relative py-[var(--section)]">
