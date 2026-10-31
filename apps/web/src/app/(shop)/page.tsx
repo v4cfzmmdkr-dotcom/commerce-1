@@ -18,7 +18,7 @@ function CollectionTile({
     >
       <div className="product-media bg-[var(--muted)]">
         {collection.imageUrl ? (
-          <img src={collection.imageUrl} alt="" />
+          <img src={collection.imageUrl} alt={collection.title} />
         ) : (
           <div className="h-full w-full bg-[var(--fg)]" />
         )}
