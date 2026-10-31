@@ -212,8 +212,8 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .announcement {
   overflow: hidden;
-  background: #111111;
-  color: #ffffff;
+  background: var(--fg);
+  color: var(--bg);
   font-family: var(--font-hadid), sans-serif;
   font-size: 0.8125rem;
   font-weight: 400;
