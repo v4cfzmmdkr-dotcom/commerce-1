@@ -3,6 +3,7 @@ import { getSql } from "@/db/client"
 import { cleanHtml } from "@/lib/html"
 import { extensionFor, saveObject } from "@/lib/storage"
 import { fetchShopifyCollections, type RemoteCollection } from "@/lib/shopify/collections"
+import { limitVariantsToBlackWhite } from "@/lib/product-colours"
 import { decodeCsvBuffer, parseShopifyCsv, variantLabel, type ParsedProduct } from "@/lib/shopify/parse"
 import type { ImportReport, ParseIssue } from "@/lib/types"
 
@@ -59,6 +60,7 @@ async function downloadToStorage(url: string, handle: string, position: number) 
 }
 
 async function upsertProduct(product: ParsedProduct, report: ImportReport) {
+  product.variants = limitVariantsToBlackWhite(product.variants)
   const sql = getSql()
   const existing = await sql<{ id: string }[]>`select id from products where handle = ${product.handle}`
   const id = existing[0]?.id ?? randomUUID()

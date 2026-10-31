@@ -1,5 +1,6 @@
 import { getSql, databaseConfigured } from "@/db/client"
 import { isPurchasable } from "@/lib/money"
+import { keepBlackWhiteColours } from "@/lib/product-colours"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
 import type { ProductMetadata } from "@/lib/types"
 
@@ -534,7 +535,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
       seoDescription: product.seo_description,
       metadata: product.metadata ?? {},
       images: images.map((image) => ({ id: image.id, url: image.url, alt: image.alt ?? "" })),
-      variants: (product.variants ?? []).map((variant) => ({
+      variants: keepBlackWhiteColours((product.variants ?? []).map((variant) => ({
         id: variant.id,
         title: variant.title,
         sku: variant.sku,
@@ -549,7 +550,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
         inventoryQty: Number(variant.inventory_qty),
         inventoryPolicy: variant.inventory_policy,
         available: Boolean(variant.available),
-      })),
+      }))),
     }
   }
   if (!databaseConfigured()) return null
@@ -594,13 +595,13 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
     tags: product.tags ?? [],
     metadata: product.metadata ?? {},
     images,
-    variants: variants.map((variant) => ({
+    variants: keepBlackWhiteColours(variants.map((variant) => ({
       ...variant,
       priceCents: Number(variant.priceCents),
       compareAtCents: variant.compareAtCents == null ? null : Number(variant.compareAtCents),
       inventoryQty: Number(variant.inventoryQty),
       available: Boolean(variant.available),
-    })),
+    }))),
   }
 }
 
