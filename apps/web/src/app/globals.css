@@ -240,8 +240,17 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .hero {
+  min-height: clamp(22rem, 58vw, 34rem);
   background: #f3f3f3;
   color: #111111;
+}
+
+.hero-media {
+  object-position: center right;
+}
+
+.hero-scrim {
+  background: linear-gradient(90deg, rgba(243, 243, 243, 0.92) 0%, rgba(243, 243, 243, 0.72) 42%, rgba(243, 243, 243, 0.18) 72%, rgba(243, 243, 243, 0.05) 100%);
 }
 
 .hero-kicker {

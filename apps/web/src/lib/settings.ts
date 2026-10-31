@@ -33,8 +33,8 @@ export function defaultSettings(): StoreSettings {
     shippingHtml:
       "<p>Delivery options and prices are confirmed at checkout. Paid orders are dispatched within 48 hours.</p>",
     logoUrl: null,
-    bannerUrl: null,
-    bannerKind: "",
+    bannerUrl: "/brand/hero.jpg",
+    bannerKind: "image",
   }
 }
 
