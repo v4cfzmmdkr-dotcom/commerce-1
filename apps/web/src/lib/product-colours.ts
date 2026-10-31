@@ -28,7 +28,7 @@ export function namedColour(value: string) {
   return null
 }
 
-export function colourSlot(variants: Array<Pick<ColourVariant, "option1Name" | "option2Name" | "option3Name">>) {
+export function colourSlot(variants: Array<Pick<ColourVariant, "option1Name" | "option1Value" | "option2Name" | "option2Value" | "option3Name" | "option3Value">>) {
   for (const variant of variants) {
     if (isColourName(variant.option1Name)) return 1 as const
     if (isColourName(variant.option2Name)) return 2 as const

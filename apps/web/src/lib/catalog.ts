@@ -287,7 +287,7 @@ function homeCollectionRank(collection: { handle: string, title: string }) {
   return index === -1 ? homeFirstBrands.length : index
 }
 
-function isBrandCollection(collection: HomeCollection) {
+function isBrandCollection(collection: { handle: string, title: string }) {
   return homeFirstBrands.some((brand) => collectionKey(collection).includes(brand))
 }
 
