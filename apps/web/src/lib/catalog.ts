@@ -348,9 +348,49 @@ export function groupHomeCollections(collections: HomeCollection[]): HomeCollect
   return groups
 }
 
+type HomeCollectionRow = { id: string, handle: string, title: string, image_url: string | null }
+
+async function productImagesForCollections(collectionIds: string[]) {
+  const images = new Map<string, string>()
+  if (!collectionIds.length) return images
+  const links = await supabaseRest<Array<{ collection_id: string, position: number, product_id: string }>>(
+    `collection_products?collection_id=in.(${collectionIds.join(",")})&select=collection_id,position,product_id&order=position.asc`,
+  )
+  const memberships = [...(links?.data ?? [])].sort((a, b) => a.position - b.position)
+  const productIds = [...new Set(memberships.map((row) => row.product_id))]
+  if (!productIds.length) return images
+  const products = await supabaseRest<Array<{ id: string }>>(`products?id=in.(${productIds.join(",")})&status=eq.active&select=id`)
+  const active = new Set((products?.data ?? []).map((row) => row.id))
+  const photos = await supabaseRest<Array<{ product_id: string, url: string, position: number }>>(
+    `product_images?product_id=in.(${productIds.join(",")})&select=product_id,url,position&order=position.asc`,
+  )
+  const firstPhoto = new Map<string, string>()
+  for (const photo of photos?.data ?? []) {
+    if (!firstPhoto.has(photo.product_id) && photo.url) firstPhoto.set(photo.product_id, photo.url)
+  }
+  for (const row of memberships) {
+    if (images.has(row.collection_id) || !active.has(row.product_id)) continue
+    const url = firstPhoto.get(row.product_id)
+    if (url) images.set(row.collection_id, url)
+  }
+  return images
+}
+
+function homeCollectionImage(collection: HomeCollectionRow, productImages: Map<string, string>) {
+  if (isBrandCollection(collection)) return collection.image_url
+  return productImages.get(collection.id) ?? collection.image_url
+}
+
 async function homeCollectionsFromRest() {
-  const rest = await supabaseRest<Array<{ handle: string, title: string, image_url: string | null }>>("collections?published=eq.true&show_on_home=eq.true&select=handle,title,image_url&order=position.asc,title.asc")
-  return (rest?.data ?? []).map((row) => ({ handle: row.handle, title: row.title, imageUrl: row.image_url }))
+  const rest = await supabaseRest<HomeCollectionRow[]>("collections?published=eq.true&show_on_home=eq.true&select=id,handle,title,image_url&order=position.asc,title.asc")
+  const collections = rest?.data ?? []
+  const listingIds = collections.filter((row) => !isBrandCollection(row)).map((row) => row.id)
+  const productImages = await productImagesForCollections(listingIds)
+  return collections.map((row) => ({
+    handle: row.handle,
+    title: row.title,
+    imageUrl: homeCollectionImage(row, productImages),
+  }))
 }
 
 export async function listHomeCollections() {
@@ -358,13 +398,30 @@ export async function listHomeCollections() {
   if (!databaseConfigured()) return [] as HomeCollection[]
   try {
     const sql = getSql()
-    const rows = await sql<HomeCollection[]>`
-      select handle, title, image_url as "imageUrl"
-      from collections
-      where published = true and show_on_home = true
-      order by position asc, title asc
+    const rows = await sql<Array<HomeCollection & { id: string }>>`
+      select
+        c.id,
+        c.handle,
+        c.title,
+        case
+          when lower(c.handle || ' ' || c.title) similar to '%(dewalt|makita|milwaukee|ryobi)%'
+            then c.image_url
+          else coalesce(img.url, c.image_url)
+        end as "imageUrl"
+      from collections c
+      left join lateral (
+        select i.url
+        from collection_products cp
+        join products p on p.id = cp.product_id and p.status = 'active'
+        join product_images i on i.product_id = p.id
+        where cp.collection_id = c.id
+        order by cp.position asc, i.position asc
+        limit 1
+      ) img on true
+      where c.published = true and c.show_on_home = true
+      order by c.position asc, c.title asc
     `
-    return rows
+    return rows.map((row) => ({ handle: row.handle, title: row.title, imageUrl: row.imageUrl }))
   } catch (error) {
     const detail = error instanceof Error ? error.message : "query failed"
     console.error(`Home collections query failed: ${detail}`)
