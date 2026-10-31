@@ -242,7 +242,7 @@ function buildProduct(
       }
     }
 
-    const policy = cell(row.data, "Variant Inventory Policy").toLowerCase() === "continue" ? "continue" : "deny"
+    const policy = "continue"
     const gramsRaw = cell(row.data, "Variant Grams")
     let weightGrams = 0
     if (gramsRaw) {

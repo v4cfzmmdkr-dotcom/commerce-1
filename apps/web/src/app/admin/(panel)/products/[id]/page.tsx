@@ -94,9 +94,9 @@ export default async function EditProductPage({
               <input className="field" name={`compare_${variant.id}`} defaultValue={dollars(variant.compareAtCents)} placeholder="Compare-at price" />
             </div>
             <label className="label">When stock runs out
-              <select className="select normal-case" name={`policy_${variant.id}`} defaultValue={variant.inventoryPolicy}>
-                <option value="deny">Sold out</option>
+              <select className="select normal-case" name={`policy_${variant.id}`} defaultValue={variant.inventoryPolicy || "continue"}>
                 <option value="continue">Keep selling</option>
+                <option value="deny">Sold out</option>
               </select>
             </label>
             <label className="flex items-center gap-2 text-sm normal-case">
@@ -112,9 +112,9 @@ export default async function EditProductPage({
             <input className="field" name="newOptionName" placeholder="Option name" />
             <input className="field" name="newOption" placeholder="Option value" />
             <input className="field" name="newQty" placeholder="Quantity" />
-            <select className="select" name="newPolicy" defaultValue="deny">
-              <option value="deny">Sold out at zero</option>
+            <select className="select" name="newPolicy" defaultValue="continue">
               <option value="continue">Keep selling</option>
+              <option value="deny">Sold out at zero</option>
             </select>
           </div>
         </fieldset>

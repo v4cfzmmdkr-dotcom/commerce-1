@@ -139,7 +139,7 @@ export async function createProduct(formData: FormData) {
   `
   await sql`
     insert into variants (id, product_id, title, price_cents, inventory_qty, inventory_policy, position)
-    values (${randomUUID()}, ${id}, '', ${price}, 0, 'deny', 0)
+    values (${randomUUID()}, ${id}, '', ${price}, 0, 'continue', 0)
   `
   redirect(`/admin/products/${id}`)
 }
@@ -472,7 +472,7 @@ export async function setStockPolicy(formData: FormData) {
   await requireAdmin()
   const sql = getSql()
   if (text(formData, "mode") === "continue") {
-    await sql`update variants set inventory_policy = 'continue' where inventory_qty <= 0 and available = true`
+    await sql`update variants set inventory_policy = 'continue', available = true`
   } else {
     await sql`update variants set inventory_policy = 'deny' where inventory_qty <= 0`
   }
