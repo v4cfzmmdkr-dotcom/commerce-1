@@ -127,6 +127,18 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   border-radius: 999px;
 }
 
+@media (max-width: 767px) {
+  .site-header-bar {
+    padding-top: 1rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .announcement {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+}
+
 .collection-nav {
   overflow: hidden;
   border-top: 0.5px solid color-mix(in srgb, var(--fg) 14%, transparent);

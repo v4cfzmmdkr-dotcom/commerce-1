@@ -43,9 +43,9 @@ export function Header({
   cartCount: number
 }) {
   return (
-    <header className="border-b border-[var(--border)] bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
+    <header className="site-header border-b border-[var(--border)] bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
       {settings.announcement ? <Announcement text={settings.announcement} /> : null}
-      <div className="wrap flex flex-wrap items-center gap-4" style={{ minHeight: "var(--header-h)" }}>
+      <div className="site-header-bar wrap flex flex-wrap items-center gap-4" style={{ minHeight: "var(--header-h)" }}>
         <Link href="/" className="tap-link gap-3">
           {settings.logoUrl ? (
             <img src={settings.logoUrl} alt={settings.name} className="h-8 w-auto" />
