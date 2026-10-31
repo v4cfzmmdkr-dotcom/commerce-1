@@ -50,7 +50,9 @@ function luminance(hexColor: string) {
 }
 
 export function darkTheme(theme: ThemeSettings): ThemeSettings {
-  if (luminance(theme.background) < luminance(theme.foreground)) return theme
+  if (luminance(theme.background) < luminance(theme.foreground)) {
+    return { ...theme, background: "#000000" }
+  }
   const accentIsDark = luminance(theme.accent) < 0.4
   return {
     ...theme,
@@ -68,7 +70,9 @@ function themeBlock(theme: ThemeSettings) {
 }
 
 export function themeCss(theme: ThemeSettings) {
-  return `:root{${themeBlock(theme)}color-scheme:light}@media (prefers-color-scheme: dark){:root{${themeBlock(darkTheme(theme))}color-scheme:dark}}@media (prefers-contrast: more){:root{--border:var(--fg)}}`
+  const light = { ...theme, background: "#ffffff" }
+  const dark = darkTheme(theme)
+  return `:root{${themeBlock(light)}color-scheme:light}@media (prefers-color-scheme: dark){:root{${themeBlock(dark)}color-scheme:dark}}@media (prefers-contrast: more){:root{--border:var(--fg)}}`
 }
 
 export function themeStyle(theme: ThemeSettings): Record<string, string> {

@@ -253,8 +253,8 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .hero {
   min-height: clamp(22rem, 58vw, 34rem);
-  background: #f3f3f3;
-  color: #111111;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .hero-media {
@@ -270,7 +270,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .hero-scrim {
-  background: linear-gradient(90deg, rgba(243, 243, 243, 0.92) 0%, rgba(243, 243, 243, 0.72) 42%, rgba(243, 243, 243, 0.18) 72%, rgba(243, 243, 243, 0.05) 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 92%, transparent) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 42%, color-mix(in srgb, var(--bg) 18%, transparent) 72%, color-mix(in srgb, var(--bg) 5%, transparent) 100%);
 }
 
 .hero-kicker {
@@ -306,8 +306,9 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
-  padding-top: 1.5rem;
-  padding-bottom: 0.5rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-top: 1px solid var(--border);
 }
 
 .hero-actions-btn {
@@ -676,13 +677,10 @@ a:hover .product-media img {
 .text-xs { font-size: 0.8125rem; line-height: 1.35; }
 .text-sm { font-size: 0.9375rem; line-height: 1.4; }
 
-@media (prefers-color-scheme: dark) {
-  .site-footer {
-    color-scheme: light;
-    background: #ffffff;
-    color: #3a3a3c;
-    border-top-color: #e5e5e5;
-  }
+.site-footer {
+  background: var(--bg);
+  color: var(--fg);
+  border-top-color: var(--border);
 }
 
 @media (prefers-reduced-motion: reduce) {
