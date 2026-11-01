@@ -24,7 +24,11 @@ export function quoteOrder(input: {
   const taxable = input.lines
     .filter((line) => line.taxable)
     .reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0)
-  const taxBase = taxable + input.shippingCents
+  // Delivery of GST-free goods is GST-free, so only the taxable share of shipping carries GST.
+  const taxableShipping = subtotal > 0
+    ? Math.round((input.shippingCents * taxable) / subtotal)
+    : input.shippingCents
+  const taxBase = taxable + taxableShipping
   const tax = input.pricesIncludeTax
     ? Math.round((Math.max(0, taxBase) * input.gstRateBps) / (10000 + input.gstRateBps))
     : Math.round((Math.max(0, taxBase) * input.gstRateBps) / 10000)

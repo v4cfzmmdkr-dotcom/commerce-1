@@ -158,6 +158,18 @@ describe("money", () => {
       pricesIncludeTax: true,
     }).total).toBe(3900)
   })
+
+  it("charges gst on shipping only for the taxable share of the order", () => {
+    const quote = (taxable: boolean[]) => quoteOrder({
+      lines: taxable.map((flag) => ({ unitPriceCents: 995, quantity: 1, taxable: flag })),
+      shippingCents: 995,
+      gstRateBps: 1000,
+      pricesIncludeTax: true,
+    }).tax
+    expect(quote([true])).toBe(181)
+    expect(quote([false])).toBe(0)
+    expect(quote([true, false])).toBe(136)
+  })
 })
 
 describe("theme and store url", () => {
