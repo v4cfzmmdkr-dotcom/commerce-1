@@ -62,7 +62,7 @@ function parseDatabaseUrl(raw: string): PgTarget {
     /^postgres(?:ql)?:\/\/(?:([^:@/]*)(?::([^@]*))?@)?([^:/?#]+)(?::(\d+))?(?:\/([^?]*)?)?/i,
   )
   if (!match) {
-    throw new Error("DATABASE_URL is invalid")
+    throw new Error("DATABASE_URL is not a Postgres connection string (postgresql://user:password@host:port/db)")
   }
   return {
     username: decodePart(match[1] || "postgres"),
@@ -117,9 +117,8 @@ export function getSql() {
         ssl: local ? false : options.ssl,
       })
     } catch (error) {
-      console.error("[db] could not parse DATABASE_URL, using the raw connection string")
-      console.error(error instanceof Error ? error.message : error)
-      globalForDb.sql = postgres(process.env.DATABASE_URL, options)
+      console.error("[db] could not parse DATABASE_URL")
+      throw error
     }
   }
   return globalForDb.sql
