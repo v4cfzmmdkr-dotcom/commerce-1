@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { addressFromPhoton, type PhotonProperties } from "@/lib/photon-address"
+import { addressFromPhoton, parseStreetQuery, type PhotonProperties } from "@/lib/photon-address"
 
 export const runtime = "nodejs"
 
@@ -24,7 +24,7 @@ async function photon(path: string) {
 const australia = "112.5,-44.0,154.0,-9.0"
 
 function search(query: string) {
-  return photon(`/api/?q=${encodeURIComponent(query)}&limit=10&lang=en&bbox=${australia}`)
+  return photon(`/api/?q=${encodeURIComponent(query)}&limit=15&lang=en&bbox=${australia}`)
 }
 
 export async function GET(request: Request) {
@@ -38,9 +38,12 @@ export async function GET(request: Request) {
       : query.length >= 3
         ? await search(query)
         : { features: [] }
+    const typed = lat && lng ? null : parseStreetQuery(query)
+    const features = [...(data.features ?? [])]
+    if (typed) features.sort((a, b) => Number(Boolean(b.properties?.housenumber)) - Number(Boolean(a.properties?.housenumber)))
     const seen = new Set<string>()
-    const results = (data.features ?? [])
-      .map(addressFromPhoton)
+    const results = features
+      .map((feature) => addressFromPhoton(feature, typed))
       .filter((item) => item !== null)
       .filter((item) => !seen.has(item.label) && seen.add(item.label))
       .slice(0, 8)
