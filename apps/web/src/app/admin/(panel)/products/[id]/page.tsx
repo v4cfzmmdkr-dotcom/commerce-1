@@ -24,9 +24,11 @@ export default async function EditProductPage({
     seoTitle: string
     seoDescription: string
     featured: boolean
+    chargeGst: boolean
   }>>`
     select id, title, handle, description_html as "descriptionHtml", vendor, product_type as "productType",
-      tags, status, seo_title as "seoTitle", seo_description as "seoDescription", featured
+      tags, status, seo_title as "seoTitle", seo_description as "seoDescription", featured,
+      coalesce((select bool_and(taxable) from variants where product_id = products.id), true) as "chargeGst"
     from products where id = ${id}
   `
   const product = products[0]
@@ -73,6 +75,9 @@ export default async function EditProductPage({
         </label>
         <label className="flex items-center gap-2 text-sm normal-case">
           <input type="checkbox" name="featured" defaultChecked={product.featured} /> Featured on the homepage
+        </label>
+        <label className="flex items-center gap-2 text-sm normal-case">
+          <input type="checkbox" name="chargeGst" defaultChecked={product.chargeGst} /> Charge GST
         </label>
         <label className="label">Description HTML<textarea className="field normal-case min-h-40" name="description" defaultValue={product.descriptionHtml} /></label>
         <label className="label">Vendor<input className="field normal-case" name="vendor" defaultValue={product.vendor} /></label>

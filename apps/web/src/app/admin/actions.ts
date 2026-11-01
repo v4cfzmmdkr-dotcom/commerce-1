@@ -213,6 +213,7 @@ export async function saveProduct(formData: FormData) {
       )
     `
   }
+  await sql`update variants set taxable = ${formData.get("chargeGst") === "on"} where product_id = ${id}`
   revalidatePath(`/products/${handle}`)
   redirect(`/admin/products/${id}?saved=1`)
 }
