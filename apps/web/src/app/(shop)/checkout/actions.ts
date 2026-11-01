@@ -34,6 +34,9 @@ export async function placeOrder(
     phone: read(formData, "phone"),
   }
   const email = read(formData, "email").toLowerCase()
+  if (email.length > 254 || Object.values(address).some((value) => value.length > 200)) {
+    return { error: "One of the details is too long" }
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email" }
   if (!address.name || !address.line1 || !address.city || !address.state || !address.postcode) {
     return { error: "Complete the delivery address" }

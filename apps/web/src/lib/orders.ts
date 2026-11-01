@@ -236,6 +236,21 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     }
     if (session.payment_status !== "paid") return { already: false, paid: false }
     if (order.payment_status === "paid") return { already: true, paid: true }
+    const paymentIntent = typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null
+    // The webhook and the return page can confirm the same order at once.
+    // Only the request that flips payment_status adjusts stock and sends email.
+    const claimed = await supabaseMutate<Array<{ id: string }>>(`orders?id=eq.${order.id}&payment_status=neq.paid`, "PATCH", {
+      payment_status: "paid",
+      status: "paid",
+      stripe_session_id: session.id,
+      stripe_payment_intent_id: paymentIntent,
+      paid_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    if (!claimed) throw new Error("Could not record the payment")
+    if (claimed.data.length === 0) return { already: true, paid: true }
     const itemRows = await supabaseRest<Array<{
       variant_id: string | null
       quantity: number
@@ -256,18 +271,9 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       })
       if (!decremented?.data) inventoryWarning = true
     }
-    const paymentIntent = typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id ?? null
-    await supabaseMutate(`orders?id=eq.${order.id}&payment_status=neq.paid`, "PATCH", {
-      payment_status: "paid",
-      status: "paid",
-      stripe_session_id: session.id,
-      stripe_payment_intent_id: paymentIntent,
-      inventory_warning: inventoryWarning,
-      paid_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    if (inventoryWarning) {
+      await supabaseMutate(`orders?id=eq.${order.id}`, "PATCH", { inventory_warning: true })
+    }
     if (order.cart_id) {
       await supabaseMutate(`cart_items?cart_id=eq.${order.cart_id}`, "DELETE")
     }
@@ -320,39 +326,45 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     from order_items where order_id = ${order.id}
   `
   let inventoryWarning = false
-  await sql.begin(async (tx) => {
+  const paymentIntent = typeof session.payment_intent === "string"
+    ? session.payment_intent
+    : session.payment_intent?.id ?? null
+  const claimed = await sql.begin(async (tx) => {
+    const updated = await tx`
+      update orders
+      set payment_status = 'paid',
+          status = 'paid',
+          stripe_session_id = ${session.id},
+          stripe_payment_intent_id = ${paymentIntent},
+          paid_at = now(),
+          updated_at = now()
+      where id = ${order.id} and payment_status <> 'paid'
+      returning id
+    `
+    if (updated.length === 0) return false
     for (const item of items) {
       if (!item.variantId) {
         inventoryWarning = true
         continue
       }
-      const updated = await tx`
+      const decremented = await tx`
         update variants
         set inventory_qty = inventory_qty - ${item.quantity}
         where id = ${item.variantId}
           and (inventory_policy = 'continue' or inventory_qty >= ${item.quantity})
         returning id
       `
-      if (updated.length === 0) inventoryWarning = true
+      if (decremented.length === 0) inventoryWarning = true
     }
-    const paymentIntent = typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id ?? null
-    await tx`
-      update orders
-      set payment_status = 'paid',
-          status = 'paid',
-          stripe_session_id = ${session.id},
-          stripe_payment_intent_id = ${paymentIntent},
-          inventory_warning = ${inventoryWarning},
-          paid_at = now(),
-          updated_at = now()
-      where id = ${order.id} and payment_status <> 'paid'
-    `
+    if (inventoryWarning) {
+      await tx`update orders set inventory_warning = true where id = ${order.id}`
+    }
     if (order.cartId) {
       await tx`delete from cart_items where cart_id = ${order.cartId}`
     }
+    return true
   })
+  if (!claimed) return { already: true, paid: true }
 
   const emailStatus = await sendOrderEmail({
     number: order.number,

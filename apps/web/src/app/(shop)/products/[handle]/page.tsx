@@ -43,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   }
   return (
     <article className="wrap grid gap-10 py-[var(--section)] lg:grid-cols-2">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <ProductGallery title={product.title} images={product.images} />
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>

@@ -11,7 +11,7 @@ export async function addToCart(
   const quantity = Number(formData.get("quantity") || 1)
   if (!variantId) return { error: "Choose an option" }
   try {
-    await addVariantToCart(variantId, Number.isFinite(quantity) ? quantity : 1)
+    await addVariantToCart(variantId, Number.isFinite(quantity) ? Math.floor(quantity) : 1)
     revalidatePath("/cart")
     revalidatePath("/", "layout")
     return { ok: true }
@@ -24,7 +24,7 @@ export async function updateCart(formData: FormData) {
   const itemId = String(formData.get("itemId") || "")
   const quantity = Number(formData.get("quantity") || 0)
   if (!itemId) return
-  await updateCartQuantity(itemId, Number.isFinite(quantity) ? quantity : 0)
+  await updateCartQuantity(itemId, Number.isFinite(quantity) ? Math.floor(quantity) : 0)
   revalidatePath("/cart")
   revalidatePath("/", "layout")
 }

@@ -5,10 +5,12 @@ import { isPurchasable, maxPurchasable } from "@/lib/money"
 import { dataApiEnabled, supabaseMutate, supabaseRest } from "@/lib/supabase-rest"
 
 const cartCookie = "np_cart"
+const idPattern = /^[A-Za-z0-9-]{1,64}$/
 
 export async function cartId() {
   const jar = await cookies()
-  return jar.get(cartCookie)?.value ?? null
+  const value = jar.get(cartCookie)?.value
+  return value && idPattern.test(value) ? value : null
 }
 
 async function rememberCart(id: string) {
@@ -164,6 +166,7 @@ export async function cartCount() {
 }
 
 export async function addVariantToCart(variantId: string, quantity: number) {
+  if (!idPattern.test(variantId)) throw new Error("That option is not available")
   if (dataApiEnabled()) {
     const result = await supabaseRest<Array<{
       id: string
@@ -249,7 +252,7 @@ export async function addVariantToCart(variantId: string, quantity: number) {
 
 export async function updateCartQuantity(itemId: string, quantity: number) {
   const id = await cartId()
-  if (!id) return
+  if (!id || !idPattern.test(itemId)) return
   if (dataApiEnabled()) {
     if (quantity <= 0) {
       await supabaseMutate(`cart_items?id=eq.${itemId}&cart_id=eq.${id}`, "DELETE")
