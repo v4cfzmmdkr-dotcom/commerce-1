@@ -135,7 +135,7 @@ describe("shopify csv", () => {
     expect(saw?.variants[1].option1Name).toBe("Size")
     expect(saw?.variants[1].option2Value).toBe("White")
     expect(saw?.variants[1].inventoryPolicy).toBe("continue")
-    expect(saw?.variants[1].taxable).toBe(false)
+    expect(saw?.variants[1].taxable).toBe(true)
     expect(result.products.find((product) => product.handle === "bad")).toBeUndefined()
     expect(result.products.find((product) => product.handle === "card")).toBeUndefined()
     expect(result.issues.some((issue) => issue.message.includes("Invalid price"))).toBe(true)

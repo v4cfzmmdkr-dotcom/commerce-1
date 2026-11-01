@@ -264,7 +264,8 @@ function buildProduct(
       inventoryQty,
       inventoryPolicy: policy,
       weightGrams,
-      taxable: cell(row.data, "Variant Taxable").toLowerCase() !== "false",
+      // The shop is GST registered; Shopify's "Variant Taxable" flag was left unticked on many products.
+      taxable: true,
       barcode: cell(row.data, "Variant Barcodes") || cell(row.data, "Variant Barcode"),
       position: index,
     })
