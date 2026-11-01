@@ -4,7 +4,6 @@ import { ProductGallery } from "@/components/product-gallery"
 import { PurchaseBox } from "@/components/purchase-box"
 import { getPublicProduct, productPurchasable } from "@/lib/catalog"
 import { cleanHtml } from "@/lib/html"
-import { formatMoney } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
 import { siteUrl } from "@/lib/site"
 
@@ -48,7 +47,6 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
       <ProductGallery title={product.title} images={product.images} />
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
-        <p className="mt-3 text-sm">{formatMoney(price, settings.currency)}</p>
         <div className="mt-6">
           <PurchaseBox variants={product.variants} currency={settings.currency} />
         </div>
