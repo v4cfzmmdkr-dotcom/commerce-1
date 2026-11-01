@@ -5,6 +5,7 @@ import { getCart } from "@/lib/cart"
 import { getSettings } from "@/lib/settings"
 import { isPurchasable, maxPurchasable } from "@/lib/money"
 import { attachStripeSession, cancelUnpaidOrder, createPendingOrder } from "@/lib/orders"
+import { SHIPPING_COUNTRY } from "@/lib/shipping"
 import { siteUrl } from "@/lib/site"
 import { getStripe, stripeConfigured } from "@/lib/stripe"
 import type { Address } from "@/lib/types"
@@ -34,10 +35,11 @@ export async function placeOrder(
   }
   const email = read(formData, "email").toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email" }
-  if (!address.name || !address.line1 || !address.city || !address.state || !address.postcode || address.country.length !== 2) {
+  if (!address.name || !address.line1 || !address.city || !address.state || !address.postcode) {
     return { error: "Complete the delivery address" }
   }
-  if (address.country === "AU" && !/^\d{4}$/.test(address.postcode)) {
+  if (address.country !== SHIPPING_COUNTRY) return { error: "We only ship within Australia" }
+  if (!/^\d{4}$/.test(address.postcode)) {
     return { error: "Enter a 4-digit Australian postcode" }
   }
   const cart = await getCart()

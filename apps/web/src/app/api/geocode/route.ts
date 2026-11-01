@@ -22,15 +22,9 @@ async function photon(path: string) {
 }
 
 const australia = "112.5,-44.0,154.0,-9.0"
-const newZealand = "166.0,-47.5,179.0,-34.0"
 
-async function search(query: string) {
-  const q = encodeURIComponent(query)
-  const [au, nz] = await Promise.all([
-    photon(`/api/?q=${q}&limit=6&lang=en&bbox=${australia}`),
-    photon(`/api/?q=${q}&limit=3&lang=en&bbox=${newZealand}`).catch(() => ({ features: [] })),
-  ])
-  return { features: [...(au.features ?? []), ...(nz.features ?? [])] }
+function search(query: string) {
+  return photon(`/api/?q=${encodeURIComponent(query)}&limit=10&lang=en&bbox=${australia}`)
 }
 
 export async function GET(request: Request) {

@@ -38,7 +38,7 @@ export default async function ShippingPage({
   return (
     <div className="grid gap-6">
       <h1 className="text-3xl font-semibold">Shipping</h1>
-      <p className="max-w-2xl text-sm">Rates are inactive until you turn them on, so checkout will not charge a guessed delivery price. Country codes are comma-separated, for example AU or AU,NZ. Leave countries blank to offer the rate everywhere. A rate applies only when the merchandise subtotal is at least the minimum and at most the maximum. Leave a limit blank for no bound. Free shipping at $25 or more uses a minimum of 25.00, and the paid rate stops at 24.99.</p>
+      <p className="max-w-2xl text-sm">Rates are inactive until you turn them on, so checkout will not charge a guessed delivery price. The shop ships within Australia only. A rate applies only when the merchandise subtotal is at least the minimum and at most the maximum. Leave a limit blank for no bound. Free shipping at $25 or more uses a minimum of 25.00, and the paid rate stops at 24.99.</p>
       {params.saved ? <p className="text-sm">Shipping saved.</p> : null}
       {rates.map((rate) => (
         <form key={rate.id} action={saveShipping} className="grid gap-2 border border-[var(--border)] p-4">
@@ -48,7 +48,6 @@ export default async function ShippingPage({
           <label className="label">Price (AUD)<input className="field" name="price" defaultValue={(rate.priceCents / 100).toFixed(2)} /></label>
           <label className="label">Minimum subtotal (AUD)<input className="field" name="minSubtotal" placeholder="No minimum" defaultValue={dollars(rate.minSubtotalCents)} /></label>
           <label className="label">Maximum subtotal (AUD)<input className="field" name="maxSubtotal" placeholder="No maximum" defaultValue={dollars(rate.maxSubtotalCents)} /></label>
-          <input className="field" name="countries" defaultValue={rate.countries} />
           <input className="field" name="position" defaultValue={rate.position} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={rate.active} /> Active</label>
           <button className="btn w-fit" type="submit">Save rate</button>
@@ -61,7 +60,6 @@ export default async function ShippingPage({
         <label className="label">Price (AUD)<input className="field" name="price" placeholder="9.95" required /></label>
         <label className="label">Minimum subtotal (AUD)<input className="field" name="minSubtotal" placeholder="No minimum" /></label>
         <label className="label">Maximum subtotal (AUD)<input className="field" name="maxSubtotal" placeholder="No maximum" /></label>
-        <input className="field" name="countries" placeholder="AU" />
         <input className="field" name="position" placeholder="0" />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" /> Active</label>
         <button className="btn w-fit" type="submit">Add rate</button>

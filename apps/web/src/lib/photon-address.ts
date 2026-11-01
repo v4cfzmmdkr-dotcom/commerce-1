@@ -24,15 +24,13 @@ export type ParsedAddress = {
   label: string
 }
 
-const allowed = new Set(["au", "nz"])
-
 export function addressFromPhoton(feature: {
   geometry?: { coordinates?: number[] }
   properties?: PhotonProperties
 }): ParsedAddress | null {
   const properties = feature.properties ?? {}
   const country = (properties.countrycode || "").toUpperCase()
-  if (!allowed.has(country.toLowerCase())) return null
+  if (country !== "AU") return null
   const [lng, lat] = feature.geometry?.coordinates ?? []
   if (typeof lat !== "number" || typeof lng !== "number") return null
   const street = [properties.housenumber, properties.street].filter(Boolean).join(" ")

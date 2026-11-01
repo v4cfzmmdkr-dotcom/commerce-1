@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom"
 import { placeOrder } from "@/app/(shop)/checkout/actions"
 import { formatMoney } from "@/lib/money"
 import { merchandiseSubtotal, quoteOrder } from "@/lib/pricing"
-import { SHIPPING_OFFER_NOTE, shippingRateApplies } from "@/lib/shipping"
+import { SHIPPING_COUNTRY, SHIPPING_OFFER_NOTE, shippingRateApplies } from "@/lib/shipping"
 
 type Rate = {
   id: string
@@ -43,7 +43,6 @@ export function CheckoutForm({
   pricesIncludeTax: boolean
   cancelled: boolean
 }) {
-  const [country, setCountry] = useState("AU")
   const [line1, setLine1] = useState("")
   const [line2, setLine2] = useState("")
   const [city, setCity] = useState("")
@@ -53,8 +52,8 @@ export function CheckoutForm({
   const [formState, action] = useActionState(placeOrder, null)
   const subtotalCents = merchandiseSubtotal(lines)
   const available = useMemo(() => {
-    return rates.filter((rate) => shippingRateApplies(rate, subtotalCents, country))
-  }, [country, rates, subtotalCents])
+    return rates.filter((rate) => shippingRateApplies(rate, subtotalCents, SHIPPING_COUNTRY))
+  }, [rates, subtotalCents])
   const selected = available.length === 1
     ? available[0]
     : available.find((rate) => rate.id === rateId) ?? null
@@ -78,7 +77,6 @@ export function CheckoutForm({
             setCity(address.city)
             setRegion(address.state)
             setPostcode(address.postcode)
-            if (address.country === "AU" || address.country === "NZ") setCountry(address.country)
           }}
         />
         <label className="label">Address<input className="field normal-case" name="line1" required autoComplete="address-line1" value={line1} onChange={(event) => setLine1(event.target.value)} /></label>
@@ -91,17 +89,15 @@ export function CheckoutForm({
           <label className="label">Postcode<input className="field normal-case" name="postcode" required autoComplete="postal-code" value={postcode} onChange={(event) => setPostcode(event.target.value)} /></label>
           <label className="label">
             Country
-            <select className="select normal-case" name="country" value={country} onChange={(event) => setCountry(event.target.value)}>
-              <option value="AU">Australia</option>
-              <option value="NZ">New Zealand</option>
-            </select>
+            <input className="field normal-case" value="Australia" readOnly aria-readonly="true" />
+            <input type="hidden" name="country" value={SHIPPING_COUNTRY} />
           </label>
         </div>
         <label className="label">Phone (optional)<input className="field normal-case" name="phone" autoComplete="tel" /></label>
         <fieldset className="grid gap-2">
           <legend className="text-xs uppercase tracking-wide">Delivery</legend>
           <p className="text-sm">{SHIPPING_OFFER_NOTE}</p>
-          {available.length === 0 ? <p className="text-sm">No delivery option is active for this country. Add one in the dashboard.</p> : null}
+          {available.length === 0 ? <p className="text-sm">No delivery option is active right now. Add one in the dashboard.</p> : null}
           {available.length === 1 ? (
             <div className="border border-[var(--border)] p-3 text-sm normal-case">
               <input type="hidden" name="shippingRateId" value={available[0].id} />

@@ -26,10 +26,14 @@ describe("addressFromPhoton", () => {
     })
   })
 
-  it("ignores addresses outside AU and NZ", () => {
+  it("ignores addresses outside Australia", () => {
     expect(addressFromPhoton({
       geometry: { coordinates: [-0.1276, 51.5072] },
       properties: { street: "Downing Street", city: "London", countrycode: "gb" },
+    })).toBeNull()
+    expect(addressFromPhoton({
+      geometry: { coordinates: [174.7633, -36.8485] },
+      properties: { street: "Queen Street", city: "Auckland", countrycode: "nz" },
     })).toBeNull()
   })
 })

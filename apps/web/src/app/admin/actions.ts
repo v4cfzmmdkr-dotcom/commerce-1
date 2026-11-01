@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth/current"
 import { cleanHtml } from "@/lib/html"
 import { parseMoneyToCents } from "@/lib/money"
 import { sendOrderEmail, sendShippingEmail } from "@/lib/email"
+import { SHIPPING_COUNTRY } from "@/lib/shipping"
 import { deleteObject, extensionFor, saveObject } from "@/lib/storage"
 import { importShopifyCsv, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
@@ -391,7 +392,7 @@ export async function saveShipping(formData: FormData) {
         name = ${text(formData, "name")},
         description = ${text(formData, "description")},
         price_cents = ${price},
-        countries = ${text(formData, "countries").toUpperCase()},
+        countries = ${SHIPPING_COUNTRY},
         active = ${formData.get("active") === "on"},
         position = ${Number(text(formData, "position") || 0)},
         min_subtotal_cents = ${minSubtotal},
@@ -404,7 +405,7 @@ export async function saveShipping(formData: FormData) {
         id, name, description, price_cents, countries, active, position, min_subtotal_cents, max_subtotal_cents
       ) values (
         ${id}, ${text(formData, "name")}, ${text(formData, "description")}, ${price},
-        ${text(formData, "countries").toUpperCase()}, ${formData.get("active") === "on"},
+        ${SHIPPING_COUNTRY}, ${formData.get("active") === "on"},
         ${Number(text(formData, "position") || 0)}, ${minSubtotal}, ${maxSubtotal}
       )
     `
