@@ -3,15 +3,24 @@ import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { currentAdmin } from "@/lib/auth/current"
 
+function adminPath(value: string | undefined) {
+  if (!value) return null
+  let path = value
+  try {
+    path = new URL(value, "http://local").pathname
+  } catch {
+    return null
+  }
+  return path.startsWith("/admin") && !path.startsWith("/admin/login") ? path : null
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>
+  searchParams: Promise<{ next?: string, redirect_url?: string }>
 }) {
   const params = await searchParams
-  const next = params.next && params.next.startsWith("/admin") && !params.next.startsWith("/admin/login")
-    ? params.next
-    : "/admin"
+  const next = adminPath(params.next) ?? adminPath(params.redirect_url) ?? "/admin"
   const { userId } = await auth()
   if (userId && await currentAdmin()) redirect(next)
   return (
