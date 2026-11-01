@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CatalogView } from "@/components/catalog-view"
 import { getCollection, listProducts, popularTags } from "@/lib/catalog"
-import { cleanHtml } from "@/lib/html"
+import { formatDescription } from "@/lib/html"
 import { catalogQuery } from "@/lib/query"
 import { getSettings } from "@/lib/settings"
 
@@ -36,7 +36,7 @@ export default async function CollectionPage({
   return (
     <CatalogView
       title={collection.title}
-      descriptionHtml={cleanHtml(collection.descriptionHtml)}
+      descriptionHtml={formatDescription(collection.descriptionHtml)}
       products={result.items}
       total={result.total}
       page={result.page}

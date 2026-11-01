@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { ProductGallery } from "@/components/product-gallery"
 import { PurchaseBox } from "@/components/purchase-box"
 import { getPublicProduct, productPurchasable } from "@/lib/catalog"
-import { cleanHtml } from "@/lib/html"
+import { formatDescription } from "@/lib/html"
 import { getSettings } from "@/lib/settings"
 import { siteUrl } from "@/lib/site"
 
@@ -52,7 +52,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
         </div>
         <div
           className="prose mt-8 text-sm"
-          dangerouslySetInnerHTML={{ __html: cleanHtml(product.descriptionHtml) }}
+          dangerouslySetInnerHTML={{ __html: formatDescription(product.descriptionHtml) }}
         />
       </div>
     </article>
