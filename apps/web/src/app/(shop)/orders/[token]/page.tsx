@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { fulfillPaidOrder, getOrderByPublicToken, getOrderItems } from "@/lib/orders"
 import { formatMoney } from "@/lib/money"
+import { trackingUrl } from "@/lib/tracking"
 import { getStripe, stripeConfigured } from "@/lib/stripe"
 
 export const metadata = { title: "Order" }
@@ -27,6 +28,7 @@ export default async function OrderPage({
   const fresh = await getOrderByPublicToken(token) ?? order
   const items = await getOrderItems(fresh.id)
   const paid = fresh.paymentStatus === "paid"
+  const trackLink = trackingUrl(fresh.trackingCarrier, fresh.trackingNumber)
   return (
     <div className="wrap max-w-2xl py-[var(--section)]">
       <p className="text-xs uppercase tracking-[0.18em]">{fresh.number}</p>
@@ -42,7 +44,14 @@ export default async function OrderPage({
         <div className="flex justify-between"><dt>Delivery</dt><dd>{fresh.shippingName}</dd></div>
         <div className="flex justify-between"><dt>Total</dt><dd>{formatMoney(Number(fresh.totalCents), fresh.currency)}</dd></div>
         {fresh.trackingNumber ? (
-          <div className="flex justify-between"><dt>Tracking</dt><dd>{fresh.trackingCarrier} {fresh.trackingNumber}</dd></div>
+          <div className="flex justify-between">
+            <dt>Tracking</dt>
+            <dd>
+              {fresh.trackingCarrier} {trackLink ? (
+                <a href={trackLink} target="_blank" rel="noopener noreferrer">{fresh.trackingNumber}</a>
+              ) : fresh.trackingNumber}
+            </dd>
+          </div>
         ) : null}
       </dl>
       <ul className="mt-8 grid gap-2 text-sm">

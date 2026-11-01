@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation"
-import { resendOrderEmail, updateOrder } from "@/app/admin/actions"
+import { resendOrderEmail, resendShippingEmail, updateOrder } from "@/app/admin/actions"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
+import { carriers, trackingUrl } from "@/lib/tracking"
 import type { Address } from "@/lib/types"
 
 export default async function OrderDetailPage({
@@ -9,7 +10,7 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ saved?: string, email?: string }>
+  searchParams: Promise<{ saved?: string, email?: string, shipping?: string }>
 }) {
   const { id } = await params
   const query = await searchParams
@@ -32,13 +33,17 @@ export default async function OrderDetailPage({
     trackingNumber: string
     inventoryWarning: boolean
     emailStatus: string
+    shippingEmailStatus: string
+    shippingEmailedTracking: string
     stripeSessionId: string | null
   }>>`
     select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
       total_cents as "totalCents", subtotal_cents as "subtotalCents", shipping_cents as "shippingCents",
       tax_cents as "taxCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
       tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber",
-      inventory_warning as "inventoryWarning", email_status as "emailStatus", stripe_session_id as "stripeSessionId"
+      inventory_warning as "inventoryWarning", email_status as "emailStatus",
+      shipping_email_status as "shippingEmailStatus", shipping_emailed_tracking as "shippingEmailedTracking",
+      stripe_session_id as "stripeSessionId"
     from orders where id = ${id}
   `
   const order = rows[0]
@@ -48,17 +53,24 @@ export default async function OrderDetailPage({
     from order_items where order_id = ${id}
   `
   const address = order.shippingAddress
+  const trackLink = trackingUrl(order.trackingCarrier, order.trackingNumber)
+  const knownCarrier = carriers.some((carrier) => carrier.name === order.trackingCarrier)
   return (
     <div className="grid max-w-2xl gap-6">
       <h1 className="text-3xl font-semibold">{order.number}</h1>
       {query.saved ? <p className="text-sm">Order updated.</p> : null}
       {query.email ? <p className="text-sm">Email status: {query.email}</p> : null}
+      {query.shipping ? <p className="text-sm">{shippingMessage(query.shipping)}</p> : null}
       {order.inventoryWarning ? <p className="text-sm">Payment was captured, but stock could not be reduced for every line. Check inventory.</p> : null}
       <dl className="grid gap-1 text-sm">
         <div>Payment: {order.paymentStatus}</div>
         <div>Status: {order.status}</div>
         <div>Email: {order.email}</div>
         <div>Confirmation email: {order.emailStatus}</div>
+        <div>
+          Shipping email: {order.shippingEmailStatus === "sent" ? `sent (tracking ${order.shippingEmailedTracking})` : order.shippingEmailStatus || "not sent"}
+        </div>
+        {trackLink ? <div><a className="underline" href={trackLink} target="_blank" rel="noopener noreferrer">Track parcel</a></div> : null}
         <div>Subtotal {formatMoney(Number(order.subtotalCents), order.currency)} · Shipping {formatMoney(Number(order.shippingCents), order.currency)} · GST {formatMoney(Number(order.taxCents), order.currency)} · Total {formatMoney(Number(order.totalCents), order.currency)}</div>
         <div>{address.name}, {address.line1} {address.line2}, {address.city} {address.state} {address.postcode} {address.country}</div>
       </dl>
@@ -76,8 +88,15 @@ export default async function OrderDetailPage({
             <option value="delivered">Delivered</option>
           </select>
         </label>
-        <label className="label">Carrier<input className="field normal-case" name="carrier" defaultValue={order.trackingCarrier} /></label>
+        <label className="label">Carrier
+          <select className="select normal-case" name="carrier" defaultValue={order.trackingCarrier || carriers[0].name}>
+            {carriers.map((carrier) => <option key={carrier.name} value={carrier.name}>{carrier.name}</option>)}
+            {order.trackingCarrier && !knownCarrier ? <option value={order.trackingCarrier}>{order.trackingCarrier}</option> : null}
+            <option value="Other">Other</option>
+          </select>
+        </label>
         <label className="label">Tracking number<input className="field normal-case" name="tracking" defaultValue={order.trackingNumber} /></label>
+        <p className="text-sm">Saving a tracking number on a paid order marks it shipped and emails the customer. They are only emailed again if the number changes.</p>
         <label className="label">Record a manual status
           <select className="select normal-case" name="mark" defaultValue="">
             <option value="">Leave payment as it is</option>
@@ -88,10 +107,25 @@ export default async function OrderDetailPage({
         <button className="btn w-fit" type="submit">Update order</button>
       </form>
       <p className="text-sm">Marking an order refunded does not send money back. Refund the payment in Stripe first.</p>
-      <form action={resendOrderEmail}>
-        <input type="hidden" name="id" value={order.id} />
-        <button className="btn-ghost" type="submit">Resend confirmation email</button>
-      </form>
+      <div className="flex flex-wrap gap-3">
+        <form action={resendOrderEmail}>
+          <input type="hidden" name="id" value={order.id} />
+          <button className="btn-ghost" type="submit">Resend confirmation email</button>
+        </form>
+        {order.trackingNumber ? (
+          <form action={resendShippingEmail}>
+            <input type="hidden" name="id" value={order.id} />
+            <button className="btn-ghost" type="submit">Resend shipping email</button>
+          </form>
+        ) : null}
+      </div>
     </div>
   )
+}
+
+function shippingMessage(status: string) {
+  if (status === "sent") return "Shipping email sent to the customer with the tracking number."
+  if (status === "not_configured") return "Shipping email not sent: set RESEND_API_KEY and ORDERS_FROM_EMAIL to enable emails."
+  if (status === "failed") return "Shipping email failed to send. Try again with Resend shipping email."
+  return "Add a tracking number before sending the shipping email."
 }

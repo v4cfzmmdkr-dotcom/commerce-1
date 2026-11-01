@@ -7,7 +7,7 @@ import { getSql } from "@/db/client"
 import { requireAdmin } from "@/lib/auth/current"
 import { cleanHtml } from "@/lib/html"
 import { parseMoneyToCents } from "@/lib/money"
-import { sendOrderEmail } from "@/lib/email"
+import { sendOrderEmail, sendShippingEmail } from "@/lib/email"
 import { deleteObject, extensionFor, saveObject } from "@/lib/storage"
 import { importShopifyCsv, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
@@ -414,8 +414,11 @@ export async function saveShipping(formData: FormData) {
 
 export async function updateOrder(formData: FormData) {
   await requireAdmin()
+  const id = text(formData, "id")
+  const tracking = text(formData, "tracking")
   const status = text(formData, "fulfillment")
-  const fulfillment = status === "shipped" || status === "delivered" || status === "unfulfilled" ? status : "unfulfilled"
+  const chosen = status === "shipped" || status === "delivered" || status === "unfulfilled" ? status : "unfulfilled"
+  const fulfillment = tracking && chosen === "unfulfilled" ? "shipped" : chosen
   const orderStatus = fulfillment === "unfulfilled" ? "paid" : "fulfilled"
   const sql = getSql()
   await sql`
@@ -423,17 +426,63 @@ export async function updateOrder(formData: FormData) {
       fulfillment_status = ${fulfillment},
       status = case when payment_status = 'paid' then ${orderStatus} else status end,
       tracking_carrier = ${text(formData, "carrier")},
-      tracking_number = ${text(formData, "tracking")},
+      tracking_number = ${tracking},
+      shipped_at = case when ${fulfillment} <> 'unfulfilled' then coalesce(shipped_at, now()) else shipped_at end,
       updated_at = now()
-    where id = ${text(formData, "id")}
+    where id = ${id}
   `
   if (text(formData, "mark") === "cancelled") {
-    await sql`update orders set status = 'cancelled', updated_at = now() where id = ${text(formData, "id")} and payment_status <> 'paid'`
+    await sql`update orders set status = 'cancelled', updated_at = now() where id = ${id} and payment_status <> 'paid'`
   }
   if (text(formData, "mark") === "refunded") {
-    await sql`update orders set status = 'refunded', payment_status = 'refunded', updated_at = now() where id = ${text(formData, "id")}`
+    await sql`update orders set status = 'refunded', payment_status = 'refunded', updated_at = now() where id = ${id}`
   }
-  redirect(`/admin/orders/${text(formData, "id")}?saved=1`)
+  const due = await sql<Array<{ id: string }>>`
+    select id from orders
+    where id = ${id} and payment_status = 'paid' and tracking_number <> '' and tracking_number <> shipping_emailed_tracking
+  `
+  const shippingEmail = due.length ? await notifyShipped(id) : null
+  redirect(`/admin/orders/${id}?saved=1${shippingEmail ? `&shipping=${shippingEmail}` : ""}`)
+}
+
+async function notifyShipped(id: string) {
+  const sql = getSql()
+  const rows = await sql<Array<{
+    number: string
+    publicToken: string
+    email: string
+    shippingAddress: Address
+    trackingCarrier: string
+    trackingNumber: string
+  }>>`
+    select number, public_token as "publicToken", email, shipping_address as "shippingAddress",
+      tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber"
+    from orders where id = ${id}
+  `
+  const order = rows[0]
+  if (!order || !order.trackingNumber) return null
+  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number }>>`
+    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents"
+    from order_items where order_id = ${id}
+  `
+  const status = await sendShippingEmail({
+    ...order,
+    items: items.map((item) => ({ ...item, quantity: Number(item.quantity), unitPriceCents: Number(item.unitPriceCents) })),
+  })
+  await sql`
+    update orders set
+      shipping_email_status = ${status},
+      shipping_emailed_tracking = case when ${status} = 'sent' then ${order.trackingNumber} else shipping_emailed_tracking end
+    where id = ${id}
+  `
+  return status
+}
+
+export async function resendShippingEmail(formData: FormData) {
+  await requireAdmin()
+  const id = text(formData, "id")
+  const status = await notifyShipped(id)
+  redirect(`/admin/orders/${id}?shipping=${status ?? "no_tracking"}`)
 }
 
 export async function resendOrderEmail(formData: FormData) {
