@@ -35,7 +35,7 @@ export default async function OrderPage({
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">{paid ? "Order confirmed" : "Order pending"}</h1>
       <p className="mt-3 text-sm">
         {paid
-          ? "Payment has been verified. A confirmation email is sent when email delivery is configured."
+          ? `Payment received. A confirmation email is on its way to ${fresh.email}.`
           : "Payment is not confirmed yet. If you just paid, refresh this page in a moment."}
       </p>
       <dl className="mt-8 grid gap-2 text-sm">
