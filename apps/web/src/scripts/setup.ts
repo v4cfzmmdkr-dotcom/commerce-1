@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto"
-import { hashPassword } from "@/lib/auth/password"
 import { migrate } from "@/db/migrate"
 import { getSql } from "@/db/client"
 import { loadEnvFile } from "@/lib/env"
@@ -47,22 +46,6 @@ async function setup() {
           0, 'AU', true, 1, ${FREE_SHIPPING_MIN_CENTS}, ${null}
         )
     `
-  }
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase()
-  const password = process.env.ADMIN_PASSWORD || ""
-  const users = await sql`select id from admin_users limit 1`
-  if (!users.length && email && password) {
-    if (password.length < 8) throw new Error("ADMIN_PASSWORD must be at least 8 characters")
-    if (process.env.NODE_ENV === "production" && password === "change-me-please") {
-      throw new Error("Choose a real ADMIN_PASSWORD before seeding production")
-    }
-    await sql`
-      insert into admin_users (id, email, name, password_hash)
-      values (${randomUUID()}, ${email}, 'Owner', ${await hashPassword(password)})
-    `
-    console.log(`Created admin ${email}`)
-  } else if (!users.length) {
-    console.log("No admin user created. Set ADMIN_EMAIL and ADMIN_PASSWORD, then run setup again.")
   }
   console.log("Database is ready")
   await sql.end({ timeout: 5 })

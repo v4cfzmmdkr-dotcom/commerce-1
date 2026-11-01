@@ -12,7 +12,7 @@ Requirements: Node 20+, pnpm 10, and Docker (for the local database).
 pnpm install
 docker compose up -d
 cp apps/web/.env.template apps/web/.env
-# Set AUTH_SECRET to a long random string.
+# Add the Clerk keys and your email in ADMIN_EMAILS.
 pnpm web:setup
 pnpm dev
 ```
@@ -43,9 +43,10 @@ Documented names live in `apps/web/.env.template`.
 
 | Name | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Postgres. Use the local Docker URL, or the Supabase pooler URL in production. |
-| `AUTH_SECRET` | Signs the admin session cookie. |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | First admin user, created by `pnpm web:setup` when no admin exists. |
+| `DATABASE_URL` | Postgres. Use the local Docker URL, or the Supabase session pooler URL (port 5432) in production. |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` | Clerk keys for admin sign-in. |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | Set to `/admin/login`. |
+| `ADMIN_EMAILS` | Comma-separated Clerk account emails allowed into the dashboard. |
 | `NEXT_PUBLIC_SITE_URL` | Public site origin used for links, sitemap, and Stripe return URLs. |
 | `STRIPE_SECRET_KEY` | Server-side Stripe secret. Never expose this in the browser. |
 | `STRIPE_WEBHOOK_SECRET` | Verifies `checkout.session.completed` events. |

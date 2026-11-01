@@ -1,12 +1,24 @@
-import { cookies } from "next/headers"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
-import { adminCookieName, readAdminSession } from "@/lib/auth/session"
+
+export function adminEmails() {
+  return (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+}
 
 export async function currentAdmin() {
-  const jar = await cookies()
-  const token = jar.get(adminCookieName)?.value
-  if (!token) return null
-  return readAdminSession(token)
+  const { userId } = await auth()
+  if (!userId) return null
+  const user = await currentUser()
+  if (!user) return null
+  const allowed = adminEmails()
+  const email = user.emailAddresses
+    .filter((address) => address.verification?.status === "verified")
+    .map((address) => address.emailAddress.toLowerCase())
+    .find((address) => allowed.includes(address))
+  return email ? { id: user.id, email } : null
 }
 
 export async function requireAdmin() {

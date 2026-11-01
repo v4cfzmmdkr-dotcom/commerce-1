@@ -73,17 +73,26 @@ function parseDatabaseUrl(raw: string): PgTarget {
   }
 }
 
+const SESSION_POOLER_PORT = 5432
+const TRANSACTION_POOLER_PORT = 6543
+
 // Vercel cannot reach the IPv6-only db.*.supabase.co host. Use the shared
 // pooler (IPv4) when a direct Supabase URL is provided.
-function vercelSafeTarget(raw: string): PgTarget {
+// postgres.js pipelines concurrent queries on one connection, and the
+// transaction pooler (6543) hangs forever on four or more pipelined
+// statements, so always connect through the session pooler (5432).
+export function vercelSafeTarget(raw: string): PgTarget {
   const parsed = parseDatabaseUrl(raw)
+  if (/\.pooler\.supabase\.com$/i.test(parsed.host) && parsed.port === TRANSACTION_POOLER_PORT) {
+    return { ...parsed, port: SESSION_POOLER_PORT }
+  }
   const match = parsed.host.match(/^db\.([a-z0-9]+)\.supabase\.co$/i)
   if (!match) return parsed
   const ref = match[1]
   return {
     ...parsed,
     host: process.env.SUPABASE_POOLER_HOST || "aws-0-ap-northeast-1.pooler.supabase.com",
-    port: Number(process.env.SUPABASE_POOLER_PORT || "6543"),
+    port: SESSION_POOLER_PORT,
     username: !parsed.username || parsed.username === "postgres"
       ? `postgres.${ref}`
       : parsed.username,
