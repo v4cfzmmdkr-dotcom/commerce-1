@@ -68,8 +68,8 @@ export function CheckoutForm({
     <form action={action} className="grid gap-8 lg:grid-cols-[1fr_300px]">
       <div className="grid gap-4">
         {cancelled ? <p className="text-sm">Payment was cancelled. Your cart is still here.</p> : null}
-        <label className="label">Email<input className="field normal-case" name="email" type="email" required autoComplete="email" /></label>
         <label className="label">Full name<input className="field normal-case" name="name" required autoComplete="name" /></label>
+        <label className="label">Email<input className="field normal-case" name="email" type="email" required autoComplete="email" /></label>
         <AddressFinder
           onSelect={(address) => {
             setLine1(address.line1)
