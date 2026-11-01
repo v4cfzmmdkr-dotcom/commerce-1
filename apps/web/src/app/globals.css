@@ -583,6 +583,46 @@ button:active:not(:disabled),
   border-radius: var(--radius);
 }
 
+.address-search {
+  position: relative;
+  display: block;
+}
+
+.address-search .field {
+  padding-right: 2.75rem;
+}
+
+.address-search .field::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.address-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--fg) 60%, transparent);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.address-search-clear:hover {
+  color: var(--fg);
+}
+
+.address-search-clear:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.92);
+}
+
 .address-map-zoom {
   position: absolute;
   top: 12px;

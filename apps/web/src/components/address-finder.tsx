@@ -12,6 +12,7 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
   const leafletRef = useRef<typeof import("leaflet") | null>(null)
   const onSelectRef = useRef(onSelect)
   const skipSearch = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ParsedAddress[]>([])
   const [status, setStatus] = useState("")
@@ -35,6 +36,15 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
       fillOpacity: 1,
     }).addTo(map)
     map.setView([address.lat, address.lng], 17)
+  }
+
+  const clear = () => {
+    setQuery("")
+    setResults([])
+    setStatus("")
+    markerRef.current?.remove()
+    markerRef.current = null
+    inputRef.current?.focus()
   }
 
   useEffect(() => {
@@ -96,17 +106,28 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
     <div className="grid gap-2">
       <label className="label">
         Find address
-        <input
-          className="field normal-case"
-          type="search"
-          autoComplete="off"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.preventDefault()
-          }}
-          placeholder="Start typing a street address"
-        />
+        <span className="address-search">
+          <input
+            ref={inputRef}
+            className="field normal-case"
+            type="search"
+            autoComplete="off"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault()
+              if (event.key === "Escape" && query) clear()
+            }}
+            placeholder="Start typing a street address"
+          />
+          {query ? (
+            <button type="button" className="address-search-clear" aria-label="Clear address search" onClick={clear}>
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          ) : null}
+        </span>
       </label>
       {results.length > 0 ? (
         <ul className="grid gap-1 border border-[var(--border)] p-1" role="listbox">
