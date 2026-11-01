@@ -131,7 +131,6 @@ async function upsertProduct(product: ParsedProduct, report: ImportReport) {
           inventory_qty = ${variant.inventoryQty},
           inventory_policy = ${variant.inventoryPolicy},
           weight_grams = ${variant.weightGrams},
-          taxable = ${variant.taxable},
           barcode = ${variant.barcode},
           position = ${index},
           available = true
