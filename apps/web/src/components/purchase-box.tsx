@@ -63,7 +63,6 @@ export function PurchaseBox({
         <OptionGroup label={names.option3 || "Option"} value={option3} values={option3Values} onChange={setOption3} />
       ) : null}
       <p className="text-2xl">{selected ? formatMoney(selected.priceCents, currency) : "Unavailable"}</p>
-      {selected?.sku ? <p className="text-xs tracking-wide">SKU {selected.sku}</p> : null}
       <label className="label max-w-28">
         Qty
         <input className="field normal-case" name="quantity" type="number" min={1} max={99} defaultValue={1} />
