@@ -52,9 +52,6 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
         <div className="mt-6">
           <PurchaseBox variants={product.variants} currency={settings.currency} />
         </div>
-        {product.tags.length > 0 ? (
-          <p className="mt-6 text-xs uppercase tracking-wide">{product.tags.join(" · ")}</p>
-        ) : null}
         <div
           className="prose mt-8 text-sm"
           dangerouslySetInnerHTML={{ __html: cleanHtml(product.descriptionHtml) }}

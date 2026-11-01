@@ -1,4 +1,4 @@
-import { getSql, databaseConfigured } from "@/db/client"
+import { getSql, databaseConfigured, textArray } from "@/db/client"
 import { isPurchasable } from "@/lib/money"
 import { keepBlackWhiteColours } from "@/lib/product-colours"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
@@ -603,7 +603,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
   `
   return {
     ...product,
-    tags: product.tags ?? [],
+    tags: textArray(product.tags),
     metadata: product.metadata ?? {},
     images,
     variants: keepBlackWhiteColours(variants.map((variant) => ({

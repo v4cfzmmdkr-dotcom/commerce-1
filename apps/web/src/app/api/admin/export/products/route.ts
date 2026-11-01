@@ -1,5 +1,5 @@
 import { currentAdmin } from "@/lib/auth/current"
-import { getSql } from "@/db/client"
+import { getSql, textArray } from "@/db/client"
 
 function csvEscape(value: unknown) {
   const text = value == null ? "" : String(value)
@@ -20,7 +20,7 @@ export async function GET() {
   const header = ["Handle", "Title", "Status", "Vendor", "Tags", "SKU", "Price", "Compare At", "Cost", "Qty", "Policy", "Option 1", "Option 2"]
   const lines = [header.join(",")]
   for (const row of rows) {
-    const tags = Array.isArray(row.tags) ? row.tags.join("|") : ""
+    const tags = textArray(row.tags).join("|")
     lines.push([
       row.handle, row.title, row.status, row.vendor, tags, row.sku,
       row.price_cents == null ? "" : (Number(row.price_cents) / 100).toFixed(2),

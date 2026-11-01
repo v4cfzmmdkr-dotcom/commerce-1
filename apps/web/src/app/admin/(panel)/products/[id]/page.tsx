@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { deleteImage, deleteProduct, saveProduct, uploadImages } from "@/app/admin/actions"
-import { getSql } from "@/db/client"
+import { getSql, textArray } from "@/db/client"
 
 export default async function EditProductPage({
   params,
@@ -77,7 +77,7 @@ export default async function EditProductPage({
         <label className="label">Description HTML<textarea className="field normal-case min-h-40" name="description" defaultValue={product.descriptionHtml} /></label>
         <label className="label">Vendor<input className="field normal-case" name="vendor" defaultValue={product.vendor} /></label>
         <label className="label">Type<input className="field normal-case" name="productType" defaultValue={product.productType} /></label>
-        <label className="label">Tags<input className="field normal-case" name="tags" defaultValue={(product.tags || []).join(", ")} /></label>
+        <label className="label">Tags<input className="field normal-case" name="tags" defaultValue={textArray(product.tags).join(", ")} /></label>
         <label className="label">SEO title<input className="field normal-case" name="seoTitle" defaultValue={product.seoTitle} /></label>
         <label className="label">SEO description<textarea className="field normal-case" name="seoDescription" defaultValue={product.seoDescription} /></label>
         <h2 className="text-lg font-medium">Variants</h2>
