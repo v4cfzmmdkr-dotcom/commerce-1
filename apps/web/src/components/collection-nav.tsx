@@ -127,6 +127,7 @@ export function CollectionNav({
       data-search-open={open ? "" : undefined}
       data-cart={cartCount > 0 ? "" : undefined}
     >
+      <div className="nav-search-backdrop" aria-hidden="true" />
       <div className="collection-nav-row">
         <div className="collection-nav-glass glass" inert={open}>
           <div ref={scroller} className="collection-nav-scroller">
@@ -143,13 +144,29 @@ export function CollectionNav({
           </div>
         </div>
         <div className="nav-search-slot" />
-        <form ref={searchForm} action="/search" role="search" className="nav-search glass" inert={search !== "in"}>
+        <form
+          ref={searchForm}
+          action="/search"
+          role="search"
+          className="nav-search glass"
+          inert={search !== "in"}
+          onSubmit={(event) => {
+            if (!searchInput.current?.value.trim()) {
+              event.preventDefault()
+              searchInput.current?.focus({ preventScroll: true })
+            }
+          }}
+        >
           <button
             className="nav-search-button"
             type={open ? "submit" : "button"}
             aria-label={open ? "Search" : "Open search"}
             aria-expanded={open}
-            onClick={() => setOpen(true)}
+            onClick={(event) => {
+              if (open) return
+              event.preventDefault()
+              setOpen(true)
+            }}
           >
             <SearchIcon />
           </button>
