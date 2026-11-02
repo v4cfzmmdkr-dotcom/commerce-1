@@ -1,6 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
+import { checkBotId } from "botid/server"
 import { getCart } from "@/lib/cart"
 import { getSettings } from "@/lib/settings"
 import { isPurchasable, maxPurchasable } from "@/lib/money"
@@ -22,6 +23,7 @@ export async function placeOrder(
   _previous: { error?: string } | null,
   formData: FormData,
 ) {
+  if ((await checkBotId()).isBot) return { error: "We could not verify your browser. Refresh the page and try again." }
   if (!stripeConfigured()) return { error: "Payments are not configured yet. Add STRIPE_SECRET_KEY." }
   const address: Address = {
     name: read(formData, "name"),

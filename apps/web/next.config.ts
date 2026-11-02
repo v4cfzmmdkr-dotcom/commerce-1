@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import { withBotId } from "botid/next/config"
 
 const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
@@ -20,4 +21,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withBotId(nextConfig)

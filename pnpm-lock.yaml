@@ -249,6 +249,9 @@ importers:
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(next@15.5.28(@opentelemetry/api@1.9.1)(react-dom@19.0.5(react@19.0.5))(react@19.0.5))(react@19.0.5)
+      botid:
+        specifier: ^1.5.12
+        version: 1.5.12(next@15.5.28(@opentelemetry/api@1.9.1)(react-dom@19.0.5(react@19.0.5))(react@19.0.5))(react@19.0.5)
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -5001,6 +5004,17 @@ packages:
   body-parser@1.20.6:
     resolution: {integrity: sha512-p5tAzS57i5MV9fZFDj9LeIiTZEufbSe2eDozP+ElheSUq1m74CRq1jI4mYNDdVs9vQztXFLuk/Gd6BWTdwRJ5g==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
+
+  botid@1.5.12:
+    resolution: {integrity: sha512-bUYGLDLbNOQJyTVfuBGzm1ADztJ/euV6XH9JgXZ9MG2CZvElgOycybVOsgHBjVwB4tFl77g7zs31kEvjYm2gAw==}
+    peerDependencies:
+      next: '*'
+      react: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      next:
+        optional: true
+      react:
+        optional: true
 
   bowser@2.14.1:
     resolution: {integrity: sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg==}
@@ -14482,6 +14496,11 @@ snapshots:
       unpipe: 1.0.0
     transitivePeerDependencies:
       - supports-color
+
+  botid@1.5.12(next@15.5.28(@opentelemetry/api@1.9.1)(react-dom@19.0.5(react@19.0.5))(react@19.0.5))(react@19.0.5):
+    optionalDependencies:
+      next: 15.5.28(@opentelemetry/api@1.9.1)(react-dom@19.0.5(react@19.0.5))(react@19.0.5)
+      react: 19.0.5
 
   bowser@2.14.1: {}
 
