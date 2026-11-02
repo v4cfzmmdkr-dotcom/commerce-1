@@ -1,3 +1,4 @@
+import { checkBotId } from "botid/server"
 import { NextResponse } from "next/server"
 import { addressFromPhoton, parseStreetQuery, type PhotonProperties } from "@/lib/photon-address"
 
@@ -28,6 +29,7 @@ function search(query: string) {
 }
 
 export async function GET(request: Request) {
+  if ((await checkBotId()).isBot) return NextResponse.json({ error: "Access denied" }, { status: 403 })
   const url = new URL(request.url)
   const query = url.searchParams.get("q")?.trim() ?? ""
   const lat = url.searchParams.get("lat")
