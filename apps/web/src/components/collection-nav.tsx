@@ -56,6 +56,17 @@ export function CollectionNav({ links }: { links: Array<{ href: string, label: s
     const headerSearch = document.getElementById("header-search")
     if (!headerSearch) return
     const observer = new IntersectionObserver(([entry]) => {
+      const form = searchForm.current
+      const row = form?.parentElement
+      if (form && row) {
+        const from = entry.boundingClientRect
+        const to = row.getBoundingClientRect()
+        const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value))
+        form.style.setProperty("--from-x", `${clamp(from.right - to.right, 160)}px`)
+        form.style.setProperty("--from-y", `${clamp(from.top - to.top, 120)}px`)
+        form.style.setProperty("--from-w", `${Math.min(from.width, to.width)}px`)
+        form.style.setProperty("--from-h", `${from.height}px`)
+      }
       const hidden = !entry.isIntersecting && entry.boundingClientRect.top < 0
       setSearch((current) => (hidden ? "in" : current ? "out" : null))
     })
