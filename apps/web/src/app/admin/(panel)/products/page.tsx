@@ -18,7 +18,6 @@ export default async function ProductsPage({
         where p.title ilike ${term} or p.handle ilike ${term}
         group by p.id
         order by p.updated_at desc
-        limit 50
       `
     : await sql<Array<{ id: string, title: string, handle: string, status: string, price: number | null }>>`
         select p.id, p.title, p.handle, p.status, min(v.price_cents) as price
@@ -26,8 +25,7 @@ export default async function ProductsPage({
         left join variants v on v.product_id = p.id
         group by p.id
         order by p.updated_at desc
-        limit 50
-      `
+    `
   return (
     <div className="grid gap-6">
       <h1 className="text-3xl font-semibold">Products</h1>
@@ -42,6 +40,7 @@ export default async function ProductsPage({
         <input className="field" name="price" placeholder="18.00" required />
         <button className="btn" type="submit">Add product</button>
       </form>
+      <p className="text-sm">{products.length} {products.length === 1 ? "product" : "products"}{term ? " found" : ""}</p>
       <ul className="grid gap-2">
         {products.map((product) => (
           <li key={product.id} className="flex items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm">
