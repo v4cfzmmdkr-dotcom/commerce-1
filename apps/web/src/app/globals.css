@@ -688,16 +688,6 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   letter-spacing: 0.01em;
 }
 
-.hero-lede {
-  margin-top: 1.25rem;
-  max-width: 36rem;
-  font-family: var(--font-hero-meta), ui-monospace, monospace;
-  font-size: 0.875rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  opacity: 0.8;
-}
-
 .hero-actions {
   display: flex;
   flex-wrap: wrap;

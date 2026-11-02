@@ -58,8 +58,7 @@ export default async function HomePage() {
         {settings.bannerUrl ? <div className="hero-scrim absolute inset-0" /> : null}
         <div className="wrap-wide relative py-[var(--section)]">
           <h1 className="hero-kicker">{settings.invoiceName || settings.name}</h1>
-          <p className="hero-title">{settings.tagline}</p>
-          <p className="hero-lede">{settings.announcement.replace(/\s+with Australia Post(?=\.?\s*$)/i, "")}</p>
+          <p className="hero-title">{heroLine(settings.tagline, settings.announcement)}</p>
         </div>
       </section>
       <section className="hero-actions wrap-wide">
@@ -90,4 +89,11 @@ export default async function HomePage() {
       </section>
     </>
   )
+}
+
+function heroLine(tagline: string, announcement: string) {
+  const title = tagline.trim().replace(/[.,]$/, "")
+  const detail = announcement.replace(/\s+with Australia Post(?=\.?\s*$)/i, "").trim()
+  if (!title || !detail) return title || detail
+  return `${title}, ${detail.charAt(0).toLowerCase()}${detail.slice(1)}`
 }
