@@ -1,5 +1,6 @@
 import { CartIcon } from "@/components/cart-icon"
 import { CollectionNav } from "@/components/collection-nav"
+import { HeaderSearch } from "@/components/header-search"
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
@@ -54,10 +55,7 @@ export function Header({
             </span>
           </Link>
           <div className="site-header-tools">
-            <form action="/search" className="site-header-search">
-              <label className="sr-only" htmlFor="header-search">Search parts</label>
-              <input id="header-search" name="q" placeholder="Search parts" className="field glass" enterKeyHint="search" />
-            </form>
+            <HeaderSearch />
             <Link
               href="/cart"
               className="header-cart glass tap-link justify-center"

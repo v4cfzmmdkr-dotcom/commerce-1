@@ -1,6 +1,7 @@
 "use client"
 
 import { CartIcon } from "@/components/cart-icon"
+import { LiveSearchResults, searchOptionId, useLiveSearch } from "@/components/live-search"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
@@ -19,6 +20,9 @@ export function CollectionNav({
   const pathname = usePathname()
   const [search, setSearch] = useState<"in" | "out" | null>(null)
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const live = useLiveSearch(query)
+  const showResults = open && search === "in" && live.term.length >= 2
 
   useEffect(() => {
     const node = scroller.current
@@ -101,7 +105,8 @@ export function CollectionNav({
     if (!open) return
     const timer = setTimeout(() => searchInput.current?.focus({ preventScroll: true }), 120)
     const onPointerDown = (event: PointerEvent) => {
-      if (!searchForm.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Element
+      if (!searchForm.current?.contains(target) && !target.closest?.(".live-search")) setOpen(false)
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false)
@@ -151,7 +156,7 @@ export function CollectionNav({
           className="nav-search glass"
           inert={search !== "in"}
           onSubmit={(event) => {
-            if (!searchInput.current?.value.trim()) {
+            if (!query.trim()) {
               event.preventDefault()
               searchInput.current?.focus({ preventScroll: true })
             }
@@ -180,11 +185,27 @@ export function CollectionNav({
             enterKeyHint="search"
             autoComplete="off"
             tabIndex={open ? 0 : -1}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showResults}
+            aria-controls="nav-search-results"
+            aria-activedescendant={showResults && live.active >= 0 ? searchOptionId("nav-search-results", live.active) : undefined}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={live.onKeyDown}
           />
           <button className="nav-search-close" type="button" aria-label="Close search" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" /></svg>
           </button>
         </form>
+        {showResults ? (
+          <LiveSearchResults
+            id="nav-search-results"
+            className="live-search-nav"
+            search={live}
+            onPick={() => setOpen(false)}
+          />
+        ) : null}
         {cartCount > 0 ? (
           <Link
             ref={cartLink}
