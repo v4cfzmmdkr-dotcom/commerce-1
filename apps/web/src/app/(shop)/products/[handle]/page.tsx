@@ -2,10 +2,33 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ProductGallery } from "@/components/product-gallery"
 import { PurchaseBox } from "@/components/purchase-box"
-import { getPublicProduct, productPurchasable } from "@/lib/catalog"
-import { formatDescription, summaryText } from "@/lib/html"
+import { getPublicProduct, type PublicProduct } from "@/lib/catalog"
+import { formatDescription } from "@/lib/html"
+import { isPurchasable } from "@/lib/money"
+import { listActiveShippingRates } from "@/lib/orders"
+import { freeShippingFrom, pageTitle, searchDescription, shippingCentsFor } from "@/lib/product-seo"
+import { RETURN_DAYS } from "@/lib/returns"
 import { getSettings } from "@/lib/settings"
+import { SHIPPING_COUNTRY, type ShippingRate } from "@/lib/shipping"
 import { siteUrl } from "@/lib/site"
+
+async function shippingRates(): Promise<ShippingRate[]> {
+  try {
+    return await listActiveShippingRates()
+  } catch {
+    return []
+  }
+}
+
+function productDescription(product: PublicProduct, rates: ShippingRate[]) {
+  return searchDescription({
+    title: product.title,
+    descriptionHtml: product.descriptionHtml,
+    seoDescription: product.seoDescription,
+    prices: product.variants.map((variant) => variant.priceCents),
+    freeShippingFromCents: freeShippingFrom(rates),
+  })
+}
 
 export async function generateMetadata({
   params,
@@ -13,14 +36,14 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>
 }): Promise<Metadata> {
   const { handle } = await params
-  const [product, settings] = await Promise.all([getPublicProduct(handle), getSettings()])
+  const [product, settings, rates] = await Promise.all([getPublicProduct(handle), getSettings(), shippingRates()])
   if (!product) return { title: "Part" }
   const title = product.seoTitle || product.title
-  const description = productDescription(product)
+  const description = productDescription(product, rates)
   const path = `/products/${product.handle}`
   const images = product.images.slice(0, 4).map((image) => ({ url: image.url, alt: image.alt || product.title }))
   return {
-    title,
+    title: pageTitle(title, settings.name),
     description,
     alternates: { canonical: path },
     openGraph: { type: "website", siteName: settings.name, locale: "en_AU", url: path, title, description, images },
@@ -28,40 +51,53 @@ export async function generateMetadata({
   }
 }
 
-function productDescription(product: { seoDescription: string, descriptionHtml: string, title: string }) {
-  return product.seoDescription || summaryText(product.descriptionHtml) || product.title
-}
-
 export default async function ProductPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params
-  const [product, settings] = await Promise.all([getPublicProduct(handle), getSettings()])
+  const [product, settings, rates] = await Promise.all([getPublicProduct(handle), getSettings(), shippingRates()])
   if (!product) notFound()
-  const url = `${siteUrl()}/products/${product.handle}`
-  const prices = product.variants.map((variant) => variant.priceCents)
-  const low = prices.length ? Math.min(...prices) : 0
-  const high = prices.length ? Math.max(...prices) : 0
-  const availability = productPurchasable(product) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+  const base = siteUrl()
+  const url = `${base}/products/${product.handle}`
   const currency = settings.currency.toUpperCase()
+  const returnPolicy = {
+    "@type": "MerchantReturnPolicy",
+    applicableCountry: SHIPPING_COUNTRY,
+    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+    merchantReturnDays: RETURN_DAYS,
+    returnMethod: "https://schema.org/ReturnByMail",
+    returnFees: "https://schema.org/ReturnFeesCustomerResponsibility",
+    merchantReturnLink: `${base}/returns`,
+  }
+  const offers = product.variants.map((variant) => {
+    const shippingCents = shippingCentsFor(rates, variant.priceCents)
+    return {
+      "@type": "Offer",
+      ...(product.variants.length > 1 ? { name: variant.title } : {}),
+      ...(variant.sku ? { sku: variant.sku } : {}),
+      priceCurrency: currency,
+      price: (variant.priceCents / 100).toFixed(2),
+      availability: isPurchasable(variant) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+      url,
+      ...(shippingCents == null ? {} : {
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: { "@type": "MonetaryAmount", value: (shippingCents / 100).toFixed(2), currency },
+          shippingDestination: { "@type": "DefinedRegion", addressCountry: SHIPPING_COUNTRY },
+        },
+      }),
+      hasMerchantReturnPolicy: returnPolicy,
+    }
+  })
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
-    description: productDescription(product),
+    description: productDescription(product, rates),
     sku: product.variants.find((variant) => variant.sku)?.sku,
     image: product.images.map((image) => image.url),
     url,
     brand: { "@type": "Brand", name: settings.name },
-    offers: low === high
-      ? { "@type": "Offer", priceCurrency: currency, price: (low / 100).toFixed(2), availability, itemCondition: "https://schema.org/NewCondition", url }
-      : {
-          "@type": "AggregateOffer",
-          priceCurrency: currency,
-          lowPrice: (low / 100).toFixed(2),
-          highPrice: (high / 100).toFixed(2),
-          offerCount: product.variants.length,
-          availability,
-          url,
-        },
+    offers,
   }
   return (
     <article className="wrap grid gap-10 py-[var(--section)] lg:grid-cols-2">
