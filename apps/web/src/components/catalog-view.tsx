@@ -49,12 +49,12 @@ export function CatalogView({
             <p className="mt-2 text-sm">{total} parts</p>
           </div>
           <details className="catalog-filters">
-            <summary className="catalog-filters-toggle" aria-label={activeFilters > 0 ? `Filters, ${activeFilters} active` : "Filters"}>
+            <summary className="catalog-filters-toggle glass" aria-label={activeFilters > 0 ? `Filters, ${activeFilters} active` : "Filters"}>
               <FiltersIcon />
               <span>Filters</span>
               {activeFilters > 0 ? <span className="catalog-filters-count">{activeFilters}</span> : null}
             </summary>
-            <form action={basePath} className="catalog-filters-panel grid content-start gap-4">
+            <form action={basePath} className="catalog-filters-panel glass grid content-start gap-4">
               <label className="label">
                 Search
                 <input className="field normal-case" name="q" defaultValue={query.q || ""} />

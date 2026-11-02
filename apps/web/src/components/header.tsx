@@ -43,39 +43,39 @@ export function Header({
   cartCount: number
 }) {
   return (
-    <header className="site-header border-b border-[var(--border)] bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
-      {settings.announcement ? <Announcement text={settings.announcement} /> : null}
-      <div className="site-header-bar wrap-wide" style={{ minHeight: "var(--header-h)" }}>
-        <Link href="/" className="site-header-brand tap-link gap-3" aria-label={`${settings.name} home`}>
-          <img src={settings.logoUrl || "/brand/logo.png"} alt={settings.name} className="h-10 w-auto" />
-        </Link>
-        <div className="site-header-tools">
-          <form action="/search" className="site-header-search">
-            <label className="sr-only" htmlFor="header-search">Search parts</label>
-            <input id="header-search" name="q" placeholder="Search parts" className="field" enterKeyHint="search" />
-          </form>
-          <Link
-            href="/cart"
-            className="header-cart tap-link justify-center"
-            aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
-          >
-            <span className="header-cart-label">Cart{cartCount > 0 ? ` (${cartCount})` : ""}</span>
-            <span className="header-cart-icon" aria-hidden="true">
-              <CartIcon />
-              {cartCount > 0 ? <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span> : null}
-            </span>
+    <>
+      <header className="site-header bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
+        {settings.announcement ? <Announcement text={settings.announcement} /> : null}
+        <div className="site-header-bar wrap-wide" style={{ minHeight: "var(--header-h)" }}>
+          <Link href="/" className="site-header-brand tap-link gap-3" aria-label={`${settings.name} home`}>
+            <img src={settings.logoUrl || "/brand/logo.png"} alt={settings.name} className="h-10 w-auto" />
           </Link>
+          <div className="site-header-tools">
+            <form action="/search" className="site-header-search">
+              <label className="sr-only" htmlFor="header-search">Search parts</label>
+              <input id="header-search" name="q" placeholder="Search parts" className="field glass" enterKeyHint="search" />
+            </form>
+            <Link
+              href="/cart"
+              className="header-cart glass tap-link justify-center"
+              aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
+            >
+              <span className="header-cart-label">Cart{cartCount > 0 ? ` (${cartCount})` : ""}</span>
+              <span className="header-cart-icon" aria-hidden="true">
+                <CartIcon />
+                {cartCount > 0 ? <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span> : null}
+              </span>
+            </Link>
+          </div>
         </div>
-      </div>
-      <CollectionNav>
-        <Link href="/search" className="collection-nav-link">All parts</Link>
-        {collections.map((collection) => (
-          <Link key={collection.handle} href={`/collections/${collection.handle}`} className="collection-nav-link">
-            {collection.title}
-          </Link>
-        ))}
-      </CollectionNav>
-    </header>
+      </header>
+      <CollectionNav
+        links={[
+          { href: "/search", label: "All parts" },
+          ...collections.map((collection) => ({ href: `/collections/${collection.handle}`, label: collection.title })),
+        ]}
+      />
+    </>
   )
 }
 
