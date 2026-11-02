@@ -299,6 +299,13 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   }
 }
 
+@media (min-width: 640px) {
+  .site-header-bar {
+    padding-top: 2.5rem;
+    padding-bottom: 1rem;
+  }
+}
+
 .collection-nav {
   position: sticky;
   top: env(safe-area-inset-top);
