@@ -1,6 +1,9 @@
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
+// Keep in step with the payment methods turned on in the Stripe Dashboard.
+const paymentMethods = ["Visa", "Mastercard", "Amex", "Apple Pay", "Google Pay", "Link", "Afterpay", "Zip"]
+
 export function Footer({ settings }: { settings: StoreSettings }) {
   return (
     <footer className="site-footer pb-[env(safe-area-inset-bottom)]">
@@ -19,7 +22,13 @@ export function Footer({ settings }: { settings: StoreSettings }) {
           <Link className="nav-link" href="/orders/lookup">Track an order</Link>
           <Link className="nav-link" href="/cookies">Cookies</Link>
         </nav>
-        {settings.supportEmail ? <p className="text-sm">{settings.supportEmail}</p> : null}
+        <div className="text-sm">
+          {settings.supportEmail ? <p className="mb-6">{settings.supportEmail}</p> : null}
+          <p className="font-semibold">We accept</p>
+          <ul className="payment-methods" aria-label="Payment methods">
+            {paymentMethods.map((method) => <li key={method} className="payment-badge">{method}</li>)}
+          </ul>
+        </div>
       </div>
     </footer>
   )
