@@ -1887,6 +1887,71 @@ a:hover .product-media img {
   color: var(--fg);
 }
 
+.admin-shell .nav-link {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--press-out), opacity 0.3s ease;
+}
+
+.admin-shell :is(button, .btn, .btn-ghost, .admin-tab, .admin-segment, .nav-link)[data-pressed]:not(:disabled) {
+  transform: scale(0.95);
+  transition:
+    transform var(--press-in),
+    box-shadow var(--press-in),
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.admin-shell :is(.btn, .btn-ghost, .admin-tab, .admin-segment)[data-pressed]:not(:disabled):not(.glass) {
+  background-image: linear-gradient(var(--press-shade), var(--press-shade));
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+.admin-shell .nav-link[data-pressed] {
+  opacity: 0.55;
+}
+
+.admin-main a:not(.btn, .btn-ghost, .admin-tab, .admin-segment, .admin-row-link) {
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.3s ease;
+}
+
+.admin-main a:not(.btn, .btn-ghost, .admin-tab, .admin-segment, .admin-row-link)[data-pressed] {
+  opacity: 0.4;
+  transition: opacity 0.08s ease;
+}
+
+.admin-main .admin-row-link {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-list:has(.admin-row-link) {
+  overflow: hidden;
+}
+
+.admin-list > li:not(.swipe-row):has(.admin-row-link),
+.admin-list > .swipe-row > .swipe-content:has(.admin-row-link) {
+  --row-press: transparent;
+  background-color: var(--row-press);
+  box-shadow: -1.25rem 0 0 var(--row-press), 1.25rem 0 0 var(--row-press);
+  transition: background-color 0.35s ease, box-shadow 0.35s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.admin-list > .swipe-row > .swipe-content:has(.admin-row-link) {
+  --row-press: var(--admin-card);
+  box-shadow: none;
+}
+
+.admin-list > li:not(.swipe-row):has(.admin-row-link[data-pressed]),
+.admin-list > .swipe-row:not(.is-dragging) > .swipe-content:has(.admin-row-link[data-pressed]) {
+  --row-press: color-mix(in srgb, var(--fg) 8%, var(--admin-card));
+  transition: background-color 0.06s ease, box-shadow 0.06s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.admin-list > .swipe-row.is-dragging > .swipe-content:has(.admin-row-link) {
+  transition: none;
+}
+
 .admin-card {
   min-width: 0;
   padding: 1rem 1.25rem;

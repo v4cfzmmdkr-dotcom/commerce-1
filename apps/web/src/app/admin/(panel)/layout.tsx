@@ -1,4 +1,5 @@
 import { SignOutButton } from "@clerk/nextjs"
+import { AdminPress } from "@/components/admin-press"
 import { AdminTabs } from "@/components/admin-tabs"
 import { requireAdmin } from "@/lib/auth/current"
 
@@ -20,6 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <AdminTabs />
       </header>
       <main id="content" className="wrap admin-main">{children}</main>
+      <AdminPress />
     </div>
   )
 }
