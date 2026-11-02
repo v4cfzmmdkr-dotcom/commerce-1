@@ -38,10 +38,10 @@ export default async function ShippingPage({
   return (
     <div className="grid gap-6">
       <h1 className="text-3xl font-semibold">Shipping</h1>
-      <p className="max-w-2xl text-sm">Rates are inactive until you turn them on, so checkout will not charge a guessed delivery price. The shop ships within Australia only. A rate applies only when the merchandise subtotal is at least the minimum and at most the maximum. Leave a limit blank for no bound. Free shipping at $25 or more uses a minimum of 25.00, and the paid rate stops at 24.99.</p>
+      <p className="admin-note max-w-2xl text-sm">Rates are inactive until you turn them on, so checkout will not charge a guessed delivery price. The shop ships within Australia only. A rate applies only when the merchandise subtotal is at least the minimum and at most the maximum. Leave a limit blank for no bound. Free shipping at $25 or more uses a minimum of 25.00, and the paid rate stops at 24.99.</p>
       {params.saved ? <p className="text-sm">Shipping saved.</p> : null}
       {rates.map((rate) => (
-        <form key={rate.id} action={saveShipping} className="grid gap-2 border border-[var(--border)] p-4">
+        <form key={rate.id} action={saveShipping} className="admin-card grid gap-2">
           <input type="hidden" name="id" value={rate.id} />
           <input className="field" name="name" defaultValue={rate.name} />
           <input className="field" name="description" defaultValue={rate.description} />
@@ -53,7 +53,7 @@ export default async function ShippingPage({
           <button className="btn w-fit" type="submit">Save rate</button>
         </form>
       ))}
-      <form action={saveShipping} className="grid gap-2 border border-dashed border-[var(--border)] p-4">
+      <form action={saveShipping} className="admin-card grid gap-2">
         <h2 className="text-lg">New rate</h2>
         <input className="field" name="name" placeholder="Name" required />
         <input className="field" name="description" placeholder="Description" />

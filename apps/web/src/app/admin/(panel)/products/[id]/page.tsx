@@ -58,7 +58,7 @@ export default async function EditProductPage({
     <div className="grid gap-8">
       <h1 className="text-3xl font-semibold">Edit product</h1>
       {query.saved ? <p className="text-sm">Saved.</p> : null}
-      <form action={saveProduct} className="grid max-w-3xl gap-4">
+      <form action={saveProduct} className="admin-card grid max-w-3xl gap-4">
         <input type="hidden" name="id" value={product.id} />
         <input type="hidden" name="variantIds" value={variants.map((variant) => variant.id).join(",")} />
         <label className="label">Title<input className="field normal-case" name="title" defaultValue={product.title} required /></label>
@@ -80,7 +80,7 @@ export default async function EditProductPage({
         <label className="label">SEO description<textarea className="field normal-case" name="seoDescription" defaultValue={product.seoDescription} /></label>
         <h2 className="text-lg font-medium">Variants</h2>
         {variants.map((variant) => (
-          <fieldset key={variant.id} className="grid gap-2 border border-[var(--border)] p-3">
+          <fieldset key={variant.id} className="admin-inset grid gap-2">
             <div className="grid gap-2 sm:grid-cols-2">
               <input className="field" name={`sku_${variant.id}`} defaultValue={variant.sku} placeholder="SKU" />
               <input className="field" name={`price_${variant.id}`} defaultValue={dollars(variant.priceCents)} placeholder="Price" required />
@@ -95,7 +95,7 @@ export default async function EditProductPage({
             </label>
           </fieldset>
         ))}
-        <fieldset className="grid gap-2 border border-dashed border-[var(--border)] p-3">
+        <fieldset className="admin-inset grid gap-2">
           <legend className="text-sm">Add a variant</legend>
           <div className="grid gap-2 sm:grid-cols-2">
             <input className="field" name="newSku" placeholder="SKU" />
@@ -106,7 +106,7 @@ export default async function EditProductPage({
         </fieldset>
         <button className="btn" type="submit">Save product</button>
       </form>
-      <section className="grid gap-3">
+      <section className="admin-card grid max-w-3xl gap-3">
         <h2 className="text-lg font-medium">Images</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {images.map((image) => (

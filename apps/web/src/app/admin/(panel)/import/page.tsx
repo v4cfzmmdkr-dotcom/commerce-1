@@ -28,7 +28,7 @@ export default async function ImportPage({
       <p className="text-sm">{pending[0]?.count ?? 0} images are still hosted on Shopify.</p>
       {params.collections ? <p className="text-sm">Synced {params.collections} collections.</p> : null}
       {params.collectionError ? <p className="text-sm">{params.collectionError}</p> : null}
-      <form action={runImport} className="grid gap-3">
+      <form action={runImport} className="admin-card grid gap-3">
         <input name="file" type="file" accept=".csv,text/csv" required />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="images" defaultChecked /> Download a batch of images now</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="collections" defaultChecked /> Sync collections from the live store</label>
@@ -37,7 +37,7 @@ export default async function ImportPage({
       </form>
       <ImageDownload pending={pending[0]?.count ?? 0} />
       {report ? (
-        <section className="grid gap-2 text-sm">
+        <section className="admin-card grid gap-2 text-sm">
           <h2 className="text-lg">Last report</h2>
           <p>Created {report.productsCreated}, updated {report.productsUpdated}, skipped {report.productsSkipped}, variants {report.variantsImported}.</p>
           <p>Images waiting {report.imagesPending}. Failures {report.failures.length}. Warnings {report.warnings.length}.</p>

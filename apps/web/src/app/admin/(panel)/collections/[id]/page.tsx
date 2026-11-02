@@ -40,7 +40,7 @@ export default async function EditCollectionPage({
       <h1 className="text-3xl font-semibold">Edit collection</h1>
       {query.saved ? <p className="text-sm">Saved.</p> : null}
       {query.error ? <p className="text-sm">No product matched that handle.</p> : null}
-      <form action={saveCollection} className="grid gap-3">
+      <form action={saveCollection} className="admin-card grid gap-3">
         <input type="hidden" name="id" value={collection.id} />
         <label className="label">Title<input className="field normal-case" name="title" defaultValue={collection.title} /></label>
         <label className="label">Handle<input className="field normal-case" name="handle" defaultValue={collection.handle} /></label>
@@ -74,14 +74,14 @@ export default async function EditCollectionPage({
         <input className="field" name="handle" placeholder="Product handle" />
         <button className="btn" type="submit">Add product</button>
       </form>
-      <ul className="grid gap-2 text-sm">
+      <ul className="admin-list text-sm">
         {members.map((member) => (
           <li key={member.id} className="flex items-center justify-between gap-3">
             <span>{member.title}</span>
             <form action={removeFromCollection}>
               <input type="hidden" name="id" value={collection.id} />
               <input type="hidden" name="productId" value={member.id} />
-              <button type="submit">Remove</button>
+              <button className="btn-ghost" type="submit">Remove</button>
             </form>
           </li>
         ))}

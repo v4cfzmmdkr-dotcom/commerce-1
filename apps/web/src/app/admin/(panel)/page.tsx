@@ -22,21 +22,22 @@ export default async function AdminHome() {
     <div className="grid gap-8">
       <h1 className="text-3xl font-semibold">Overview</h1>
       <div className="grid gap-4 sm:grid-cols-3">
-        <article className="border border-[var(--border)] p-4">
-          <p className="text-xs uppercase tracking-wide">Products</p>
-          <p className="mt-2 text-2xl">{listed + hidden}</p>
-          <p className="text-sm">
-            <Link href="/admin/products?show=listed">listed {listed}</Link> · <Link href="/admin/products?show=hidden">hidden {hidden}</Link>
+        <article className="admin-card">
+          <p className="admin-stat-label">Products</p>
+          <p className="admin-stat-value">{listed + hidden}</p>
+          <p className="mt-1 text-sm">
+            <Link href="/admin/products?show=listed">Listed {listed}</Link> · <Link href="/admin/products?show=hidden">Hidden {hidden}</Link>
           </p>
         </article>
-        <article className="border border-[var(--border)] p-4">
-          <p className="text-xs uppercase tracking-wide">Paid orders</p>
-          <p className="mt-2 text-2xl">{paid?.count ?? 0}</p>
+        <article className="admin-card">
+          <p className="admin-stat-label">Paid orders</p>
+          <p className="admin-stat-value">{paid?.count ?? 0}</p>
+          <p className="mt-1 text-sm"><Link href="/admin/orders">View orders</Link></p>
         </article>
-        <article className="border border-[var(--border)] p-4">
-          <p className="text-xs uppercase tracking-wide">Images still on Shopify</p>
-          <p className="mt-2 text-2xl">{remoteImages[0]?.count ?? 0}</p>
-          <Link href="/admin/import" className="text-sm">Download them</Link>
+        <article className="admin-card">
+          <p className="admin-stat-label">Images still on Shopify</p>
+          <p className="admin-stat-value">{remoteImages[0]?.count ?? 0}</p>
+          <p className="mt-1 text-sm"><Link href="/admin/import">Download them</Link></p>
         </article>
       </div>
     </div>

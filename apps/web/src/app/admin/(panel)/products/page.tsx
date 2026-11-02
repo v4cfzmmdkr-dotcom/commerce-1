@@ -45,34 +45,34 @@ export default async function ProductsPage({
         {show ? <input type="hidden" name="show" value={show} /> : null}
         <button className="btn" type="submit">Search</button>
       </form>
-      <form action={createProduct} className="grid gap-3 border border-[var(--border)] p-4 sm:grid-cols-[1fr_140px_auto]">
+      <form action={createProduct} className="admin-card grid gap-3 sm:grid-cols-[1fr_140px_auto]">
         <input className="field" name="title" placeholder="New product title" required />
         <input className="field" name="price" placeholder="18.00" required />
         <button className="btn" type="submit">Add product</button>
       </form>
-      <nav className="flex gap-4 text-sm" aria-label="Filter products">
-        <Link href={filterLink(null)} aria-current={show === null ? "page" : undefined} className={show === null ? "font-semibold" : ""}>
+      <nav className="admin-segmented" aria-label="Filter products">
+        <Link href={filterLink(null)} aria-current={show === null ? "page" : undefined} className="admin-segment">
           All ({counts[0].listed + counts[0].hidden})
         </Link>
-        <Link href={filterLink("listed")} aria-current={show === "listed" ? "page" : undefined} className={show === "listed" ? "font-semibold" : ""}>
+        <Link href={filterLink("listed")} aria-current={show === "listed" ? "page" : undefined} className="admin-segment">
           Listed ({counts[0].listed})
         </Link>
-        <Link href={filterLink("hidden")} aria-current={show === "hidden" ? "page" : undefined} className={show === "hidden" ? "font-semibold" : ""}>
+        <Link href={filterLink("hidden")} aria-current={show === "hidden" ? "page" : undefined} className="admin-segment">
           Hidden ({counts[0].hidden})
         </Link>
       </nav>
-      <p className="text-sm">{products.length} {products.length === 1 ? "product" : "products"}{term ? " found" : ""}</p>
-      <ul className="grid gap-2">
+      <p className="admin-note text-sm">{products.length} {products.length === 1 ? "product" : "products"}{term ? " found" : ""}</p>
+      <ul className="admin-list">
         {products.map((product) => {
           const listed = product.status === "active"
           return (
-            <li key={product.id} id={`p-${product.id}`} className="flex items-center justify-between gap-3 border-b border-[var(--border)] py-3 text-sm">
-              <Link href={`/admin/products/${product.id}`}>{product.title}</Link>
+            <li key={product.id} id={`p-${product.id}`} className="flex items-center justify-between gap-3 py-2 text-sm">
+              <Link className="admin-row-link" href={`/admin/products/${product.id}`}>{product.title}</Link>
               <form action={setListed} className="flex shrink-0 items-center gap-3">
                 <input type="hidden" name="id" value={product.id} />
                 <input type="hidden" name="listed" value={listed ? "0" : "1"} />
                 <input type="hidden" name="back" value={back} />
-                <span>{listed ? "Listed" : "Hidden"}</span>
+                <span className="admin-note">{listed ? "Listed" : "Hidden"}</span>
                 <button className="btn-ghost" type="submit">{listed ? "Hide" : "List"}</button>
               </form>
             </li>

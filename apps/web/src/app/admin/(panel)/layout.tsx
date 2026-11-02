@@ -1,36 +1,25 @@
 import { SignOutButton } from "@clerk/nextjs"
-import Link from "next/link"
+import { AdminTabs } from "@/components/admin-tabs"
 import { requireAdmin } from "@/lib/auth/current"
-
-const links = [
-  ["Overview", "/admin"],
-  ["Products", "/admin/products"],
-  ["Collections", "/admin/collections"],
-  ["Orders", "/admin/orders"],
-  ["Shipping", "/admin/shipping"],
-  ["Import", "/admin/import"],
-  ["Theme", "/admin/theme"],
-  ["Settings", "/admin/settings"],
-]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin()
   return (
-    <div className="min-h-screen bg-[var(--bg)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
-      <div className="border-b border-[var(--border)]">
-        <div className="wrap flex flex-wrap items-center justify-between gap-3 py-4">
-          <p className="text-sm tracking-[0.16em]">DASHBOARD</p>
-          <SignOutButton redirectUrl="/admin/login">
-            <button className="nav-link text-sm" type="button">Sign out {admin.email}</button>
-          </SignOutButton>
+    <div className="admin-shell">
+      <header className="admin-bar">
+        <div className="wrap admin-bar-top">
+          <p className="admin-bar-title">Dashboard</p>
+          <div className="admin-bar-actions">
+            <span className="admin-account hidden sm:inline">{admin.email}</span>
+            <a className="nav-link shrink-0" href="/" target="_blank" rel="noreferrer">View shop</a>
+            <SignOutButton redirectUrl="/admin/login">
+              <button className="nav-link shrink-0" type="button">Sign out</button>
+            </SignOutButton>
+          </div>
         </div>
-        <nav className="wrap flex gap-5 overflow-x-auto text-sm" aria-label="Admin">
-          {links.map(([label, href]) => (
-            <Link key={href} className="nav-link shrink-0 whitespace-nowrap" href={href}>{label}</Link>
-          ))}
-        </nav>
-      </div>
-      <main id="content" className="wrap py-8">{children}</main>
+        <AdminTabs />
+      </header>
+      <main id="content" className="wrap admin-main">{children}</main>
     </div>
   )
 }

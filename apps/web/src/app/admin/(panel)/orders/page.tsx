@@ -28,10 +28,11 @@ export default async function OrdersPage() {
         <h1 className="text-3xl font-semibold">Orders</h1>
         <a href="/api/admin/export/orders">Export CSV</a>
       </div>
-      <table className="w-full text-left text-sm">
+      <div className="admin-card overflow-x-auto p-0">
+      <table className="admin-table">
         <thead>
-          <tr className="border-b border-[var(--border)]">
-            <th className="py-2">Order</th>
+          <tr>
+            <th>Order</th>
             <th>Email</th>
             <th>Payment</th>
             <th>Fulfilment</th>
@@ -40,8 +41,8 @@ export default async function OrdersPage() {
         </thead>
         <tbody>
           {orders.map((order) => (
-            <tr key={order.id} className="border-b border-[var(--border)]">
-              <td className="py-2"><Link href={`/admin/orders/${order.id}`}>{order.number}</Link></td>
+            <tr key={order.id}>
+              <td><Link href={`/admin/orders/${order.id}`}>{order.number}</Link></td>
               <td>{order.email}</td>
               <td>{paymentLabel(order.paymentStatus, order)}</td>
               <td>{order.fulfillmentStatus}</td>
@@ -50,6 +51,7 @@ export default async function OrdersPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

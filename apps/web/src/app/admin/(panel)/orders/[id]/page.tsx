@@ -74,12 +74,12 @@ export default async function OrderDetailPage({
         <div>Subtotal {formatMoney(Number(order.subtotalCents), order.currency)} · Shipping {formatMoney(Number(order.shippingCents), order.currency)} · GST {formatMoney(Number(order.taxCents), order.currency)} · Total {formatMoney(Number(order.totalCents), order.currency)}</div>
         <div>{address.name}, {address.line1} {address.line2}, {address.city} {address.state} {address.postcode} {address.country}</div>
       </dl>
-      <ul className="text-sm">
+      <ul className="admin-card text-sm">
         {items.map((item, index) => (
           <li key={index}>{item.quantity} × {item.productTitle} {item.variantTitle} {item.sku}</li>
         ))}
       </ul>
-      <form action={updateOrder} className="grid gap-3">
+      <form action={updateOrder} className="admin-card grid gap-3">
         <input type="hidden" name="id" value={order.id} />
         <label className="label">Fulfilment
           <select className="select normal-case" name="fulfillment" defaultValue={order.fulfillmentStatus}>
