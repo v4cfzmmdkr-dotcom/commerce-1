@@ -26,7 +26,7 @@ function CollectionTile({
           <div className="h-full w-full bg-[var(--fg)]" />
         )}
       </div>
-      <p className="mt-3 text-sm">{collection.title}</p>
+      <p className="mt-3 text-sm font-semibold">{collection.title}</p>
     </Link>
   )
 }
