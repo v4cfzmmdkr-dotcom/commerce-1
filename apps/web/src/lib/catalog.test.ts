@@ -62,6 +62,17 @@ describe("listProducts through the Supabase API", () => {
     expect(result.pageCount).toBe(2)
   })
 
+  it("filters by brand with a whole-word title match", async () => {
+    await listProducts({ brand: "milwaukee", sort: "price-asc" })
+    const url = new URL(fetchMock.mock.calls[0][0])
+    expect(url.searchParams.get("title")).toBe("imatch.\\m(milwaukee|packout)\\M")
+  })
+
+  it("ignores an unknown brand", async () => {
+    await listProducts({ brand: "nope", sort: "price-asc" })
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get("title")).toBeNull()
+  })
+
   it("never asks the API to order by a variant column", async () => {
     await listProducts({ sort: "price-asc" })
     for (const [input] of fetchMock.mock.calls) {

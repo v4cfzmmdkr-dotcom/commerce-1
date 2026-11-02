@@ -1,4 +1,5 @@
 import { getSql, databaseConfigured, textArray } from "@/db/client"
+import { brandPattern, countBrands, findBrand } from "@/lib/brands"
 import { isPurchasable } from "@/lib/money"
 import { keepBlackWhiteColours } from "@/lib/product-colours"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
@@ -19,6 +20,7 @@ export type CatalogQuery = {
   q?: string
   sort?: string
   tag?: string
+  brand?: string
   collectionId?: string
   inStock?: boolean
   minCents?: number | null
@@ -180,6 +182,8 @@ async function listProductsFromRest(query: CatalogQuery) {
     const tag = query.tag.replace(/[{},]/g, "")
     params.set("tags", `cs.{${tag}}`)
   }
+  const brand = findBrand(query.brand)
+  if (brand) params.set("title", `imatch.${brandPattern(brand)}`)
   if (collectionIds) {
     params.set("id", `in.(${collectionIds.join(",")})`)
   }
@@ -203,7 +207,7 @@ async function listProductsFromRest(query: CatalogQuery) {
       return item ? [item] : []
     })
   }
-  const total = collectionIds && !query.q?.trim() && !query.tag
+  const total = collectionIds && !query.q?.trim() && !query.tag && !brand
     ? collectionIds.length
     : (result.total || items.length)
   const paged = useCollectionOrder ? items.slice(offset, offset + pageSize) : items
@@ -243,6 +247,8 @@ export async function listProducts(query: CatalogQuery) {
       )`
     : sql``
   const tag = query.tag ? sql`and ${query.tag} = any(p.tags)` : sql``
+  const brandMatch = findBrand(query.brand)
+  const brand = brandMatch ? sql`and p.title ~* ${brandPattern(brandMatch)}` : sql``
   const collection = query.collectionId
     ? sql`and exists (
         select 1 from collection_products cp
@@ -252,7 +258,7 @@ export async function listProducts(query: CatalogQuery) {
   const stock = query.inStock ? sql`and pr.purchasable` : sql``
   const min = query.minCents != null ? sql`and pr.min_price >= ${query.minCents}` : sql``
   const max = query.maxCents != null ? sql`and pr.min_price <= ${query.maxCents}` : sql``
-  const where = sql`p.status = 'active' ${search} ${tag} ${collection} ${stock} ${min} ${max}`
+  const where = sql`p.status = 'active' ${search} ${tag} ${brand} ${collection} ${stock} ${min} ${max}`
 
   const rows = await sql<ProductCard[]>`
     select
@@ -517,6 +523,32 @@ export async function getCollection(handle: string) {
     const detail = error instanceof Error ? error.message : "query failed"
     console.error(`Collection query failed: ${detail}`)
     return null
+  }
+}
+
+export async function brandOptions(collectionId?: string) {
+  try {
+    if (catalogViaHttps()) {
+      const scope = collectionId
+        ? `,collection_products!inner(collection_id)&collection_products.collection_id=eq.${encodeURIComponent(collectionId)}`
+        : ""
+      const rest = await supabaseRest<Array<{ title: string }>>(`products?status=eq.active&select=title${scope}`)
+      return countBrands((rest?.data ?? []).map((row) => row.title))
+    }
+    if (!databaseConfigured()) return []
+    const sql = getSql()
+    const rows = collectionId
+      ? await sql<{ title: string }[]>`
+          select p.title from products p
+          join collection_products cp on cp.product_id = p.id and cp.collection_id = ${collectionId}
+          where p.status = 'active'
+        `
+      : await sql<{ title: string }[]>`select title from products where status = 'active'`
+    return countBrands(rows.map((row) => row.title))
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "query failed"
+    console.error(`Brand query failed: ${detail}`)
+    return []
   }
 }
 

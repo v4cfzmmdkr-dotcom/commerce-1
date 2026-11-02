@@ -10,6 +10,7 @@ export function CatalogView({
   page,
   pageCount,
   tags,
+  brands,
   currency,
   basePath,
   query,
@@ -21,6 +22,7 @@ export function CatalogView({
   page: number
   pageCount: number
   tags: Array<{ tag: string, count: number }>
+  brands: Array<{ slug: string, name: string, count: number }>
   currency: string
   basePath: string
   query: Record<string, string | undefined>
@@ -35,7 +37,7 @@ export function CatalogView({
     return text ? `${basePath}?${text}` : basePath
   }
 
-  const activeFilters = [query.q, query.tag, query.min, query.max, query.sort && query.sort !== "newest" ? query.sort : undefined]
+  const activeFilters = [query.q, query.tag, query.brand, query.min, query.max, query.sort && query.sort !== "newest" ? query.sort : undefined]
     .filter(Boolean).length
 
   return (
@@ -57,6 +59,17 @@ export function CatalogView({
                 Search
                 <input className="field normal-case" name="q" defaultValue={query.q || ""} />
               </label>
+              {brands.length > 0 ? (
+                <label className="label">
+                  Fits brand
+                  <select className="select normal-case" name="brand" defaultValue={query.brand || ""}>
+                    <option value="">Any brand</option>
+                    {brands.map((brand) => (
+                      <option key={brand.slug} value={brand.slug}>{brand.name} ({brand.count})</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <label className="label">
                 Sort
                 <select className="select normal-case" name="sort" defaultValue={query.sort || "newest"}>
@@ -66,15 +79,17 @@ export function CatalogView({
                   <option value="title">Name</option>
                 </select>
               </label>
-              <label className="label">
-                Tag
-                <select className="select normal-case" name="tag" defaultValue={query.tag || ""}>
-                  <option value="">Any</option>
-                  {tags.map((tag) => (
-                    <option key={tag.tag} value={tag.tag}>{tag.tag}</option>
-                  ))}
-                </select>
-              </label>
+              {tags.length > 0 ? (
+                <label className="label">
+                  Tag
+                  <select className="select normal-case" name="tag" defaultValue={query.tag || ""}>
+                    <option value="">Any</option>
+                    {tags.map((tag) => (
+                      <option key={tag.tag} value={tag.tag}>{tag.tag}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               <div className="grid grid-cols-2 gap-2">
                 <label className="label">
                   Min $

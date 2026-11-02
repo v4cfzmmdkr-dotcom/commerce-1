@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CatalogView } from "@/components/catalog-view"
-import { getCollection, listProducts, popularTags } from "@/lib/catalog"
+import { brandOptions, getCollection, listProducts, popularTags } from "@/lib/catalog"
 import { formatDescription, summaryText } from "@/lib/html"
 import { catalogQuery } from "@/lib/query"
 import { getSettings } from "@/lib/settings"
@@ -37,9 +37,10 @@ export default async function CollectionPage({
   const collection = await getCollection(handle)
   if (!collection) notFound()
   const query = catalogQuery(await searchParams)
-  const [result, tags, settings] = await Promise.all([
+  const [result, tags, brands, settings] = await Promise.all([
     listProducts({ ...query, collectionId: collection.id }),
     popularTags(collection.id),
+    brandOptions(collection.id),
     getSettings(),
   ])
   return (
@@ -51,6 +52,7 @@ export default async function CollectionPage({
       page={result.page}
       pageCount={result.pageCount}
       tags={tags}
+      brands={brands}
       currency={settings.currency}
       basePath={`/collections/${collection.handle}`}
       query={query.raw}
