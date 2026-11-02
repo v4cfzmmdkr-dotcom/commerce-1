@@ -426,7 +426,7 @@ export async function updateOrder(formData: FormData) {
   await sql`
     update orders set
       fulfillment_status = ${fulfillment},
-      status = case when payment_status = 'paid' then ${orderStatus} else status end,
+      status = case when payment_status in ('paid', 'partially_refunded') then ${orderStatus} else status end,
       tracking_carrier = ${text(formData, "carrier")},
       tracking_number = ${tracking},
       shipped_at = case when ${fulfillment} <> 'unfulfilled' then coalesce(shipped_at, now()) else shipped_at end,
@@ -434,14 +434,18 @@ export async function updateOrder(formData: FormData) {
     where id = ${id}
   `
   if (text(formData, "mark") === "cancelled") {
-    await sql`update orders set status = 'cancelled', updated_at = now() where id = ${id} and payment_status <> 'paid'`
+    await sql`update orders set status = 'cancelled', updated_at = now() where id = ${id} and payment_status in ('unpaid', 'failed')`
   }
   if (text(formData, "mark") === "refunded") {
-    await sql`update orders set status = 'refunded', payment_status = 'refunded', updated_at = now() where id = ${id}`
+    await sql`
+      update orders set status = 'refunded', payment_status = 'refunded', refunded_cents = total_cents, updated_at = now()
+      where id = ${id}
+    `
   }
   const due = await sql<Array<{ id: string }>>`
     select id from orders
-    where id = ${id} and payment_status = 'paid' and tracking_number <> '' and tracking_number <> shipping_emailed_tracking
+    where id = ${id} and payment_status in ('paid', 'partially_refunded')
+      and tracking_number <> '' and tracking_number <> shipping_emailed_tracking
   `
   const shippingEmail = due.length ? await notifyShipped(id) : null
   redirect(`/admin/orders/${id}?saved=1${shippingEmail ? `&shipping=${shippingEmail}` : ""}`)

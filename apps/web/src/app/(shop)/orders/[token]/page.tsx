@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { fulfillPaidOrder, getOrderByPublicToken, getOrderItems } from "@/lib/orders"
 import { formatMoney } from "@/lib/money"
+import { paymentLabel } from "@/lib/payment-status"
 import { trackingUrl } from "@/lib/tracking"
 import { getStripe, stripeConfigured } from "@/lib/stripe"
 
@@ -39,7 +40,7 @@ export default async function OrderPage({
           : "Payment is not confirmed yet. If you just paid, refresh this page in a moment."}
       </p>
       <dl className="mt-8 grid gap-2 text-sm">
-        <div className="flex justify-between"><dt>Payment</dt><dd>{fresh.paymentStatus}</dd></div>
+        <div className="flex justify-between"><dt>Payment</dt><dd>{paymentLabel(fresh.paymentStatus)}</dd></div>
         <div className="flex justify-between"><dt>Fulfilment</dt><dd>{fresh.fulfillmentStatus}</dd></div>
         <div className="flex justify-between"><dt>Delivery</dt><dd>{fresh.shippingName}</dd></div>
         <div className="flex justify-between"><dt>Total</dt><dd>{formatMoney(Number(fresh.totalCents), fresh.currency)}</dd></div>

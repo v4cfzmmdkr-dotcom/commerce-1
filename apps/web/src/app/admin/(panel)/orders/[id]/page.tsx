@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { resendOrderEmail, resendShippingEmail, updateOrder } from "@/app/admin/actions"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
+import { paymentLabel } from "@/lib/payment-status"
 import { carriers, trackingUrl } from "@/lib/tracking"
 import type { Address } from "@/lib/types"
 
@@ -23,6 +24,7 @@ export default async function OrderDetailPage({
     paymentStatus: string
     fulfillmentStatus: string
     totalCents: number
+    refundedCents: number
     subtotalCents: number
     shippingCents: number
     taxCents: number
@@ -38,7 +40,7 @@ export default async function OrderDetailPage({
     stripeSessionId: string | null
   }>>`
     select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
-      total_cents as "totalCents", subtotal_cents as "subtotalCents", shipping_cents as "shippingCents",
+      total_cents as "totalCents", refunded_cents as "refundedCents", subtotal_cents as "subtotalCents", shipping_cents as "shippingCents",
       tax_cents as "taxCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
       tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber",
       inventory_warning as "inventoryWarning", email_status as "emailStatus",
@@ -63,7 +65,7 @@ export default async function OrderDetailPage({
       {query.shipping ? <p className="text-sm">{shippingMessage(query.shipping)}</p> : null}
       {order.inventoryWarning ? <p className="text-sm">Payment was captured, but stock could not be reduced for every line. Check inventory.</p> : null}
       <dl className="grid gap-1 text-sm">
-        <div>Payment: {order.paymentStatus}</div>
+        <div>Payment: {paymentLabel(order.paymentStatus, order)}</div>
         <div>Status: {order.status}</div>
         <div>Email: {order.email}</div>
         <div>Confirmation email: {order.emailStatus}</div>
@@ -106,7 +108,7 @@ export default async function OrderDetailPage({
         </label>
         <button className="btn w-fit" type="submit">Update order</button>
       </form>
-      <p className="text-sm">Marking an order refunded does not send money back. Refund the payment in Stripe first.</p>
+      <p className="text-sm">Refunds made in Stripe show here automatically. Marking an order refunded does not send money back.</p>
       <div className="flex flex-wrap gap-3">
         <form action={resendOrderEmail}>
           <input type="hidden" name="id" value={order.id} />

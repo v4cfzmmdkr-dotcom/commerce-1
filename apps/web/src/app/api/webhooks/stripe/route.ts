@@ -1,4 +1,4 @@
-import { fulfillPaidOrder, markOrderFailed } from "@/lib/orders"
+import { fulfillPaidOrder, markOrderFailed, recordRefund } from "@/lib/orders"
 import { getStripe } from "@/lib/stripe"
 
 export const runtime = "nodejs"
@@ -14,6 +14,10 @@ export async function POST(request: Request) {
     event = getStripe().webhooks.constructEvent(body, signature, secret)
   } catch {
     return new Response("Invalid signature", { status: 400 })
+  }
+  if (event.type === "charge.refunded") {
+    await recordRefund(event.data.object)
+    return new Response("ok")
   }
   const session = event.data.object
   if (!("metadata" in session)) return new Response("ok")

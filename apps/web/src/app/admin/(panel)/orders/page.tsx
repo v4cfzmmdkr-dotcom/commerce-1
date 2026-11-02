@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
+import { paymentLabel } from "@/lib/payment-status"
 
 export default async function OrdersPage() {
   const sql = getSql()
@@ -11,11 +12,12 @@ export default async function OrdersPage() {
     paymentStatus: string
     fulfillmentStatus: string
     totalCents: number
+    refundedCents: number
     currency: string
     createdAt: string
   }>>`
     select id, number, email, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
-      total_cents as "totalCents", currency, created_at as "createdAt"
+      total_cents as "totalCents", refunded_cents as "refundedCents", currency, created_at as "createdAt"
     from orders
     order by created_at desc
     limit 100
@@ -41,7 +43,7 @@ export default async function OrdersPage() {
             <tr key={order.id} className="border-b border-[var(--border)]">
               <td className="py-2"><Link href={`/admin/orders/${order.id}`}>{order.number}</Link></td>
               <td>{order.email}</td>
-              <td>{order.paymentStatus}</td>
+              <td>{paymentLabel(order.paymentStatus, order)}</td>
               <td>{order.fulfillmentStatus}</td>
               <td>{formatMoney(Number(order.totalCents), order.currency)}</td>
             </tr>

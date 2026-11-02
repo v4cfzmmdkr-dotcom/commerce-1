@@ -209,6 +209,9 @@ type OrderRow = {
   cartId: string | null
 }
 
+// A refunded order must not be marked paid again by a replayed checkout event.
+const claimable = ["unpaid", "failed"]
+
 export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout.Session) {
   if (dataApiEnabled()) {
     const result = await supabaseRest<Array<{
@@ -235,13 +238,13 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       throw new Error("Payment amount does not match the order")
     }
     if (session.payment_status !== "paid") return { already: false, paid: false }
-    if (order.payment_status === "paid") return { already: true, paid: true }
+    if (!claimable.includes(order.payment_status)) return { already: true, paid: true }
     const paymentIntent = typeof session.payment_intent === "string"
       ? session.payment_intent
       : session.payment_intent?.id ?? null
     // The webhook and the return page can confirm the same order at once.
     // Only the request that flips payment_status adjusts stock and sends email.
-    const claimed = await supabaseMutate<Array<{ id: string }>>(`orders?id=eq.${order.id}&payment_status=neq.paid`, "PATCH", {
+    const claimed = await supabaseMutate<Array<{ id: string }>>(`orders?id=eq.${order.id}&payment_status=in.(${claimable.join(",")})`, "PATCH", {
       payment_status: "paid",
       status: "paid",
       stripe_session_id: session.id,
@@ -312,7 +315,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     throw new Error("Payment amount does not match the order")
   }
   if (session.payment_status !== "paid") return { already: false, paid: false }
-  if (order.paymentStatus === "paid") return { already: true, paid: true }
+  if (!claimable.includes(order.paymentStatus)) return { already: true, paid: true }
 
   const items = await sql<Array<{
     variantId: string | null
@@ -338,7 +341,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
           stripe_payment_intent_id = ${paymentIntent},
           paid_at = now(),
           updated_at = now()
-      where id = ${order.id} and payment_status <> 'paid'
+      where id = ${order.id} and payment_status in ${tx(claimable)}
       returning id
     `
     if (updated.length === 0) return false
@@ -399,6 +402,39 @@ export async function markOrderFailed(orderId: string) {
     update orders
     set payment_status = 'failed', status = 'cancelled', updated_at = now()
     where id = ${orderId} and payment_status = 'unpaid'
+  `
+}
+
+export async function recordRefund(charge: Stripe.Charge) {
+  const paymentIntent = typeof charge.payment_intent === "string"
+    ? charge.payment_intent
+    : charge.payment_intent?.id
+  const refunded = charge.amount_refunded
+  if (!paymentIntent || refunded <= 0) return
+  const paymentStatus = charge.refunded ? "refunded" : "partially_refunded"
+  // Events can arrive out of order; amount_refunded only grows, so never lower it.
+  if (dataApiEnabled()) {
+    const result = await supabaseMutate(
+      `orders?stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntent)}&refunded_cents=lte.${refunded}`,
+      "PATCH",
+      {
+        payment_status: paymentStatus,
+        refunded_cents: refunded,
+        ...(charge.refunded ? { status: "refunded" } : {}),
+        updated_at: new Date().toISOString(),
+      },
+    )
+    if (!result) throw new Error("Could not record the refund")
+    return
+  }
+  const sql = getSql()
+  await sql`
+    update orders
+    set payment_status = ${paymentStatus},
+        refunded_cents = ${refunded},
+        status = case when ${charge.refunded} then 'refunded' else status end,
+        updated_at = now()
+    where stripe_payment_intent_id = ${paymentIntent} and refunded_cents <= ${refunded}
   `
 }
 
