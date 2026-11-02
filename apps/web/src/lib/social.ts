@@ -15,8 +15,9 @@ export const social = {
     detail: "Store",
   },
   email: {
-    href: "mailto:nicheparts@outlook.com.au",
+    address: "contact@nicheparts.com.au",
+    href: "mailto:contact@nicheparts.com.au",
     label: "Email",
-    detail: "nicheparts@outlook.com.au",
+    detail: "contact@nicheparts.com.au",
   },
 }
