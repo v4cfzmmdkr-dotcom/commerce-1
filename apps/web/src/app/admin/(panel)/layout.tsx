@@ -24,9 +24,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <button className="nav-link text-sm" type="button">Sign out {admin.email}</button>
           </SignOutButton>
         </div>
-        <nav className="wrap flex gap-4 overflow-x-auto text-sm" aria-label="Admin">
+        <nav className="wrap flex gap-5 overflow-x-auto text-sm" aria-label="Admin">
           {links.map(([label, href]) => (
-            <Link key={href} className="nav-link" href={href}>{label}</Link>
+            <Link key={href} className="nav-link shrink-0 whitespace-nowrap" href={href}>{label}</Link>
           ))}
         </nav>
       </div>
