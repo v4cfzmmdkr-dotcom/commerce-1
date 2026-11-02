@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { cartCount } from "@/lib/cart"
@@ -23,6 +24,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <main id="content">{children}</main>
       <Footer settings={settings} />
       <Analytics />
+      <SpeedInsights />
     </div>
   )
 }
