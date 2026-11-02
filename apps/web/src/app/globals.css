@@ -369,16 +369,105 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   transition: width 0.5s cubic-bezier(0.32, 1.2, 0.55, 1) 0.36s;
 }
 
+.collection-nav[data-cart] {
+  --cart-space: calc(51px + 0.5rem);
+}
+
 .collection-nav[data-search="in"] .nav-search-slot {
-  width: calc(51px + 0.5rem);
+  width: calc(51px + 0.5rem + var(--cart-space, 0px));
   transition: width 0.42s cubic-bezier(0.25, 1, 0.5, 1) 0s;
+}
+
+.nav-cart {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 51px;
+  height: 51px;
+  border-radius: 999px;
+  color: var(--fg);
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 0.25s ease,
+    filter 0.3s ease,
+    transform 0.5s cubic-bezier(0.32, 1.25, 0.55, 1),
+    visibility 0s linear 0.7s;
+}
+
+.collection-nav[data-search="in"] .nav-cart {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.25s ease,
+    filter 0.3s ease,
+    transform var(--press-out),
+    visibility 0s;
+  animation: nav-cart-in 0.85s linear backwards;
+}
+
+.collection-nav[data-search="out"] .nav-cart {
+  animation: nav-cart-out 0.7s linear both;
+}
+
+.collection-nav[data-search="in"] .nav-cart:active {
+  transform: scale(0.94);
+  transition: transform var(--press-in);
+}
+
+.collection-nav[data-search="in"][data-search-open] .nav-cart {
+  opacity: 0;
+  filter: blur(6px);
+  transform: scale(0.6);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    filter 0.3s ease,
+    transform 0.4s cubic-bezier(0.32, 1.25, 0.55, 1);
+}
+
+.nav-cart .header-cart-icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+@keyframes nav-cart-in {
+  0% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0), var(--from-y, -48px)) scale(var(--from-s, 1));
+  }
+  8% { opacity: 1; }
+  32% {
+    transform: translate(var(--from-x, 0), var(--from-y, -48px)) scale(var(--from-s, 1));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.6);
+  }
+  54% { transform: translateY(3px) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1); }
+  70% { transform: translateY(-1px) scale(0.97, 1.03); animation-timing-function: ease-in-out; }
+  84% { transform: scale(1.01, 0.99); animation-timing-function: ease-in-out; }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes nav-cart-out {
+  0% { opacity: 1; transform: none; animation-timing-function: ease-in-out; }
+  12% { transform: translateY(2px) scale(1.06, 0.94); animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  45% { transform: translate(var(--from-x, 0), var(--from-y, -48px)) scale(var(--from-s, 1)); }
+  85% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--from-x, 0), var(--from-y, -48px)) scale(var(--from-s, 1));
+  }
 }
 
 .nav-search {
   --search-spring: cubic-bezier(0.32, 1.25, 0.55, 1);
   position: absolute;
   top: 0;
-  right: 0;
+  right: var(--cart-space, 0px);
   bottom: 0;
   display: flex;
   align-items: center;
@@ -388,13 +477,13 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   pointer-events: auto;
   opacity: 0;
   visibility: hidden;
-  transition: width 0.55s var(--search-spring), visibility 0s linear 0.7s;
+  transition: width 0.55s var(--search-spring), right 0.55s var(--search-spring), visibility 0s linear 0.7s;
 }
 
 .collection-nav[data-search="in"] .nav-search {
   opacity: 1;
   visibility: visible;
-  transition: width 0.55s var(--search-spring), visibility 0s;
+  transition: width 0.55s var(--search-spring), right 0.55s var(--search-spring), visibility 0s;
   animation: nav-search-in 0.85s linear backwards;
 }
 
@@ -411,6 +500,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .collection-nav[data-search-open] .nav-search {
+  right: 0;
   width: 100%;
 }
 
@@ -1583,6 +1673,20 @@ a:hover .product-media img {
 }
 
 body:has(.collection-nav[data-search="in"]) .site-header-search .field:placeholder-shown:not(:focus) {
+  opacity: 0;
+  transition: opacity 0s;
+}
+
+.site-header-tools .header-cart:not(:active) {
+  transition:
+    transform var(--press-out),
+    box-shadow 0.35s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease 0.55s;
+}
+
+body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .header-cart {
   opacity: 0;
   transition: opacity 0s;
 }

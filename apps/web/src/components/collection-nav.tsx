@@ -1,12 +1,20 @@
 "use client"
 
+import { CartIcon } from "@/components/cart-icon"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-export function CollectionNav({ links }: { links: Array<{ href: string, label: string }> }) {
+export function CollectionNav({
+  links,
+  cartCount,
+}: {
+  links: Array<{ href: string, label: string }>
+  cartCount: number
+}) {
   const scroller = useRef<HTMLDivElement>(null)
   const searchForm = useRef<HTMLFormElement>(null)
+  const cartLink = useRef<HTMLAnchorElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
   const [search, setSearch] = useState<"in" | "out" | null>(null)
@@ -62,10 +70,21 @@ export function CollectionNav({ links }: { links: Array<{ href: string, label: s
         const from = entry.boundingClientRect
         const to = row.getBoundingClientRect()
         const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value))
-        form.style.setProperty("--from-x", `${clamp(from.right - to.right, 160)}px`)
+        const formRight = to.left + form.offsetLeft + form.offsetWidth
+        form.style.setProperty("--from-x", `${clamp(from.right - formRight, 160)}px`)
         form.style.setProperty("--from-y", `${clamp(from.top - to.top, 120)}px`)
         form.style.setProperty("--from-w", `${Math.min(from.width, to.width)}px`)
         form.style.setProperty("--from-h", `${from.height}px`)
+        const headerCart = document.querySelector(".site-header-tools .header-cart")
+        if (cartLink.current && headerCart) {
+          const cart = headerCart.getBoundingClientRect()
+          const size = cartLink.current.offsetWidth || 51
+          const dx = cart.left + cart.width / 2 - (to.right - size / 2)
+          const dy = cart.top + cart.height / 2 - (to.top + to.height / 2)
+          cartLink.current.style.setProperty("--from-x", `${clamp(dx, 160)}px`)
+          cartLink.current.style.setProperty("--from-y", `${clamp(dy, 120)}px`)
+          cartLink.current.style.setProperty("--from-s", `${cart.width / size}`)
+        }
       }
       const hidden = entry.intersectionRatio < 0.99 && entry.boundingClientRect.top < 0
       setSearch((current) => (hidden ? "in" : current ? "out" : null))
@@ -106,6 +125,7 @@ export function CollectionNav({ links }: { links: Array<{ href: string, label: s
       aria-label="Collections"
       data-search={search ?? undefined}
       data-search-open={open ? "" : undefined}
+      data-cart={cartCount > 0 ? "" : undefined}
     >
       <div className="collection-nav-row">
         <div className="collection-nav-glass glass" inert={open}>
@@ -148,6 +168,20 @@ export function CollectionNav({ links }: { links: Array<{ href: string, label: s
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" /></svg>
           </button>
         </form>
+        {cartCount > 0 ? (
+          <Link
+            ref={cartLink}
+            href="/cart"
+            className="nav-cart glass"
+            aria-label={`Cart, ${cartCount} items`}
+            inert={search !== "in" || open}
+          >
+            <span className="header-cart-icon" aria-hidden="true">
+              <CartIcon />
+              <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span>
+            </span>
+          </Link>
+        ) : null}
       </div>
     </nav>
   )
