@@ -20,7 +20,7 @@ export default async function CartPage() {
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
           <ul className="grid [&>li:first-child>.swipe-content]:pt-0">
             {cart.lines.map((line) => (
-              <SwipeToDelete key={line.id} itemId={line.id} className="grid grid-cols-[88px_1fr] gap-4 border-b border-[var(--border)] py-6">
+              <SwipeToDelete key={line.id} action={updateCart} fields={{ itemId: line.id, quantity: "0" }} fullSwipe className="grid grid-cols-[88px_1fr] gap-4 border-b border-[var(--border)] py-6">
                 <div className="product-media">
                   {line.imageUrl ? <img src={line.imageUrl} alt={line.productTitle} /> : null}
                 </div>

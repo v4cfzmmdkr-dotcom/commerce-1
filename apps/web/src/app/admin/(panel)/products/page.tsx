@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { copyListing, createProduct, setListed } from "@/app/admin/actions"
+import { copyListing, createProduct, deleteProduct, setListed } from "@/app/admin/actions"
 import { PendingButton } from "@/components/pending-button"
+import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
 
 export default async function ProductsPage({
@@ -82,7 +83,13 @@ export default async function ProductsPage({
         {products.map((product) => {
           const listed = product.status === "active"
           return (
-            <li key={product.id} id={`p-${product.id}`} className="flex items-center justify-between gap-3 py-2 text-sm">
+            <SwipeToDelete
+              key={product.id}
+              id={`p-${product.id}`}
+              action={deleteProduct}
+              fields={{ id: product.id, back }}
+              className="flex items-center justify-between gap-3 py-2 text-sm"
+            >
               <Link className="admin-row-link" href={`/admin/products/${product.id}`}>{product.title}</Link>
               <form action={setListed} className="flex shrink-0 items-center gap-3">
                 <input type="hidden" name="id" value={product.id} />
@@ -91,7 +98,7 @@ export default async function ProductsPage({
                 <span className="admin-note">{listed ? "Listed" : "Hidden"}</span>
                 <button className="btn-ghost" type="submit">{listed ? "Hide" : "List"}</button>
               </form>
-            </li>
+            </SwipeToDelete>
           )
         })}
       </ul>

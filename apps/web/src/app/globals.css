@@ -1233,6 +1233,12 @@ a:hover .product-media img {
 .swipe-row.is-dragging .swipe-content,
 .swipe-row.is-dragging .swipe-delete { transition: none; }
 .swipe-row.is-dragging { user-select: none; }
+.admin-list:has(> .swipe-row) { overflow: hidden; }
+.admin-list > .swipe-row { margin-inline: -1.25rem; }
+.admin-list > .swipe-row > .swipe-content {
+  padding-inline: 1.25rem;
+  background: var(--admin-card);
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

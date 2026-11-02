@@ -1,18 +1,23 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import { updateCart } from "@/app/(shop)/cart/actions"
 
 const actionWidth = 88
 
 type Drag = { x: number, y: number, offset: number, axis: "x" | "y" | null }
 
 export function SwipeToDelete({
-  itemId,
+  id,
+  action,
+  fields,
+  fullSwipe = false,
   className,
   children,
 }: {
-  itemId: string
+  id?: string
+  action: (formData: FormData) => Promise<void>
+  fields: Record<string, string>
+  fullSwipe?: boolean
   className?: string
   children: React.ReactNode
 }) {
@@ -20,7 +25,7 @@ export function SwipeToDelete({
   const offsetRef = useRef(0)
   const [dragging, setDragging] = useState(false)
   const [removing, setRemoving] = useState(false)
-  const [, startTransition] = useTransition()
+  const [pending, startTransition] = useTransition()
   const rowRef = useRef<HTMLLIElement>(null)
   const drag = useRef<Drag | null>(null)
   const swiped = useRef(false)
@@ -40,6 +45,14 @@ export function SwipeToDelete({
     return () => document.removeEventListener("pointerdown", close)
   }, [open])
 
+  useEffect(() => {
+    if (pending || !removing) return
+    if (rowRef.current) rowRef.current.style.height = ""
+    offsetRef.current = 0
+    setOffsetState(0)
+    setRemoving(false)
+  }, [pending, removing])
+
   const remove = () => {
     const row = rowRef.current
     if (!row || removing) return
@@ -50,15 +63,12 @@ export function SwipeToDelete({
       row.style.height = "0px"
     })
     const data = new FormData()
-    data.set("itemId", itemId)
-    data.set("quantity", "0")
+    for (const [key, value] of Object.entries(fields)) data.set(key, value)
     startTransition(async () => {
       try {
-        await updateCart(data)
-      } catch {
-        row.style.height = ""
-        setRemoving(false)
-        setOffset(0)
+        await action(data)
+      } catch (error) {
+        console.error("Could not delete", error)
       }
     })
   }
@@ -88,7 +98,8 @@ export function SwipeToDelete({
     if (current.axis !== "x") return
     swiped.current = true
     const width = event.currentTarget.offsetWidth
-    setOffset(Math.min(0, Math.max(-width, current.offset + dx)))
+    const next = Math.min(0, Math.max(-width, current.offset + dx))
+    setOffset(fullSwipe || next > -actionWidth ? next : -actionWidth + (next + actionWidth) * 0.3)
   }
 
   const onPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -98,7 +109,7 @@ export function SwipeToDelete({
     setDragging(false)
     const width = event.currentTarget.offsetWidth
     const distance = -offsetRef.current
-    if (distance > width * 0.5) remove()
+    if (fullSwipe && distance > width * 0.5) remove()
     else setOffset(distance > actionWidth / 2 ? -actionWidth : 0)
   }
 
@@ -111,7 +122,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <li ref={rowRef} className={`swipe-row${dragging ? " is-dragging" : ""}${removing ? " is-removing" : ""}`}>
+    <li ref={rowRef} id={id} className={`swipe-row${dragging ? " is-dragging" : ""}${removing ? " is-removing" : ""}`}>
       <button
         type="button"
         className="swipe-delete"

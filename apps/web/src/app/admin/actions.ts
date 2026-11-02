@@ -262,16 +262,22 @@ export async function deleteProduct(formData: FormData) {
     where v.product_id = ${id}
     limit 1
   `
+  const back = (notice: string) => {
+    const path = text(formData, "back")
+    const url = new URL(/^\/admin\/products(\?|$)/.test(path) ? path : "/admin/products", "http://admin.local")
+    url.searchParams.set("notice", notice)
+    return `${url.pathname}${url.search}`
+  }
   if (used.length) {
     await sql`update products set status = 'archived', updated_at = now() where id = ${id}`
-    redirect("/admin/products?notice=archived")
+    redirect(back("archived"))
   }
   const images = await sql<{ storagePath: string | null }[]>`
     select storage_path as "storagePath" from product_images where product_id = ${id}
   `
   for (const image of images) await deleteObject(image.storagePath)
   await sql`delete from products where id = ${id}`
-  redirect("/admin/products?notice=deleted")
+  redirect(back("deleted"))
 }
 
 export async function uploadImages(formData: FormData) {
