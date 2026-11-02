@@ -48,7 +48,9 @@ export function Header({
         {settings.announcement ? <Announcement text={settings.announcement} /> : null}
         <div className="site-header-bar wrap-wide" style={{ minHeight: "var(--header-h)" }}>
           <Link href="/" className="site-header-brand tap-link gap-3" aria-label={`${settings.name} home`}>
-            <img src={settings.logoUrl || "/brand/logo.png"} alt={settings.name} className="h-10 w-auto" />
+            <span className="app-icon">
+              <img src={settings.logoUrl || "/brand/logo.png"} alt={settings.name} />
+            </span>
           </Link>
           <div className="site-header-tools">
             <form action="/search" className="site-header-search">
