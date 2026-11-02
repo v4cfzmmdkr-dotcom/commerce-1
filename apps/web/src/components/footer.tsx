@@ -10,15 +10,12 @@ export function Footer({ settings }: { settings: StoreSettings }) {
           <p className="mt-3 max-w-xs text-sm">{settings.tagline}</p>
         </div>
         <nav className="flex flex-col text-sm" aria-label="Shop">
-          <Link className="nav-link" href="/search">Shop</Link>
           <Link className="nav-link" href="/contact">Contact</Link>
           <Link className="nav-link" href="/shipping">Shipping</Link>
           <Link className="nav-link" href="/orders/lookup">Track an order</Link>
           <Link className="nav-link" href="/cookies">Cookies</Link>
         </nav>
-        <div className="text-sm">
-          {settings.supportEmail ? <p>{settings.supportEmail}</p> : <p>Prices in AUD and include GST unless a product says otherwise.</p>}
-        </div>
+        {settings.supportEmail ? <p className="text-sm">{settings.supportEmail}</p> : null}
       </div>
     </footer>
   )
