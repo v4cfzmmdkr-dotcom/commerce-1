@@ -41,7 +41,7 @@ export function CartQuantity({ itemId, quantity }: { itemId: string, quantity: n
       <input
         ref={inputRef}
         id={`qty-${itemId}`}
-        className="field w-16 text-center"
+        className="field no-spin w-16 text-center"
         name="quantity"
         type="number"
         min={0}

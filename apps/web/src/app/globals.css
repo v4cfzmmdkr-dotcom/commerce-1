@@ -597,6 +597,13 @@ button:active:not(:disabled),
   appearance: none;
 }
 
+.no-spin { -moz-appearance: textfield; appearance: textfield; }
+.no-spin::-webkit-inner-spin-button,
+.no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .address-search-clear {
   position: absolute;
   top: 50%;
