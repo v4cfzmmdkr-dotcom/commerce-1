@@ -12,8 +12,9 @@ export function Footer({ settings }: { settings: StoreSettings }) {
               <img src={settings.logoUrl || "/brand/logo.png"} alt="" />
             </span>
           </Link>
-          <p className="text-sm font-semibold">{settings.name}</p>
-          <p className="mt-3 max-w-xs text-sm">{settings.tagline}</p>
+          <p className="text-sm">
+            <span className="font-semibold">© {new Date().getFullYear()} {settings.name}.</span> All rights reserved.
+          </p>
         </div>
         <nav className="flex flex-col text-sm" aria-label="Shop">
           <Link className="nav-link" href="/contact">Contact</Link>
