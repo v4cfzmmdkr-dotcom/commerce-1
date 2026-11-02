@@ -54,9 +54,8 @@ export function CheckoutForm({
   const available = useMemo(() => {
     return rates.filter((rate) => shippingRateApplies(rate, subtotalCents, SHIPPING_COUNTRY))
   }, [rates, subtotalCents])
-  const selected = available.length === 1
-    ? available[0]
-    : available.find((rate) => rate.id === rateId) ?? null
+  const cheapest = available.reduce<Rate | null>((best, rate) => (!best || rate.priceCents < best.priceCents ? rate : best), null)
+  const selected = available.find((rate) => rate.id === rateId) ?? cheapest
   const quote = quoteOrder({
     lines,
     shippingCents: selected?.priceCents ?? 0,
