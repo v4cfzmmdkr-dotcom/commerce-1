@@ -71,6 +71,8 @@ export function CheckoutForm({
         <label className="label">Full name<input className="field normal-case" name="name" required autoComplete="name" /></label>
         <label className="label">Email<input className="field normal-case" name="email" type="email" required autoComplete="email" /></label>
         <AddressFinder
+          value={line1}
+          onChange={setLine1}
           onSelect={(address) => {
             setLine1(address.line1)
             setLine2(address.line2)
@@ -79,7 +81,6 @@ export function CheckoutForm({
             setPostcode(address.postcode)
           }}
         />
-        <label className="label">Address<input className="field normal-case" name="line1" required autoComplete="address-line1" value={line1} onChange={(event) => setLine1(event.target.value)} /></label>
         <label className="label">Apartment, suite (optional)<input className="field normal-case" name="line2" autoComplete="address-line2" value={line2} onChange={(event) => setLine2(event.target.value)} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="label">City<input className="field normal-case" name="city" required autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)} /></label>

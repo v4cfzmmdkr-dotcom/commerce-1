@@ -5,7 +5,15 @@ import type { CircleMarker, Map as LeafletMap } from "leaflet"
 import type { ParsedAddress } from "@/lib/photon-address"
 import "leaflet/dist/leaflet.css"
 
-export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress) => void }) {
+export function AddressFinder({
+  value: query,
+  onChange: setQuery,
+  onSelect,
+}: {
+  value: string
+  onChange: (value: string) => void
+  onSelect: (address: ParsedAddress) => void
+}) {
   const mapEl = useRef<HTMLDivElement>(null)
   const mapRef = useRef<LeafletMap | null>(null)
   const markerRef = useRef<CircleMarker | null>(null)
@@ -13,17 +21,17 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
   const onSelectRef = useRef(onSelect)
   const skipSearch = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState("")
   const [results, setResults] = useState<ParsedAddress[]>([])
   const [status, setStatus] = useState("")
+  const queryRef = useRef(query)
   onSelectRef.current = onSelect
+  queryRef.current = query
 
   const apply = (address: ParsedAddress) => {
     const map = mapRef.current
     const L = leafletRef.current
+    skipSearch.current = address.line1 !== queryRef.current
     onSelectRef.current(address)
-    skipSearch.current = true
-    setQuery(address.label)
     setResults([])
     setStatus("")
     if (!map || !L) return
@@ -105,13 +113,14 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
   return (
     <div className="grid gap-2">
       <label className="label">
-        Find address
+        Address
         <span className="address-search">
           <input
             ref={inputRef}
             className="field normal-case"
-            type="search"
-            autoComplete="off"
+            name="line1"
+            required
+            autoComplete="address-line1"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -121,7 +130,7 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
             placeholder="Start typing a street address"
           />
           {query ? (
-            <button type="button" className="address-search-clear" aria-label="Clear address search" onClick={clear}>
+            <button type="button" className="address-search-clear" aria-label="Clear address" onClick={clear}>
               <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
@@ -151,7 +160,7 @@ export function AddressFinder({ onSelect }: { onSelect: (address: ParsedAddress)
           <button type="button" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>−</button>
         </div>
       </div>
-      <p className="text-xs">Search, or tap the map. Map data from OpenStreetMap.</p>
+      <p className="text-xs">Pick a suggestion or tap the map to fill in the rest. Map data from OpenStreetMap.</p>
       {status ? <p className="text-sm" role="status">{status}</p> : null}
     </div>
   )
