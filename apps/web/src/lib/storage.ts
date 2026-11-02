@@ -23,6 +23,10 @@ async function ensureBucket() {
       const base = process.env.SUPABASE_URL
       const key = process.env.SUPABASE_SERVICE_ROLE_KEY
       if (!base || !key) return
+      const existing = await fetch(`${base}/storage/v1/bucket/product-images`, {
+        headers: { Authorization: `Bearer ${key}`, apikey: key },
+      })
+      if (existing.ok) return
       const response = await fetch(`${base}/storage/v1/bucket`, {
         method: "POST",
         headers: {
