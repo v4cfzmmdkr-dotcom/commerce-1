@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type Stripe from "stripe"
 import { getSql } from "@/db/client"
-import { sendOrderAlert, sendOrderEmail } from "@/lib/email"
+import { sendOrderAlert, sendOrderEmail, sendRefundEmail } from "@/lib/email"
 import { merchandiseSubtotal, quoteOrder, type PricedLine } from "@/lib/pricing"
 import { nullableCents, selectShippingRate, type ShippingRate } from "@/lib/shipping"
 import { getSettings } from "@/lib/settings"
@@ -392,31 +392,108 @@ export async function recordRefund(charge: Stripe.Charge) {
     : charge.payment_intent?.id
   const refunded = charge.amount_refunded
   if (!paymentIntent || refunded <= 0) return
-  const paymentStatus = charge.refunded ? "refunded" : "partially_refunded"
-  // Events can arrive out of order; amount_refunded only grows, so never lower it.
+  // Events can be retried or arrive out of order, and amount_refunded only grows.
+  // Each attempt only moves refunded_cents on from the value it read, so exactly one
+  // request records each increase and emails the customer about it.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const order = await findRefundOrder(paymentIntent)
+    if (!order || refunded <= order.refundedCents) return
+    if (await claimRefund(order, refunded, charge.refunded)) {
+      await emailRefund(order, refunded, charge.refunded)
+      return
+    }
+  }
+  throw new Error("Could not record the refund")
+}
+
+type RefundOrder = {
+  id: string
+  number: string
+  publicToken: string
+  email: string
+  totalCents: number
+  currency: string
+  refundedCents: number
+}
+
+async function findRefundOrder(paymentIntent: string): Promise<RefundOrder | null> {
   if (dataApiEnabled()) {
-    const result = await supabaseMutate(
-      `orders?stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntent)}&refunded_cents=lte.${refunded}`,
+    const result = await supabaseRest<Array<{
+      id: string
+      number: string
+      public_token: string
+      email: string
+      total_cents: number
+      currency: string
+      refunded_cents: number
+    }>>(`orders?stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntent)}&select=id,number,public_token,email,total_cents,currency,refunded_cents&limit=1`)
+    if (!result) throw new Error("Could not load the refunded order")
+    const row = result.data[0]
+    return row ? {
+      id: row.id,
+      number: row.number,
+      publicToken: row.public_token,
+      email: row.email,
+      totalCents: Number(row.total_cents),
+      currency: row.currency,
+      refundedCents: Number(row.refunded_cents),
+    } : null
+  }
+  const sql = getSql()
+  const rows = await sql<RefundOrder[]>`
+    select id, number, public_token as "publicToken", email, total_cents as "totalCents", currency,
+      refunded_cents as "refundedCents"
+    from orders where stripe_payment_intent_id = ${paymentIntent} limit 1
+  `
+  return rows[0] ? { ...rows[0], totalCents: Number(rows[0].totalCents), refundedCents: Number(rows[0].refundedCents) } : null
+}
+
+async function claimRefund(order: RefundOrder, refunded: number, full: boolean) {
+  const paymentStatus = full ? "refunded" : "partially_refunded"
+  if (dataApiEnabled()) {
+    const result = await supabaseMutate<Array<{ id: string }>>(
+      `orders?id=eq.${order.id}&refunded_cents=eq.${order.refundedCents}`,
       "PATCH",
       {
         payment_status: paymentStatus,
         refunded_cents: refunded,
-        ...(charge.refunded ? { status: "refunded" } : {}),
+        ...(full ? { status: "refunded" } : {}),
         updated_at: new Date().toISOString(),
       },
     )
     if (!result) throw new Error("Could not record the refund")
-    return
+    return result.data.length > 0
   }
   const sql = getSql()
-  await sql`
+  const updated = await sql`
     update orders
     set payment_status = ${paymentStatus},
         refunded_cents = ${refunded},
-        status = case when ${charge.refunded} then 'refunded' else status end,
+        status = case when ${full} then 'refunded' else status end,
         updated_at = now()
-    where stripe_payment_intent_id = ${paymentIntent} and refunded_cents <= ${refunded}
+    where id = ${order.id} and refunded_cents = ${order.refundedCents}
+    returning id
   `
+  return updated.length > 0
+}
+
+// The refund is already recorded, so a failed email must not fail the webhook.
+async function emailRefund(order: RefundOrder, refunded: number, full: boolean) {
+  try {
+    const status = await sendRefundEmail({
+      number: order.number,
+      publicToken: order.publicToken,
+      email: order.email,
+      currency: order.currency,
+      totalCents: order.totalCents,
+      amountCents: refunded - order.refundedCents,
+      refundedCents: refunded,
+      full,
+    })
+    if (status !== "sent") console.error(`Refund email for ${order.number} ${status}`)
+  } catch (error) {
+    console.error(`Refund email for ${order.number} failed: ${error instanceof Error ? error.message : "unknown error"}`)
+  }
 }
 
 export type PublicOrder = {

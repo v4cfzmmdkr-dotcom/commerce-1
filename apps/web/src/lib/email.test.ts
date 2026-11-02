@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { sendOrderAlert, sendShippingEmail } from "@/lib/email"
+import { sendOrderAlert, sendRefundEmail, sendShippingEmail } from "@/lib/email"
 
 const order = {
   number: "NP-1001",
@@ -72,5 +72,48 @@ describe("sendOrderAlert", () => {
     expect(body.html).toContain("customer@example.com")
     expect(body.html).toContain("0400 000 000")
     expect(body.html).toContain("/admin/orders/order-1")
+  })
+})
+
+describe("sendRefundEmail", () => {
+  const refund = {
+    number: "NP-1001",
+    publicToken: "token123",
+    email: "customer@example.com",
+    currency: "aud",
+    totalCents: 3000,
+    amountCents: 1000,
+    refundedCents: 1000,
+    full: false,
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("RESEND_API_KEY", "test-key")
+    vi.stubEnv("ORDERS_FROM_EMAIL", "orders@example.com")
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it("tells the customer how much of a partial refund they have received", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }))
+    vi.stubGlobal("fetch", fetchMock)
+    await expect(sendRefundEmail(refund)).resolves.toBe("sent")
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.to).toEqual(["customer@example.com"])
+    expect(body.subject).toBe("Refund for order NP-1001")
+    expect(body.html).toContain("$10.00")
+    expect(body.html).toContain("Refunded so far: $10.00 of $30.00")
+  })
+
+  it("says when the order is fully refunded", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }))
+    vi.stubGlobal("fetch", fetchMock)
+    await sendRefundEmail({ ...refund, amountCents: 2000, refundedCents: 3000, full: true })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.html).toContain("$20.00")
+    expect(body.html).toContain("fully refunded")
   })
 })

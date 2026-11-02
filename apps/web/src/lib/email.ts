@@ -97,6 +97,33 @@ export async function sendOrderAlert(to: string, order: EmailOrder & { id: strin
   )
 }
 
+type RefundEmailOrder = {
+  number: string
+  publicToken: string
+  email: string
+  currency: string
+  totalCents: number
+  amountCents: number
+  refundedCents: number
+  full: boolean
+}
+
+export async function sendRefundEmail(order: RefundEmailOrder) {
+  const link = `${siteUrl()}/orders/${order.publicToken}`
+  const amount = formatMoney(order.amountCents, order.currency)
+  const summary = order.full
+    ? "<p>Your order has now been fully refunded.</p>"
+    : `<p>Refunded so far: ${formatMoney(order.refundedCents, order.currency)} of ${formatMoney(order.totalCents, order.currency)}.</p>`
+  return sendEmail(
+    order.email,
+    `Refund for order ${order.number}`,
+    `<p>We have refunded <strong>${amount}</strong> for your order <strong>${escapeHtml(order.number)}</strong> to your original payment method.</p>
+      ${summary}
+      <p>Refunds usually appear on your statement within 5 to 10 business days, depending on your bank.</p>
+      <p><a href="${link}">View order status</a></p>`,
+  )
+}
+
 export async function sendShippingEmail(order: ShippingEmailOrder) {
   const link = `${siteUrl()}/orders/${order.publicToken}`
   const track = trackingUrl(order.trackingCarrier, order.trackingNumber)
