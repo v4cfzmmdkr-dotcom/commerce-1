@@ -4,7 +4,7 @@
 export const STANDARD_SHIPPING_CENTS = 995
 export const FREE_SHIPPING_MIN_CENTS = 2500
 export const STANDARD_SHIPPING_MAX_CENTS = FREE_SHIPPING_MIN_CENTS - 1
-export const SHIPPING_OFFER_NOTE = "$9.95 standard, free when the order is $25 or more. Express delivery is $14.95 on any order."
+export const SHIPPING_OFFER_NOTE = "Sent with Australia Post. $9.95 standard, free when the order is $25 or more. Express delivery is $14.95 on any order."
 export const SHIPPING_COUNTRY = "AU"
 
 export type ShippingRate = {

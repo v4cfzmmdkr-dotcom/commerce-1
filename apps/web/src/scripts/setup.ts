@@ -21,13 +21,13 @@ async function setup() {
         'default',
         'Niche Parts Australia',
         'Australian made parts',
-        'Dispatched within 48 hours.',
+        'Dispatched within 48 hours with Australia Post.',
         'aud',
         1000,
         true,
         ${sql.json(defaultTheme)},
         ${"<p>Niche Parts Australia makes small-run parts and accessories in Australia, including power-tool fittings, mounts, jigs, and inserts.</p>"},
-        ${"<p>Delivery options and prices are confirmed at checkout. Paid orders are dispatched within 48 hours.</p>"}
+        ${"<p>All orders are sent with Australia Post. Delivery options and prices are confirmed at checkout. Paid orders are dispatched within 48 hours, and you will get a tracking number by email.</p>"}
       )
     `
   }
