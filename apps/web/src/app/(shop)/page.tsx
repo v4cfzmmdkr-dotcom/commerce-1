@@ -1,6 +1,8 @@
+import { BrandCarousel } from "@/components/brand-carousel"
 import { ProductGrid } from "@/components/product-grid"
 import { SocialLinks } from "@/components/social-links"
-import { groupHomeCollections, listFeaturedProducts, listHomeCollections, type HomeCollection } from "@/lib/catalog"
+import { brandLogo, type BrandCount } from "@/lib/brands"
+import { brandOptions, groupHomeCollections, listFeaturedProducts, listHomeCollections, type HomeCollection } from "@/lib/catalog"
 import { getSettings } from "@/lib/settings"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -31,13 +33,31 @@ function CollectionTile({
   )
 }
 
+function BrandTile({ brand }: { brand: BrandCount }) {
+  const logo = brandLogo(brand.slug)
+  return (
+    <Link href={`/search?brand=${brand.slug}`} className="collection-tile no-underline">
+      <div className="product-media brand-tile-media">
+        {logo ? (
+          <img src={logo} alt={`${brand.name} logo`} loading="lazy" decoding="async" />
+        ) : (
+          <span className="brand-tile-wordmark">{brand.name}</span>
+        )}
+      </div>
+      <p className="mt-3 text-sm font-bold">{brand.name}</p>
+      <p className="text-xs opacity-60">{brand.count} {brand.count === 1 ? "part" : "parts"}</p>
+    </Link>
+  )
+}
+
 export default async function HomePage() {
-  const [settings, collections, products] = await Promise.all([
+  const [settings, collections, products, brandCounts] = await Promise.all([
     getSettings(),
     listHomeCollections(),
     listFeaturedProducts(),
+    brandOptions(),
   ])
-  const collectionGroups = groupHomeCollections(collections)
+  const collectionGroups = groupHomeCollections(collections, brandCounts)
   return (
     <>
       <section className="hero relative isolate overflow-hidden">
@@ -69,15 +89,24 @@ export default async function HomePage() {
         <section key={group.id} className="wrap-wide collection-group">
           <h2 className="collection-group-title">{group.heading}</h2>
           <p className="mt-1 mb-6 max-w-xl text-sm opacity-70">{group.intro}</p>
-          <div className={group.layout === "mosaic" ? "collection-mosaic" : "grid grid-cols-2 gap-[var(--gap)] md:grid-cols-4 xl:grid-cols-6"}>
-            {group.collections.map((collection, index) => (
-              <CollectionTile
-                key={collection.handle}
-                collection={collection}
-                wide={group.layout === "mosaic" && index < 2}
-              />
-            ))}
-          </div>
+          {group.layout === "brands" ? (
+            <BrandCarousel label={group.heading}>
+              {group.collections.map((collection) => (
+                <CollectionTile key={collection.handle} collection={collection} />
+              ))}
+              {group.brands?.map((brand) => <BrandTile key={brand.slug} brand={brand} />)}
+            </BrandCarousel>
+          ) : (
+            <div className={group.layout === "mosaic" ? "collection-mosaic" : "grid grid-cols-2 gap-[var(--gap)] md:grid-cols-4 xl:grid-cols-6"}>
+              {group.collections.map((collection, index) => (
+                <CollectionTile
+                  key={collection.handle}
+                  collection={collection}
+                  wide={group.layout === "mosaic" && index < 2}
+                />
+              ))}
+            </div>
+          )}
         </section>
       ))}
       <section className="wrap-wide py-[var(--section)]">

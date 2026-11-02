@@ -1362,6 +1362,182 @@ label:has(> input[type="radio"]) {
   }
 }
 
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.brand-carousel {
+  position: relative;
+  container-type: inline-size;
+}
+
+.brand-carousel > * {
+  --tile: calc((100cqw - 2 * var(--gap)) / 2.4);
+}
+
+@media (min-width: 768px) {
+  .brand-carousel > * { --tile: calc((100cqw - 3 * var(--gap)) / 4); }
+}
+
+@media (min-width: 1280px) {
+  .brand-carousel > * { --tile: calc((100cqw - 5 * var(--gap)) / 6); }
+}
+
+.brand-carousel-track {
+  --fade-start: 3rem;
+  --fade-end: 3rem;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--tile);
+  gap: var(--gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: var(--radius);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+  transition: --fade-start 0.35s ease, --fade-end 0.35s ease;
+}
+
+.brand-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-carousel-track:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 4px;
+}
+
+.brand-carousel[data-start] .brand-carousel-track { --fade-start: 0px; }
+.brand-carousel[data-end] .brand-carousel-track { --fade-end: 0px; }
+
+.brand-carousel .collection-tile {
+  display: block;
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--press-out);
+}
+
+.brand-carousel .collection-tile:active {
+  transform: scale(0.96);
+  transition: transform var(--press-in);
+}
+
+.brand-carousel .product-media {
+  position: relative;
+}
+
+.brand-carousel .product-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--fg) 14%, transparent);
+  pointer-events: none;
+}
+
+.brand-tile-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #111;
+}
+
+.brand-carousel-progress {
+  --progress: 0;
+  position: relative;
+  width: min(12rem, 40%);
+  height: 4px;
+  margin: 1.25rem auto 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  overflow: hidden;
+}
+
+.brand-carousel-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--progress) * 100%);
+  min-width: 4px;
+  border-radius: inherit;
+  background: var(--fg);
+  transition: width 0.12s ease-out;
+}
+
+.brand-carousel[data-start][data-end] .brand-carousel-progress {
+  visibility: hidden;
+}
+
+.brand-tile-wordmark {
+  padding: 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+
+.brand-carousel-nav {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .brand-carousel-nav {
+    position: absolute;
+    top: calc(var(--tile) / 2);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 999px;
+    color: var(--fg);
+    cursor: pointer;
+    translate: 0 -50%;
+    opacity: 0;
+    scale: 0.85;
+    transition:
+      opacity 0.25s ease,
+      scale 0.5s cubic-bezier(0.32, 1.25, 0.55, 1),
+      transform var(--press-out),
+      box-shadow 0.35s ease;
+  }
+
+  .brand-carousel-nav svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .brand-carousel-prev { left: 0.75rem; }
+  .brand-carousel-next { right: 0.75rem; }
+
+  .brand-carousel:hover .brand-carousel-nav:not(:disabled),
+  .brand-carousel:focus-within .brand-carousel-nav:not(:disabled) {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .brand-carousel-nav:disabled {
+    pointer-events: none;
+  }
+}
+
 .product-gallery {
   display: grid;
   gap: 0.75rem;

@@ -1,5 +1,5 @@
 import { getSql, databaseConfigured, textArray } from "@/db/client"
-import { brandPattern, countBrands, findBrand } from "@/lib/brands"
+import { brandPattern, countBrands, findBrand, type BrandCount } from "@/lib/brands"
 import { isPurchasable } from "@/lib/money"
 import { keepBlackWhiteColours } from "@/lib/product-colours"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
@@ -330,6 +330,7 @@ export type HomeCollectionGroup = {
   intro: string
   layout: "brands" | "mosaic" | "grid"
   collections: HomeCollection[]
+  brands?: BrandCount[]
 }
 
 function collectionKey(collection: { handle: string, title: string }) {
@@ -363,8 +364,11 @@ function fitRank(collection: HomeCollection) {
   return index === -1 ? fitOrder.length : index
 }
 
-export function groupHomeCollections(collections: HomeCollection[]): HomeCollectionGroup[] {
+export function groupHomeCollections(collections: HomeCollection[], brandCounts: BrandCount[] = []): HomeCollectionGroup[] {
   const brands = collections.filter(isBrandCollection).sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
+  const moreBrands = brandCounts
+    .filter((brand) => !brands.some((collection) => collectionKey(collection).includes(brand.slug)))
+    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
   const fit = collections.filter((collection) => !isBrandCollection(collection) && isFitCollection(collection))
     .sort((left, right) => fitRank(left) - fitRank(right) || left.title.localeCompare(right.title))
   const used = new Set([...brands, ...fit].map((collection) => collection.handle))
@@ -373,13 +377,14 @@ export function groupHomeCollections(collections: HomeCollection[]): HomeCollect
     .sort((left, right) => left.title.localeCompare(right.title))
 
   const groups: HomeCollectionGroup[] = []
-  if (brands.length) {
+  if (brands.length || moreBrands.length) {
     groups.push({
       id: "brands",
       heading: "Shop by brand",
       intro: "Parts for the tools already in the shed.",
       layout: "brands",
       collections: brands,
+      brands: moreBrands,
     })
   }
   if (fit.length) {

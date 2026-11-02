@@ -49,6 +49,20 @@ export const brands: Brand[] = [
   { slug: "yamaha", name: "Yamaha", terms: ["yamaha"] },
 ]
 
+export type BrandCount = { slug: string, name: string, count: number }
+
+// Square logo tiles in public/brand-logos, used by the home page brand carousel.
+const brandLogoSlugs = new Set([
+  "asus", "aurora", "beko", "black-decker", "bmw", "bonsaii", "bosch", "citadel", "delta", "dyson",
+  "fellowes", "festool", "ford", "google", "honda", "ikea", "kawasaki", "kobalt", "lego", "leitz",
+  "mercedes", "metabo", "nespresso", "nintendo", "ninja", "playstation", "porsche", "porter-cable", "revox", "rexel",
+  "smeg", "sony", "stanley", "starlink", "suzuki", "teac", "technics", "ubiquiti", "xbox", "yamaha",
+])
+
+export function brandLogo(slug: string) {
+  return brandLogoSlugs.has(slug) ? `/brand-logos/${slug}.webp` : null
+}
+
 export function findBrand(slug: string | undefined) {
   return slug ? brands.find((brand) => brand.slug === slug) : undefined
 }
@@ -62,7 +76,7 @@ function brandRegex(brand: Brand) {
   return new RegExp(`(?<![\\p{L}\\p{N}])(${brand.terms.join("|")})(?![\\p{L}\\p{N}])`, "iu")
 }
 
-export function countBrands(titles: string[]) {
+export function countBrands(titles: string[]): BrandCount[] {
   return brands
     .map((brand) => {
       const regex = brandRegex(brand)

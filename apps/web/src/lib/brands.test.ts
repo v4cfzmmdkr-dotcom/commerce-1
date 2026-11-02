@@ -1,5 +1,19 @@
+import { existsSync } from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { countBrands } from "@/lib/brands"
+import { brandLogo, brands, countBrands } from "@/lib/brands"
+
+describe("brandLogo", () => {
+  it("points every logo at a file in public", () => {
+    const logos = brands.map((brand) => brandLogo(brand.slug)).filter((logo): logo is string => Boolean(logo))
+    expect(logos.length).toBeGreaterThan(30)
+    for (const logo of logos) expect(existsSync(path.join(process.cwd(), "public", logo))).toBe(true)
+  })
+
+  it("returns null for brands without a logo", () => {
+    expect(brandLogo("breville")).toBeNull()
+  })
+})
 
 describe("countBrands", () => {
   it("counts titles that name a brand or one of its product lines", () => {
