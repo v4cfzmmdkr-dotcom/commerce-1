@@ -19,6 +19,14 @@ export default async function SettingsPage({
         New order alerts
         <input className="field normal-case" type="email" name="orderAlertEmail" defaultValue={settings.orderAlertEmail} placeholder="Leave empty to turn off" />
       </label>
+      <label className="label">
+        ABN
+        <input className="field normal-case" name="abn" inputMode="numeric" defaultValue={settings.abn} placeholder="Only once registered for GST" />
+      </label>
+      <label className="label">
+        Business name on invoices
+        <input className="field normal-case" name="invoiceName" defaultValue={settings.invoiceName} placeholder="Leave empty to use the store name" />
+      </label>
       <label className="label">GST percent<input className="field normal-case" name="gst" defaultValue={(settings.gstRateBps / 100).toFixed(2)} /></label>
       <label className="flex items-center gap-2 text-sm normal-case">
         <input type="checkbox" name="pricesIncludeTax" defaultChecked={settings.pricesIncludeTax} />

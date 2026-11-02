@@ -12,7 +12,9 @@ import { SHIPPING_COUNTRY } from "@/lib/shipping"
 import { deleteObject, extensionFor, saveObject } from "@/lib/storage"
 import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
+import { receiptSeller } from "@/lib/orders"
 import { slugify } from "@/lib/slug"
+import { normaliseAbn } from "@/lib/tax-invoice"
 import type { Address } from "@/lib/types"
 
 function text(formData: FormData, key: string) {
@@ -110,6 +112,8 @@ export async function saveSettings(formData: FormData) {
   if (orderAlertEmail && (orderAlertEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderAlertEmail))) {
     throw new Error("Enter a valid email for new order alerts")
   }
+  const abn = normaliseAbn(text(formData, "abn"))
+  if (abn === null) throw new Error("Enter a valid 11-digit ABN")
   const sql = getSql()
   await sql`
     update store_settings set
@@ -118,6 +122,8 @@ export async function saveSettings(formData: FormData) {
       announcement = ${text(formData, "announcement")},
       support_email = ${text(formData, "supportEmail")},
       order_alert_email = ${orderAlertEmail},
+      abn = ${abn},
+      invoice_name = ${text(formData, "invoiceName")},
       gst_rate_bps = ${Math.round(gst * 100)},
       prices_include_tax = ${formData.get("pricesIncludeTax") === "on"},
       about_html = ${cleanHtml(String(formData.get("aboutHtml") || ""))},
@@ -516,9 +522,13 @@ export async function resendOrderEmail(formData: FormData) {
     currency: string
     shippingName: string
     shippingAddress: Address
+    shippingCents: number
+    taxCents: number
+    paidAt: Date | null
   }>>`
     select number, public_token as "publicToken", email, total_cents as "totalCents", currency,
-      shipping_name as "shippingName", shipping_address as "shippingAddress"
+      shipping_name as "shippingName", shipping_address as "shippingAddress",
+      shipping_cents as "shippingCents", tax_cents as "taxCents", paid_at as "paidAt"
     from orders where id = ${id}
   `
   const order = rows[0]
@@ -529,7 +539,10 @@ export async function resendOrderEmail(formData: FormData) {
   `
   const emailStatus = await sendOrderEmail({
     ...order,
+    ...await receiptSeller(),
     totalCents: Number(order.totalCents),
+    shippingCents: Number(order.shippingCents),
+    taxCents: Number(order.taxCents),
     items: items.map((item) => ({ ...item, quantity: Number(item.quantity), unitPriceCents: Number(item.unitPriceCents) })),
   })
   await sql`update orders set email_status = ${emailStatus} where id = ${id}`

@@ -8,6 +8,8 @@ export type StoreSettings = {
   announcement: string
   supportEmail: string
   orderAlertEmail: string
+  abn: string
+  invoiceName: string
   currency: string
   gstRateBps: number
   pricesIncludeTax: boolean
@@ -26,6 +28,8 @@ export function defaultSettings(): StoreSettings {
     announcement: "Dispatched within 48 hours.",
     supportEmail: "",
     orderAlertEmail: "",
+    abn: "",
+    invoiceName: "",
     currency: "aud",
     gstRateBps: 1000,
     pricesIncludeTax: true,
@@ -47,6 +51,8 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
     announcement: String(row.announcement || ""),
     supportEmail: String(row.support_email || ""),
     orderAlertEmail: String(row.order_alert_email || ""),
+    abn: String(row.abn || ""),
+    invoiceName: String(row.invoice_name || ""),
     currency: String(row.currency || "aud"),
     gstRateBps: Number(row.gst_rate_bps ?? 1000),
     pricesIncludeTax: Boolean(row.prices_include_tax),

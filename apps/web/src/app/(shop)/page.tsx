@@ -57,7 +57,7 @@ export default async function HomePage() {
         ) : null}
         {settings.bannerUrl ? <div className="hero-scrim absolute inset-0" /> : null}
         <div className="wrap-wide relative py-[var(--section)]">
-          <p className="hero-kicker">{settings.name}</p>
+          <p className="hero-kicker">{settings.invoiceName || settings.name}</p>
           <h1 className="hero-title">{settings.tagline}</h1>
           <p className="hero-lede">{settings.announcement}</p>
         </div>

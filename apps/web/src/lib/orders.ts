@@ -206,6 +206,8 @@ type OrderRow = {
   currency: string
   shippingName: string
   shippingAddress: Address
+  shippingCents: number
+  taxCents: number
   cartId: string | null
 }
 
@@ -226,8 +228,10 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       currency: string
       shipping_name: string
       shipping_address: Address
+      shipping_cents: number
+      tax_cents: number
       cart_id: string | null
-    }>>(`orders?id=eq.${orderId}&select=id,number,public_token,email,status,payment_status,fulfillment_status,total_cents,currency,shipping_name,shipping_address,cart_id`)
+    }>>(`orders?id=eq.${orderId}&select=id,number,public_token,email,status,payment_status,fulfillment_status,total_cents,currency,shipping_name,shipping_address,shipping_cents,tax_cents,cart_id`)
     const order = result?.data[0]
     if (!order) throw new Error("Order not found")
     if (session.metadata?.orderId !== order.id) throw new Error("Payment does not match this order")
@@ -279,7 +283,13 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
         unitPriceCents: Number(item.unit_price_cents),
       })),
     }
-    const emailStatus = await sendOrderEmail(emailOrder)
+    const emailStatus = await sendOrderEmail({
+      ...emailOrder,
+      ...await receiptSeller(),
+      shippingCents: Number(order.shipping_cents),
+      taxCents: Number(order.tax_cents),
+      paidAt: new Date(),
+    })
     await supabaseMutate(`orders?id=eq.${order.id}`, "PATCH", { email_status: emailStatus })
     await alertOwner({ ...emailOrder, id: order.id })
     return { already: false, paid: true }
@@ -288,7 +298,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
   const rows = await sql<OrderRow[]>`
     select id, number, public_token as "publicToken", email, status, payment_status as "paymentStatus",
       fulfillment_status as "fulfillmentStatus", total_cents as "totalCents", currency, shipping_name as "shippingName",
-      shipping_address as "shippingAddress", cart_id as "cartId"
+      shipping_address as "shippingAddress", shipping_cents as "shippingCents", tax_cents as "taxCents", cart_id as "cartId"
     from orders where id = ${orderId}
   `
   const order = rows[0]
@@ -351,10 +361,21 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       unitPriceCents: Number(item.unitPriceCents),
     })),
   }
-  const emailStatus = await sendOrderEmail(emailOrder)
+  const emailStatus = await sendOrderEmail({
+    ...emailOrder,
+    ...await receiptSeller(),
+    shippingCents: Number(order.shippingCents),
+    taxCents: Number(order.taxCents),
+    paidAt: new Date(),
+  })
   await sql`update orders set email_status = ${emailStatus} where id = ${order.id}`
   await alertOwner({ ...emailOrder, id: order.id })
   return { already: false, paid: true }
+}
+
+export async function receiptSeller() {
+  const settings = await getSettings()
+  return { sellerName: settings.invoiceName || settings.name, abn: settings.abn }
 }
 
 // A failed alert must not fail the payment confirmation.
@@ -510,6 +531,9 @@ export type PublicOrder = {
   trackingCarrier: string
   trackingNumber: string
   inventoryWarning: boolean
+  shippingCents: number
+  taxCents: number
+  paidAt: string | null
 }
 
 export async function getOrderByPublicToken(token: string) {
@@ -528,7 +552,10 @@ export async function getOrderByPublicToken(token: string) {
       tracking_carrier: string | null
       tracking_number: string | null
       inventory_warning: boolean
-    }>>(`orders?public_token=eq.${encodeURIComponent(token)}&select=id,number,email,status,payment_status,fulfillment_status,total_cents,currency,shipping_name,shipping_address,tracking_carrier,tracking_number,inventory_warning`)
+      shipping_cents: number
+      tax_cents: number
+      paid_at: string | null
+    }>>(`orders?public_token=eq.${encodeURIComponent(token)}&select=id,number,email,status,payment_status,fulfillment_status,total_cents,currency,shipping_name,shipping_address,tracking_carrier,tracking_number,inventory_warning,shipping_cents,tax_cents,paid_at`)
     const row = result?.data[0]
     if (!row) return null
     return {
@@ -545,13 +572,17 @@ export async function getOrderByPublicToken(token: string) {
       trackingCarrier: row.tracking_carrier ?? "",
       trackingNumber: row.tracking_number ?? "",
       inventoryWarning: Boolean(row.inventory_warning),
+      shippingCents: Number(row.shipping_cents),
+      taxCents: Number(row.tax_cents),
+      paidAt: row.paid_at,
     } satisfies PublicOrder
   }
   const sql = getSql()
   const rows = await sql<PublicOrder[]>`
     select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
       total_cents as "totalCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
-      tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber", inventory_warning as "inventoryWarning"
+      tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber", inventory_warning as "inventoryWarning",
+      shipping_cents as "shippingCents", tax_cents as "taxCents", paid_at::text as "paidAt"
     from orders where public_token = ${token}
   `
   const order = rows[0]
@@ -559,6 +590,8 @@ export async function getOrderByPublicToken(token: string) {
   return {
     ...order,
     totalCents: Number(order.totalCents),
+    shippingCents: Number(order.shippingCents),
+    taxCents: Number(order.taxCents),
     inventoryWarning: Boolean(order.inventoryWarning),
   }
 }

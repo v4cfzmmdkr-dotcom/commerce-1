@@ -1,5 +1,6 @@
 import { formatMoney } from "@/lib/money"
 import { siteUrl } from "@/lib/site"
+import { invoiceDate } from "@/lib/tax-invoice"
 import { trackingUrl } from "@/lib/tracking"
 import type { Address } from "@/lib/types"
 
@@ -62,19 +63,34 @@ function addressHtml(address: Address) {
   ].filter(Boolean).map(escapeHtml).join("<br>")
 }
 
-export async function sendOrderEmail(order: EmailOrder) {
+type ReceiptOrder = EmailOrder & {
+  shippingCents: number
+  taxCents: number
+  paidAt: string | Date | null
+  sellerName: string
+  abn: string
+}
+
+export async function sendOrderEmail(order: ReceiptOrder) {
   const link = `${siteUrl()}/orders/${order.publicToken}`
+  const money = (cents: number) => formatMoney(cents, order.currency)
   const lines = order.items
-    .map((item) => `<li>${item.quantity} × ${itemName(item)} — ${formatMoney(item.unitPriceCents * item.quantity, order.currency)}</li>`)
+    .map((item) => `<li>${item.quantity} × ${itemName(item)} — ${money(item.unitPriceCents * item.quantity)}</li>`)
     .join("")
+  const invoice = order.abn
+    ? `<h2 style="margin:0 0 4px">Tax invoice</h2>
+      <p style="margin:0 0 16px">${escapeHtml(order.sellerName)} · ABN ${escapeHtml(order.abn)}<br>
+      Invoice ${escapeHtml(order.number)} · ${invoiceDate(order.paidAt)}</p>`
+    : ""
   return sendEmail(
     order.email,
     `Order ${order.number} confirmed`,
-    `<p>Thanks for your order. We have received payment for <strong>${escapeHtml(order.number)}</strong>.</p>
-      <p>Total: ${formatMoney(order.totalCents, order.currency)}</p>
-      <p>Delivery: ${escapeHtml(order.shippingName)}</p>
-      <p>${addressHtml(order.shippingAddress)}</p>
+    `${invoice}<p>Thanks for your order. We have received payment for <strong>${escapeHtml(order.number)}</strong>.</p>
       <ul>${lines}</ul>
+      <p>Shipping (${escapeHtml(order.shippingName)}): ${money(order.shippingCents)}<br>
+      <strong>Total: ${money(order.totalCents)}</strong><br>
+      Includes GST: ${money(order.taxCents)}</p>
+      <p>Delivering to:<br>${addressHtml(order.shippingAddress)}</p>
       <p><a href="${link}">View order status</a></p>`,
   )
 }
