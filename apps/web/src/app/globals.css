@@ -405,12 +405,14 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   color: var(--fg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.25s var(--search-spring);
+  transition: transform var(--press-out), background-color 0.3s ease;
 }
 
 .nav-search-button:active,
 .nav-search-close:active {
   transform: scale(0.9);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  transition: transform var(--press-in), background-color var(--press-in);
 }
 
 .nav-search-button svg {
@@ -442,13 +444,13 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .nav-search-close {
   opacity: 0;
-  transition: opacity 0.2s ease, transform 0.25s var(--search-spring);
+  transition: opacity 0.2s ease, transform var(--press-out), background-color 0.3s ease;
 }
 
 .collection-nav[data-search-open] .nav-search-input,
 .collection-nav[data-search-open] .nav-search-close {
   opacity: 1;
-  transition-delay: 0.15s;
+  transition-delay: 0.15s, 0s, 0s;
 }
 
 .nav-search:has(.nav-search-button:focus-visible, .nav-search-close:focus-visible) {
@@ -507,7 +509,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform var(--press-out);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -518,6 +520,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .collection-nav-link:active {
   transform: scale(0.95);
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform var(--press-in);
 }
 
 .collection-nav-link[aria-current="page"] {
@@ -751,13 +754,29 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   cursor: not-allowed;
 }
 
+:root {
+  --press-in: 0.1s cubic-bezier(0.3, 0, 0.5, 1);
+  --press-out: 0.5s cubic-bezier(0.32, 1.4, 0.55, 1);
+  --press-shade: color-mix(in srgb, currentColor 12%, transparent);
+}
+
 button,
 .btn,
 .btn-ghost,
 .hero-social a,
 .contact-channel,
-.address-map-zoom button {
-  transition: transform 0.12s ease;
+.address-map-zoom button,
+.header-cart,
+.site-header-brand,
+.catalog-filters-toggle,
+.admin-tab,
+.admin-segment {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--press-out),
+    box-shadow 0.35s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 button:active:not(:disabled),
@@ -765,8 +784,26 @@ button:active:not(:disabled),
 .btn-ghost:active:not(:disabled),
 .hero-social a:active,
 .contact-channel:active,
-.address-map-zoom button:active {
-  transform: scale(0.96);
+.address-map-zoom button:active,
+.header-cart:active,
+.site-header-brand:active,
+.catalog-filters-toggle:active,
+.admin-tab:active,
+.admin-segment:active {
+  transform: scale(0.95);
+  transition:
+    transform var(--press-in),
+    box-shadow var(--press-in),
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn:active:not(:disabled):not(.glass),
+.btn-ghost:active:not(:disabled):not(.glass),
+.admin-tab:active,
+.admin-segment:active {
+  background-image: linear-gradient(var(--press-shade), var(--press-shade));
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.18);
 }
 
 .field,
@@ -1432,7 +1469,22 @@ a:hover .product-media img {
     inset 0 1px 0.5px var(--glass-edge),
     inset 0 -1px 1px var(--glass-shade),
     0 1px 2px rgb(0 0 0 / 0.04),
-    0 8px 28px var(--glass-drop);
+    0 8px 28px var(--glass-drop),
+    var(--glass-press, 0 0 transparent);
+}
+
+.glass:is(a, button, summary):active {
+  --glass-sheen: rgb(255 255 255 / 0.75);
+  --glass-drop: rgb(0 0 0 / 0.04);
+  --glass-press: inset 0 1px 8px rgb(0 0 0 / 0.1);
+  transform: scale(0.94);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass:is(a, button, summary):active {
+    --glass-sheen: rgb(255 255 255 / 0.2);
+    --glass-press: inset 0 1px 8px rgb(0 0 0 / 0.4);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
