@@ -34,6 +34,8 @@ async function ensureBucket() {
       })
       if (!response.ok && response.status !== 409) {
         const detail = await response.text()
+        // Supabase reports an existing bucket as HTTP 400 with a 409 inside the body.
+        if (/BucketAlreadyExists|"statusCode":"409"/.test(detail)) return
         throw new Error(`Could not create the image bucket (${response.status}): ${detail.slice(0, 180)}`)
       }
     })().catch((error) => {
