@@ -335,11 +335,12 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   flex: 0 0 auto;
   width: 0;
   height: 1px;
-  transition: width 0.55s cubic-bezier(0.32, 1.25, 0.55, 1);
+  transition: width 0.55s cubic-bezier(0.32, 1.25, 0.55, 1) 0.32s;
 }
 
 .collection-nav[data-search="in"] .nav-search-slot {
   width: calc(51px + 0.5rem);
+  transition-delay: 0s;
 }
 
 .nav-search {
@@ -357,7 +358,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   opacity: 0;
   visibility: hidden;
   transform-origin: 30% 50%;
-  transition: width 0.55s var(--search-spring), visibility 0s linear 0.45s;
+  transition: width 0.55s var(--search-spring), visibility 0s linear 0.7s;
 }
 
 .collection-nav[data-search="in"] .nav-search {
@@ -368,7 +369,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .collection-nav[data-search="out"] .nav-search {
-  animation: nav-search-out 0.4s cubic-bezier(0.4, 0, 0.6, 1) both;
+  animation: nav-search-out 0.7s cubic-bezier(0.45, 0, 0.55, 1) both;
 }
 
 .collection-nav[data-search-open] .nav-search {
@@ -385,7 +386,9 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 @keyframes nav-search-out {
   0% { opacity: 1; filter: blur(0); transform: none; }
-  35% { opacity: 1; transform: scale(1.06, 0.94); }
+  18% { transform: scale(1.02, 0.98); }
+  35% { transform: translateX(0) scale(0.95, 1.05); }
+  55% { opacity: 1; filter: blur(0); transform: translateX(2px) scale(1.12, 0.9); }
   100% { opacity: 0; filter: blur(8px); transform: translateX(-24px) scale(0.35); }
 }
 
