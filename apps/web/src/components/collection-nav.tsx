@@ -67,9 +67,9 @@ export function CollectionNav({ links }: { links: Array<{ href: string, label: s
         form.style.setProperty("--from-w", `${Math.min(from.width, to.width)}px`)
         form.style.setProperty("--from-h", `${from.height}px`)
       }
-      const hidden = !entry.isIntersecting && entry.boundingClientRect.top < 0
+      const hidden = entry.intersectionRatio < 0.99 && entry.boundingClientRect.top < 0
       setSearch((current) => (hidden ? "in" : current ? "out" : null))
-    })
+    }, { threshold: [0, 0.99] })
     observer.observe(headerSearch)
     return () => observer.disconnect()
   }, [])

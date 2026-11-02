@@ -338,16 +338,40 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   transform: scale(0.97);
 }
 
+.collection-nav[data-search="in"] .collection-nav-glass {
+  transform-origin: left center;
+  animation: nav-capsule-in 0.85s ease-out;
+}
+
+.collection-nav[data-search="out"] .collection-nav-glass {
+  transform-origin: left center;
+  animation: nav-capsule-out 0.9s ease-out;
+}
+
+@keyframes nav-capsule-in {
+  0%, 52% { transform: none; }
+  64% { transform: scaleX(0.992); }
+  80% { transform: scaleX(1.002); }
+  100% { transform: none; }
+}
+
+@keyframes nav-capsule-out {
+  0%, 55% { transform: none; }
+  72% { transform: scaleX(1.004); }
+  86% { transform: scaleX(0.999); }
+  100% { transform: none; }
+}
+
 .nav-search-slot {
   flex: 0 0 auto;
   width: 0;
   height: 1px;
-  transition: width 0.55s cubic-bezier(0.32, 1.25, 0.55, 1) 0.32s;
+  transition: width 0.5s cubic-bezier(0.32, 1.2, 0.55, 1) 0.36s;
 }
 
 .collection-nav[data-search="in"] .nav-search-slot {
   width: calc(51px + 0.5rem);
-  transition-delay: 0s;
+  transition: width 0.42s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
 .nav-search {
@@ -371,15 +395,15 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   opacity: 1;
   visibility: visible;
   transition: width 0.55s var(--search-spring), visibility 0s;
-  animation: nav-search-in 0.75s var(--search-spring) backwards;
+  animation: nav-search-in 0.85s linear backwards;
 }
 
 .collection-nav[data-search="out"] .nav-search {
-  animation: nav-search-out 0.7s cubic-bezier(0.45, 0, 0.55, 1) both;
+  animation: nav-search-out 0.7s linear both;
 }
 
 .collection-nav[data-search="in"] .nav-search-button {
-  animation: nav-search-icon-in 0.75s ease backwards;
+  animation: nav-search-icon-in 0.85s ease backwards;
 }
 
 .collection-nav[data-search="out"] .nav-search-button {
@@ -397,19 +421,30 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
     opacity: 0;
     filter: blur(4px);
     transform: translate(var(--from-x, 0), var(--from-y, -48px));
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
   }
-  15% { opacity: 1; filter: blur(0); }
-  55% { width: 51px; height: 100%; transform: translateY(3px) scale(1.08, 0.92); }
-  75% { transform: scale(0.97, 1.03); }
-  90% { transform: scale(1.01, 0.99); }
+  12% { opacity: 1; filter: blur(0); }
+  40% {
+    width: 51px;
+    height: 100%;
+    transform: translateY(var(--from-y, -48px)) scale(0.96, 1.04);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0.6);
+  }
+  60% { transform: translateY(3px) scale(1.1, 0.9); animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1); }
+  76% { transform: translateY(-1px) scale(0.97, 1.03); animation-timing-function: ease-in-out; }
+  89% { transform: scale(1.01, 0.99); animation-timing-function: ease-in-out; }
   100% { width: 51px; height: 100%; opacity: 1; filter: blur(0); transform: none; }
 }
 
 @keyframes nav-search-out {
-  0% { width: 51px; height: 100%; opacity: 1; filter: blur(0); transform: none; }
-  10% { transform: scale(1.01, 0.99); }
-  25% { transform: scale(0.97, 1.03); }
-  45% { width: 51px; height: 100%; transform: translateY(3px) scale(1.08, 0.92); }
+  0% { width: 51px; height: 100%; opacity: 1; filter: blur(0); transform: none; animation-timing-function: ease-in-out; }
+  12% { transform: translateY(2px) scale(1.06, 0.94); animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  45% {
+    width: 51px;
+    height: 100%;
+    transform: translateY(var(--from-y, -48px)) scale(0.96, 1.04);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1);
+  }
   85% { opacity: 1; filter: blur(0); }
   100% {
     width: var(--from-w, 51px);
@@ -1544,6 +1579,12 @@ a:hover .product-media img {
 .site-header-search .field.glass {
   border-radius: 999px;
   padding-inline: 1.125rem;
+  transition: opacity 0.2s ease 0.55s;
+}
+
+body:has(.collection-nav[data-search="in"]) .site-header-search .field:placeholder-shown:not(:focus) {
+  opacity: 0;
+  transition: opacity 0s;
 }
 
 .header-cart.glass {
