@@ -1203,6 +1203,37 @@ a:hover .product-media img {
   white-space: nowrap;
 }
 
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  transition: height 0.25s ease 0.15s, opacity 0.25s ease 0.15s;
+}
+.swipe-row.is-removing { opacity: 0; }
+.swipe-content {
+  position: relative;
+  background: var(--bg);
+  touch-action: pan-y;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.swipe-content img { -webkit-user-drag: none; }
+.swipe-delete {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline: 1.25rem;
+  background: #ff3b30;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.swipe-row.is-dragging .swipe-content,
+.swipe-row.is-dragging .swipe-delete { transition: none; }
+.swipe-row.is-dragging { user-select: none; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .hero-video { display: none; }

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { updateCart } from "@/app/(shop)/cart/actions"
 import { CartQuantity } from "@/components/cart-quantity"
+import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getCart } from "@/lib/cart"
 import { formatMoney } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
@@ -17,9 +18,9 @@ export default async function CartPage() {
         <p className="mt-6 text-sm">Your cart is empty. <Link href="/search">Browse parts</Link>.</p>
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
-          <ul className="grid gap-6">
+          <ul className="grid [&>li:first-child>.swipe-content]:pt-0">
             {cart.lines.map((line) => (
-              <li key={line.id} className="grid grid-cols-[88px_1fr] gap-4 border-b border-[var(--border)] pb-6">
+              <SwipeToDelete key={line.id} itemId={line.id} className="grid grid-cols-[88px_1fr] gap-4 border-b border-[var(--border)] py-6">
                 <div className="product-media">
                   {line.imageUrl ? <img src={line.imageUrl} alt={line.productTitle} /> : null}
                 </div>
@@ -36,7 +37,7 @@ export default async function CartPage() {
                     </form>
                   </div>
                 </div>
-              </li>
+              </SwipeToDelete>
             ))}
           </ul>
           <aside className="h-fit border border-[var(--border)] p-4">
