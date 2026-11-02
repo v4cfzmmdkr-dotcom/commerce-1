@@ -117,7 +117,7 @@ export async function saveSettings(formData: FormData) {
   const sql = getSql()
   await sql`
     update store_settings set
-      name = ${text(formData, "name") || "Niche Parts"},
+      name = ${text(formData, "name") || "Niche Parts Australia"},
       tagline = ${text(formData, "tagline")},
       announcement = ${text(formData, "announcement")},
       support_email = ${text(formData, "supportEmail")},

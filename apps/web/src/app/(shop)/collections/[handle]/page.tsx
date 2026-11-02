@@ -14,7 +14,7 @@ export async function generateMetadata({
   const { handle } = await params
   const [collection, settings] = await Promise.all([getCollection(handle), getSettings()])
   if (!collection) return { title: "Collection" }
-  const description = summaryText(collection.descriptionHtml) || `Shop ${collection.title} from Niche Parts, made in Australia and dispatched within 48 hours.`
+  const description = summaryText(collection.descriptionHtml) || `Shop ${collection.title} from ${settings.name}, made in Australia and dispatched within 48 hours.`
   const path = `/collections/${collection.handle}`
   const images = collection.imageUrl ? [{ url: collection.imageUrl, alt: collection.title }] : []
   return {

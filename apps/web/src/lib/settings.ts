@@ -23,7 +23,7 @@ export type StoreSettings = {
 
 export function defaultSettings(): StoreSettings {
   return {
-    name: "Niche Parts",
+    name: "Niche Parts Australia",
     tagline: "Australian made parts",
     announcement: "Dispatched within 48 hours.",
     supportEmail: "",
@@ -35,7 +35,7 @@ export function defaultSettings(): StoreSettings {
     pricesIncludeTax: true,
     theme: defaultTheme,
     aboutHtml:
-      "<p>Niche Parts makes small-run parts and accessories in Australia, including power-tool fittings, mounts, jigs, and inserts.</p>",
+      "<p>Niche Parts Australia makes small-run parts and accessories in Australia, including power-tool fittings, mounts, jigs, and inserts.</p>",
     shippingHtml:
       "<p>Delivery options and prices are confirmed at checkout. Paid orders are dispatched within 48 hours.</p>",
     logoUrl: null,
