@@ -99,3 +99,19 @@ export function formatDescription(input: string | null | undefined) {
   if (!text) return ""
   return cleanHtml(blockTag.test(text) ? text : plainTextToHtml(text))
 }
+
+const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", nbsp: " ", "#39": "'" }
+
+// Search engines show roughly 155-160 characters of a meta description.
+export function summaryText(input: string | null | undefined, max = 155) {
+  const text = (input ?? "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(#?\w+);/g, (match, name: string) => entities[name.toLowerCase()] ?? match)
+    .replace(/\s+/g, " ")
+    .trim()
+  if (text.length <= max) return text
+  const cut = text.slice(0, max - 1)
+  const space = cut.lastIndexOf(" ")
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:-]+$/, "")}…`
+}

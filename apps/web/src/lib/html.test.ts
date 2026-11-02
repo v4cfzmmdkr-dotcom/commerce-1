@@ -1,4 +1,21 @@
 import { describe, expect, it } from "vitest"
+import { summaryText } from "@/lib/html"
+
+describe("summaryText", () => {
+  it("strips tags and entities into one line", () => {
+    expect(summaryText("<p>Fits <strong>Dyson</strong> V11&nbsp;&amp; V15.</p>\n<p>Made in Australia.</p>")).toBe("Fits Dyson V11 & V15. Made in Australia.")
+  })
+
+  it("shortens long text on a word boundary", () => {
+    const result = summaryText("word ".repeat(60))
+    expect(result.length).toBeLessThanOrEqual(155)
+    expect(result.endsWith("word…")).toBe(true)
+  })
+
+  it("returns an empty string for empty input", () => {
+    expect(summaryText(null)).toBe("")
+  })
+})
 import { formatDescription } from "@/lib/html"
 
 describe("formatDescription", () => {

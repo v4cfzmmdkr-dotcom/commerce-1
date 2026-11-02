@@ -47,10 +47,20 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings()
+  const description = `${settings.tagline}. ${settings.announcement}`.replace(/\.\./g, ".").trim()
   return {
     metadataBase: new URL(siteUrl()),
     title: { default: settings.name, template: `%s · ${settings.name}` },
-    description: settings.tagline,
+    description,
+    openGraph: {
+      siteName: settings.name,
+      locale: "en_AU",
+      type: "website",
+      title: settings.name,
+      description,
+      images: [{ url: settings.logoUrl || "/brand/logo.png", alt: settings.name }],
+    },
+    twitter: { card: "summary", title: settings.name, description },
   }
 }
 
