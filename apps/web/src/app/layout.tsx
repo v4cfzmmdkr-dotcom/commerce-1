@@ -52,6 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(siteUrl()),
     title: { default: settings.name, template: `%s · ${settings.name}` },
     description,
+    appleWebApp: { capable: true, title: "Niche Parts", statusBarStyle: "default" },
     openGraph: {
       siteName: settings.name,
       locale: "en_AU",
