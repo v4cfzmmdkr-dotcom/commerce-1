@@ -370,10 +370,6 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   animation: announcement-marquee 40s linear infinite;
 }
 
-.announcement:hover .announcement-track {
-  animation-play-state: paused;
-}
-
 .announcement-group {
   display: flex;
   align-items: center;
