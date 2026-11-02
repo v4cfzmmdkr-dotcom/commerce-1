@@ -95,7 +95,7 @@ export function CheckoutForm({
         </div>
         <label className="label">Phone (optional)<input className="field normal-case" name="phone" autoComplete="tel" /></label>
         <fieldset className="grid gap-2">
-          <legend className="text-xs uppercase tracking-wide">Delivery</legend>
+          <legend className="mb-2 text-xs uppercase tracking-wide">Delivery</legend>
           <p className="text-sm">{SHIPPING_OFFER_NOTE}</p>
           {available.length === 0 ? <p className="text-sm">No delivery option is active right now. Add one in the dashboard.</p> : null}
           {available.length === 1 ? (

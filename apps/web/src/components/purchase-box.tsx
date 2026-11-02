@@ -87,7 +87,7 @@ function OptionGroup({
 }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="text-xs uppercase tracking-wide">{label}</legend>
+      <legend className="mb-3 text-xs uppercase tracking-wide">{label}</legend>
       <div className="flex flex-wrap gap-2">
         {values.map((item) => (
           <button

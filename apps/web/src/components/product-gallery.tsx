@@ -74,8 +74,21 @@ export function ProductGallery({
             >
               ›
             </button>
-            <p className="product-gallery-count" aria-live="polite">
-              {index + 1} / {images.length}
+            <div className="product-gallery-dots glass">
+              {images.map((image, dotIndex) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={`Show photo ${dotIndex + 1}`}
+                  aria-current={dotIndex === index ? "true" : undefined}
+                  className="product-gallery-dot"
+                  onClick={() => setIndex(dotIndex)}
+                />
+              ))}
+            </div>
+            <p className="sr-only" aria-live="polite">
+              Photo {index + 1} of {images.length}
             </p>
           </>
         ) : null}
