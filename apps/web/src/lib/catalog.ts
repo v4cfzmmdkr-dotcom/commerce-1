@@ -107,6 +107,54 @@ function cardsFromRest(rows: RestProduct[]): ProductCard[] {
   })
 }
 
+const cardSelect = "id,handle,title,created_at,product_images(url,alt,position),variants!inner(price_cents,compare_at_cents,available,inventory_policy,inventory_qty)"
+
+// PostgREST cannot order or filter products by an aggregate of their variants,
+// so price sorts and price ranges rank every match by its lowest variant price
+// first, then load full cards for just the requested page.
+async function listByPriceFromRest(
+  query: CatalogQuery,
+  filters: URLSearchParams,
+  collectionIds: string[] | null,
+  page: number,
+  pageSize: number,
+) {
+  const light = new URLSearchParams(filters)
+  light.set("select", "id,title,variants!inner(price_cents)")
+  light.set("order", "created_at.desc")
+  const all = await supabaseRest<Array<{ id: string, title: string, variants: Array<{ price_cents: number }> }>>(`products?${light.toString()}`)
+  if (!all) return null
+  let ranked = all.data.map((row) => ({
+    id: row.id,
+    title: row.title,
+    price: Math.min(...row.variants.map((variant) => Number(variant.price_cents))),
+  }))
+  if (query.minCents != null) ranked = ranked.filter((row) => row.price >= query.minCents!)
+  if (query.maxCents != null) ranked = ranked.filter((row) => row.price <= query.maxCents!)
+  if (query.sort === "price-asc" || query.sort === "price-desc") {
+    const direction = query.sort === "price-asc" ? 1 : -1
+    ranked.sort((left, right) => (left.price - right.price) * direction || left.title.localeCompare(right.title))
+  } else if (query.sort === "title") {
+    ranked.sort((left, right) => left.title.localeCompare(right.title))
+  } else if (collectionIds) {
+    const position = new Map(collectionIds.map((id, index) => [id, index]))
+    ranked.sort((left, right) => (position.get(left.id) ?? 0) - (position.get(right.id) ?? 0))
+  }
+  const total = ranked.length
+  const pageIds = ranked.slice((page - 1) * pageSize, page * pageSize).map((row) => row.id)
+  const pageCount = Math.max(1, Math.ceil(total / pageSize))
+  if (!pageIds.length) return { items: [] as ProductCard[], total, page, pageCount }
+  const full = await supabaseRest<RestProduct[]>(`products?id=in.(${pageIds.join(",")})&select=${cardSelect}`)
+  if (!full) return null
+  const cards = new Map(cardsFromRest(full.data).map((card) => [card.id, card]))
+  return {
+    items: pageIds.flatMap((id) => cards.get(id) ?? []),
+    total,
+    page,
+    pageCount,
+  }
+}
+
 async function listProductsFromRest(query: CatalogQuery) {
   const pageSize = query.pageSize ?? 24
   const page = Math.max(1, query.page ?? 1)
@@ -124,11 +172,6 @@ async function listProductsFromRest(query: CatalogQuery) {
   }
   const params = new URLSearchParams()
   params.set("status", "eq.active")
-  params.set("select", "id,handle,title,created_at,product_images(url,alt,position),variants!inner(price_cents,compare_at_cents,available,inventory_policy,inventory_qty)")
-  if (query.sort === "price-asc") params.set("order", "variants(price_cents).asc")
-  else if (query.sort === "price-desc") params.set("order", "variants(price_cents).desc")
-  else if (query.sort === "title") params.set("order", "title.asc")
-  else params.set("order", "created_at.desc")
   if (query.q?.trim()) {
     const term = `*${query.q.trim().replace(/[,()]/g, "")}*`
     params.set("or", `(title.ilike.${term},handle.ilike.${term})`)
@@ -140,6 +183,12 @@ async function listProductsFromRest(query: CatalogQuery) {
   if (collectionIds) {
     params.set("id", `in.(${collectionIds.join(",")})`)
   }
+  const byPrice = query.sort === "price-asc" || query.sort === "price-desc"
+  if (byPrice || query.minCents != null || query.maxCents != null) {
+    return listByPriceFromRest(query, params, collectionIds, page, pageSize)
+  }
+  params.set("select", cardSelect)
+  params.set("order", query.sort === "title" ? "title.asc" : "created_at.desc")
   const useCollectionOrder = Boolean(collectionIds) && (!query.sort || query.sort === "newest")
   const result = await supabaseRest<RestProduct[]>(`products?${params.toString()}`, {
     Prefer: "count=exact",
