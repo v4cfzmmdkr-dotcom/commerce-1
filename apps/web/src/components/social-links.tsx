@@ -26,13 +26,6 @@ export function ContactChannels() {
           <span className="block text-sm opacity-70">{social.instagram.detail}</span>
         </span>
       </a>
-      <a className="contact-channel no-underline" href={social.facebook.href} target="_blank" rel="noreferrer">
-        <FacebookIcon />
-        <span>
-          <span className="block font-medium">{social.facebook.label}</span>
-          <span className="block text-sm opacity-70">{social.facebook.detail}</span>
-        </span>
-      </a>
       <a className="contact-channel no-underline" href={social.email.href}>
         <EmailIcon />
         <span>
