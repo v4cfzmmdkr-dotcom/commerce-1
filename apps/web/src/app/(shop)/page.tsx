@@ -59,7 +59,7 @@ export default async function HomePage() {
         <div className="wrap-wide relative py-[var(--section)]">
           <p className="hero-kicker">{settings.invoiceName || settings.name}</p>
           <h1 className="hero-title">{settings.tagline}</h1>
-          <p className="hero-lede">{settings.announcement}</p>
+          <p className="hero-lede">{settings.announcement.replace(/\s+with Australia Post(?=\.?\s*$)/i, "")}</p>
         </div>
       </section>
       <section className="hero-actions wrap-wide">
