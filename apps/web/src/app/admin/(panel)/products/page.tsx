@@ -1,11 +1,12 @@
 import Link from "next/link"
-import { createProduct, setListed } from "@/app/admin/actions"
+import { copyListing, createProduct, setListed } from "@/app/admin/actions"
+import { PendingButton } from "@/components/pending-button"
 import { getSql } from "@/db/client"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -44,6 +45,21 @@ export default async function ProductsPage({
         <input className="field max-w-sm" name="q" defaultValue={params.q || ""} placeholder="Search title or handle" />
         {show ? <input type="hidden" name="show" value={show} /> : null}
         <button className="btn" type="submit">Search</button>
+      </form>
+      <form action={copyListing} className="admin-card grid gap-3">
+        <div>
+          <h2>Copy a listing</h2>
+          <p className="admin-note mt-1 text-sm">Paste a Shopify product link or an eBay listing link. The title, description, price, options, and photos are copied into a new product.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <input className="field normal-case" name="url" type="url" inputMode="url" required placeholder="https://store.com/products/… or https://www.ebay.com.au/itm/…" aria-label="Listing link" />
+          <PendingButton pendingText="Copying…">Copy listing</PendingButton>
+        </div>
+        <label className="flex items-center gap-2 text-sm normal-case">
+          <input type="checkbox" name="list" />
+          List it on the shop straight away
+        </label>
+        {params.listingError ? <p className="text-sm" role="alert">{params.listingError}</p> : null}
       </form>
       <form action={createProduct} className="admin-card grid gap-3 sm:grid-cols-[1fr_140px_auto]">
         <input className="field" name="title" placeholder="New product title" required />

@@ -3,13 +3,14 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import { getSql } from "@/db/client"
+import { getSql, textArrayLiteral } from "@/db/client"
 import { requireAdmin } from "@/lib/auth/current"
 import { cleanHtml } from "@/lib/html"
 import { parseMoneyToCents } from "@/lib/money"
 import { sendOrderEmail, sendShippingEmail } from "@/lib/email"
 import { SHIPPING_COUNTRY } from "@/lib/shipping"
 import { deleteObject, extensionFor, saveObject } from "@/lib/storage"
+import { ListingError, importListing } from "@/lib/listing-import"
 import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
 import { receiptSeller } from "@/lib/orders"
@@ -156,6 +157,20 @@ export async function createProduct(formData: FormData) {
   redirect(`/admin/products/${id}`)
 }
 
+export async function copyListing(formData: FormData) {
+  await requireAdmin()
+  let result
+  try {
+    result = await importListing(text(formData, "url"), { list: formData.get("list") === "on" })
+  } catch (error) {
+    if (!(error instanceof ListingError)) console.error("Listing import failed", error)
+    const message = error instanceof ListingError ? error.message : "Could not copy that listing. Try again, or add it by hand"
+    redirect(`/admin/products?listingError=${encodeURIComponent(message)}`)
+  }
+  revalidatePath("/", "layout")
+  redirect(`/admin/products/${result.id}?copied=${result.source}&photos=${result.photosCopied}&failed=${result.photosFailed}`)
+}
+
 export async function saveProduct(formData: FormData) {
   await requireAdmin()
   const id = text(formData, "id")
@@ -173,7 +188,7 @@ export async function saveProduct(formData: FormData) {
       description_html = ${cleanHtml(String(formData.get("description") || ""))},
       vendor = ${text(formData, "vendor")},
       product_type = ${text(formData, "productType")},
-      tags = ${tags},
+      tags = ${textArrayLiteral(tags)}::text[],
       status = ${formData.get("listed") === "on" ? "active" : "draft"},
       seo_title = ${text(formData, "seoTitle")},
       seo_description = ${text(formData, "seoDescription")},

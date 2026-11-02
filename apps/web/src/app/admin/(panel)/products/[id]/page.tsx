@@ -7,7 +7,7 @@ export default async function EditProductPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ saved?: string }>
+  searchParams: Promise<{ saved?: string, copied?: string, photos?: string, failed?: string }>
 }) {
   const { id } = await params
   const query = await searchParams
@@ -58,6 +58,12 @@ export default async function EditProductPage({
     <div className="grid gap-8">
       <h1 className="text-3xl font-semibold">Edit product</h1>
       {query.saved ? <p className="text-sm">Saved.</p> : null}
+      {query.copied ? (
+        <p className="admin-card max-w-3xl text-sm" role="status">
+          Copied from {query.copied === "ebay" ? "eBay" : "Shopify"} with {query.photos ?? 0} {query.photos === "1" ? "photo" : "photos"}
+          {Number(query.failed) > 0 ? ` (${query.failed} could not be copied)` : ""}. {product.status === "active" ? "It is listed on the shop. Check the price and description." : "Check the price and description, then tick Listed on the shop and save."}
+        </p>
+      ) : null}
       <form action={saveProduct} className="admin-card grid max-w-3xl gap-4">
         <input type="hidden" name="id" value={product.id} />
         <input type="hidden" name="variantIds" value={variants.map((variant) => variant.id).join(",")} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { textArray, vercelSafeTarget } from "@/db/client"
+import { textArray, textArrayLiteral, vercelSafeTarget } from "@/db/client"
 
 describe("vercelSafeTarget", () => {
   it("moves the Supabase transaction pooler to the session pooler", () => {
@@ -32,5 +32,13 @@ describe("textArray", () => {
   it("returns an empty list for anything else", () => {
     expect(textArray(null)).toEqual([])
     expect(textArray(undefined)).toEqual([])
+  })
+})
+
+describe("textArrayLiteral", () => {
+  it("writes a text[] literal that reads back the same", () => {
+    const tags = ["wall mount", "say \"hi\"", "back\\slash", "a,b"]
+    expect(textArrayLiteral([])).toBe("{}")
+    expect(textArray(textArrayLiteral(tags))).toEqual(tags)
   })
 })

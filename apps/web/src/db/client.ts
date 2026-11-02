@@ -40,6 +40,11 @@ export function textArray(value: unknown): string[] {
   return items
 }
 
+// The same limitation applies to writes: a JS array is sent as "a,b", so pass this literal and cast it to text[].
+export function textArrayLiteral(values: string[]) {
+  return `{${values.map((value) => `"${value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`).join(",")}}`
+}
+
 type PgTarget = {
   host: string
   port: number

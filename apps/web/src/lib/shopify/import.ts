@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto"
-import { getSql } from "@/db/client"
+import { getSql, textArrayLiteral } from "@/db/client"
 import { cleanHtml } from "@/lib/html"
 import { extensionFor, saveObject } from "@/lib/storage"
 import { fetchShopifyCollections, type RemoteCollection } from "@/lib/shopify/collections"
@@ -15,7 +15,7 @@ type ExistingVariant = {
   option3Value: string
 }
 
-function emptyReport(encoding: string): ImportReport {
+export function emptyReport(encoding: string): ImportReport {
   return {
     encoding,
     productsCreated: 0,
@@ -59,7 +59,7 @@ async function downloadToStorage(url: string, handle: string, position: number) 
   return saveObject(`${handle}/${position}-${hash}.${extensionFor(contentType)}`, bytes, contentType)
 }
 
-async function upsertProduct(product: ParsedProduct, report: ImportReport) {
+export async function upsertProduct(product: ParsedProduct, report: ImportReport) {
   product.variants = limitVariantsToBlackWhite(product.variants)
   const sql = getSql()
   const existing = await sql<{ id: string }[]>`select id from products where handle = ${product.handle}`
@@ -72,7 +72,7 @@ async function upsertProduct(product: ParsedProduct, report: ImportReport) {
         description_html = ${description},
         vendor = ${product.vendor},
         product_type = ${product.productType},
-        tags = ${product.tags},
+        tags = ${textArrayLiteral(product.tags)}::text[],
         status = ${product.status},
         seo_title = ${product.seoTitle},
         seo_description = ${product.seoDescription},
@@ -88,7 +88,7 @@ async function upsertProduct(product: ParsedProduct, report: ImportReport) {
         seo_title, seo_description, metadata
       ) values (
         ${id}, ${product.handle}, ${product.title}, ${description}, ${product.vendor},
-        ${product.productType}, ${product.tags}, ${product.status}, ${product.seoTitle},
+        ${product.productType}, ${textArrayLiteral(product.tags)}::text[], ${product.status}, ${product.seoTitle},
         ${product.seoDescription}, ${sql.json(product.metadata)}
       )
     `
@@ -198,9 +198,10 @@ async function upsertProduct(product: ParsedProduct, report: ImportReport) {
       where product_id = ${id}
         and storage_path is null
         and source_url is not null
-        and not (source_url = any(${incomingSrc}))
+        and not (source_url = any(${textArrayLiteral(incomingSrc)}::text[]))
     `
   }
+  return id
 }
 
 export async function importShopifyCsv(buffer: Buffer, filename = "upload.csv") {
@@ -232,13 +233,14 @@ export async function importShopifyCsv(buffer: Buffer, filename = "upload.csv") 
   return { id, report }
 }
 
-export async function migrateRemoteImages(options: { limit: number, budgetMs?: number, concurrency?: number }) {
+export async function migrateRemoteImages(options: { limit: number, budgetMs?: number, concurrency?: number, productId?: string }) {
   const sql = getSql()
   const rows = await sql<Array<{ id: string, sourceUrl: string, position: number, handle: string }>>`
     select i.id, i.source_url as "sourceUrl", i.position, p.handle
     from product_images i
     join products p on p.id = i.product_id
     where i.storage_path is null and i.source_url is not null
+      ${options.productId ? sql`and i.product_id = ${options.productId}` : sql``}
     order by p.handle, i.position
     limit ${options.limit}
   `

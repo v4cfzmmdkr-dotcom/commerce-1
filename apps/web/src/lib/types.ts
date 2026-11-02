@@ -16,6 +16,7 @@ export type ProductMetadata = {
   color?: string
   compatibleVacuum?: string
   compatibleCoffee?: string
+  sourceUrl?: string
 }
 
 export type Address = {
