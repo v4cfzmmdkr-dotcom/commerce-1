@@ -255,28 +255,12 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     if (!claimed) throw new Error("Could not record the payment")
     if (claimed.data.length === 0) return { already: true, paid: true }
     const itemRows = await supabaseRest<Array<{
-      variant_id: string | null
       quantity: number
       product_title: string
       variant_title: string
       unit_price_cents: number
-    }>>(`order_items?order_id=eq.${order.id}&select=variant_id,quantity,product_title,variant_title,unit_price_cents`)
+    }>>(`order_items?order_id=eq.${order.id}&select=quantity,product_title,variant_title,unit_price_cents`)
     const items = itemRows?.data ?? []
-    let inventoryWarning = false
-    for (const item of items) {
-      if (!item.variant_id) {
-        inventoryWarning = true
-        continue
-      }
-      const decremented = await supabaseRpc<boolean>("decrement_variant_inventory", {
-        p_variant_id: item.variant_id,
-        p_qty: Number(item.quantity),
-      })
-      if (!decremented?.data) inventoryWarning = true
-    }
-    if (inventoryWarning) {
-      await supabaseMutate(`orders?id=eq.${order.id}`, "PATCH", { inventory_warning: true })
-    }
     if (order.cart_id) {
       await supabaseMutate(`cart_items?cart_id=eq.${order.cart_id}`, "DELETE")
     }
@@ -318,17 +302,15 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
   if (!claimable.includes(order.paymentStatus)) return { already: true, paid: true }
 
   const items = await sql<Array<{
-    variantId: string | null
     quantity: number
     productTitle: string
     variantTitle: string
     unitPriceCents: number
   }>>`
-    select variant_id as "variantId", quantity, product_title as "productTitle",
+    select quantity, product_title as "productTitle",
       variant_title as "variantTitle", unit_price_cents as "unitPriceCents"
     from order_items where order_id = ${order.id}
   `
-  let inventoryWarning = false
   const paymentIntent = typeof session.payment_intent === "string"
     ? session.payment_intent
     : session.payment_intent?.id ?? null
@@ -345,23 +327,6 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       returning id
     `
     if (updated.length === 0) return false
-    for (const item of items) {
-      if (!item.variantId) {
-        inventoryWarning = true
-        continue
-      }
-      const decremented = await tx`
-        update variants
-        set inventory_qty = inventory_qty - ${item.quantity}
-        where id = ${item.variantId}
-          and (inventory_policy = 'continue' or inventory_qty >= ${item.quantity})
-        returning id
-      `
-      if (decremented.length === 0) inventoryWarning = true
-    }
-    if (inventoryWarning) {
-      await tx`update orders set inventory_warning = true where id = ${order.id}`
-    }
     if (order.cartId) {
       await tx`delete from cart_items where cart_id = ${order.cartId}`
     }

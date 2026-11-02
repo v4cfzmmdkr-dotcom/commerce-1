@@ -28,9 +28,8 @@ export function isPurchasable(variant: {
   inventoryPolicy: string
   inventoryQty: number
 }) {
-  if (!variant.available) return false
-  if (variant.inventoryPolicy === "continue") return true
-  return variant.inventoryQty > 0
+  // Parts are made to order, so stock counts never block a sale.
+  return variant.available
 }
 
 export function maxPurchasable(variant: {
@@ -38,7 +37,5 @@ export function maxPurchasable(variant: {
   inventoryPolicy: string
   inventoryQty: number
 }) {
-  if (!isPurchasable(variant)) return 0
-  if (variant.inventoryPolicy === "continue") return 99
-  return Math.min(99, variant.inventoryQty)
+  return isPurchasable(variant) ? 99 : 0
 }

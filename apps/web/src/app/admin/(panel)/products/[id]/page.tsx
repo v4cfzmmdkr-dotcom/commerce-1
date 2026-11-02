@@ -42,13 +42,10 @@ export default async function EditProductPage({
     option2Value: string
     priceCents: number
     compareAtCents: number | null
-    inventoryQty: number
-    inventoryPolicy: string
   }>>`
     select id, sku, option1_name as "option1Name", option1_value as "option1Value",
       option2_name as "option2Name", option2_value as "option2Value",
-      price_cents as "priceCents", compare_at_cents as "compareAtCents",
-      inventory_qty as "inventoryQty", inventory_policy as "inventoryPolicy"
+      price_cents as "priceCents", compare_at_cents as "compareAtCents"
     from variants where product_id = ${id}
     order by position asc
   `
@@ -66,12 +63,8 @@ export default async function EditProductPage({
         <input type="hidden" name="variantIds" value={variants.map((variant) => variant.id).join(",")} />
         <label className="label">Title<input className="field normal-case" name="title" defaultValue={product.title} required /></label>
         <label className="label">Handle<input className="field normal-case" name="handle" defaultValue={product.handle} /></label>
-        <label className="label">Status
-          <select className="select normal-case" name="status" defaultValue={product.status}>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </select>
+        <label className="flex items-center gap-2 text-sm normal-case">
+          <input type="checkbox" name="listed" defaultChecked={product.status === "active"} /> Listed on the shop
         </label>
         <label className="flex items-center gap-2 text-sm normal-case">
           <input type="checkbox" name="featured" defaultChecked={product.featured} /> Featured on the homepage
@@ -95,15 +88,8 @@ export default async function EditProductPage({
               <input className="field" name={`option1Value_${variant.id}`} defaultValue={variant.option1Value} placeholder="Option value" />
               <input className="field" name={`option2Name_${variant.id}`} defaultValue={variant.option2Name} placeholder="Second option name" />
               <input className="field" name={`option2Value_${variant.id}`} defaultValue={variant.option2Value} placeholder="Second option value" />
-              <input className="field" name={`qty_${variant.id}`} defaultValue={variant.inventoryQty} placeholder="Quantity" />
               <input className="field" name={`compare_${variant.id}`} defaultValue={dollars(variant.compareAtCents)} placeholder="Compare-at price" />
             </div>
-            <label className="label">When stock runs out
-              <select className="select normal-case" name={`policy_${variant.id}`} defaultValue={variant.inventoryPolicy || "continue"}>
-                <option value="continue">Keep selling</option>
-                <option value="deny">Sold out</option>
-              </select>
-            </label>
             <label className="flex items-center gap-2 text-sm normal-case">
               <input type="checkbox" name={`delete_${variant.id}`} /> Remove this variant
             </label>
@@ -116,11 +102,6 @@ export default async function EditProductPage({
             <input className="field" name="newPrice" placeholder="Price to add a variant" />
             <input className="field" name="newOptionName" placeholder="Option name" />
             <input className="field" name="newOption" placeholder="Option value" />
-            <input className="field" name="newQty" placeholder="Quantity" />
-            <select className="select" name="newPolicy" defaultValue="continue">
-              <option value="continue">Keep selling</option>
-              <option value="deny">Sold out at zero</option>
-            </select>
           </div>
         </fieldset>
         <button className="btn" type="submit">Save product</button>

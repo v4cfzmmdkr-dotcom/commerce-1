@@ -102,7 +102,7 @@ function cardsFromRest(rows: RestProduct[]): ProductCard[] {
       compareAtCents: compares.length ? Math.min(...compares.map(Number)) : null,
       imageUrl: image?.url ?? null,
       imageAlt: image?.alt ?? "",
-      purchasable: variants.some((variant) => variant.available && (variant.inventory_policy === "continue" || Number(variant.inventory_qty) > 0)),
+      purchasable: variants.some((variant) => variant.available),
     }]
   })
 }
@@ -221,7 +221,7 @@ export async function listProducts(query: CatalogQuery) {
         product_id,
         min(price_cents) as min_price,
         min(compare_at_cents) as compare_at,
-        bool_or(available and (inventory_policy = 'continue' or inventory_qty > 0)) as purchasable
+        bool_or(available) as purchasable
       from variants
       group by product_id
     ) pr on pr.product_id = p.id
@@ -240,7 +240,7 @@ export async function listProducts(query: CatalogQuery) {
     from products p
     join (
       select product_id, min(price_cents) as min_price,
-        bool_or(available and (inventory_policy = 'continue' or inventory_qty > 0)) as purchasable
+        bool_or(available) as purchasable
       from variants
       group by product_id
     ) pr on pr.product_id = p.id
@@ -635,7 +635,7 @@ export async function listFeaturedProducts() {
       from products p
       join (
         select product_id, min(price_cents) as min_price, min(compare_at_cents) as compare_at,
-          bool_or(available and (inventory_policy = 'continue' or inventory_qty > 0)) as purchasable
+          bool_or(available) as purchasable
         from variants group by product_id
       ) pr on pr.product_id = p.id
       left join lateral (

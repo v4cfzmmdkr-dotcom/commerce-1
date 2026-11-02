@@ -35,7 +35,7 @@ export function CatalogView({
     return text ? `${basePath}?${text}` : basePath
   }
 
-  const activeFilters = [query.q, query.tag, query.min, query.max, query.stock === "1" ? "1" : undefined, query.sort && query.sort !== "newest" ? query.sort : undefined]
+  const activeFilters = [query.q, query.tag, query.min, query.max, query.sort && query.sort !== "newest" ? query.sort : undefined]
     .filter(Boolean).length
 
   return (
@@ -85,10 +85,6 @@ export function CatalogView({
                   <input className="field normal-case" name="max" inputMode="decimal" defaultValue={query.max || ""} />
                 </label>
               </div>
-              <label className="flex items-center gap-2 text-sm normal-case">
-                <input type="checkbox" name="stock" value="1" defaultChecked={query.stock === "1"} />
-                In stock only
-              </label>
               <button className="btn" type="submit">Apply</button>
               {activeFilters > 0 ? <Link className="text-center text-sm" href={basePath}>Clear filters</Link> : null}
             </form>

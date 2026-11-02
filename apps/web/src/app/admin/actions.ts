@@ -163,7 +163,7 @@ export async function saveProduct(formData: FormData) {
       vendor = ${text(formData, "vendor")},
       product_type = ${text(formData, "productType")},
       tags = ${tags},
-      status = ${text(formData, "status") || "draft"},
+      status = ${formData.get("listed") === "on" ? "active" : "draft"},
       seo_title = ${text(formData, "seoTitle")},
       seo_description = ${text(formData, "seoDescription")},
       featured = ${formData.get("featured") === "on"},
@@ -191,8 +191,7 @@ export async function saveProduct(formData: FormData) {
         title = ${[text(formData, `option1Value_${variantId}`), text(formData, `option2Value_${variantId}`)].filter((value) => value && value.toLowerCase() !== "default title").join(" / ")},
         price_cents = ${price},
         compare_at_cents = ${compare === "invalid" ? null : compare},
-        inventory_qty = ${Number(text(formData, `qty_${variantId}`) || 0)},
-        inventory_policy = ${text(formData, `policy_${variantId}`) === "continue" ? "continue" : "deny"},
+        inventory_policy = 'continue',
         position = ${index},
         available = true
       where id = ${variantId} and product_id = ${id}
@@ -206,16 +205,25 @@ export async function saveProduct(formData: FormData) {
         id, product_id, sku, title, option1_name, option1_value, price_cents, inventory_qty, inventory_policy, position
       ) values (
         ${randomUUID()}, ${id}, ${text(formData, "newSku")}, ${option},
-        ${text(formData, "newOptionName") || "Option"}, ${option}, ${newPrice},
-        ${Number(text(formData, "newQty") || 0)},
-        ${text(formData, "newPolicy") === "continue" ? "continue" : "deny"},
+        ${text(formData, "newOptionName") || "Option"}, ${option}, ${newPrice}, 0, 'continue',
         ${ids.length}
       )
     `
   }
   await sql`update variants set taxable = ${formData.get("chargeGst") === "on"} where product_id = ${id}`
-  revalidatePath(`/products/${handle}`)
+  revalidatePath("/", "layout")
   redirect(`/admin/products/${id}?saved=1`)
+}
+
+export async function setListed(formData: FormData) {
+  await requireAdmin()
+  const id = text(formData, "id")
+  const listed = text(formData, "listed") === "1"
+  const sql = getSql()
+  await sql`update products set status = ${listed ? "active" : "draft"} where id = ${id}`
+  revalidatePath("/", "layout")
+  const back = text(formData, "back")
+  redirect(`${/^\/admin\/products(\?|$)/.test(back) ? back : "/admin/products"}#p-${id}`)
 }
 
 export async function deleteProduct(formData: FormData) {
@@ -521,18 +529,6 @@ export async function resendOrderEmail(formData: FormData) {
   })
   await sql`update orders set email_status = ${emailStatus} where id = ${id}`
   redirect(`/admin/orders/${id}?email=${emailStatus}`)
-}
-
-export async function setStockPolicy(formData: FormData) {
-  await requireAdmin()
-  const sql = getSql()
-  if (text(formData, "mode") === "continue") {
-    await sql`update variants set inventory_policy = 'continue', available = true`
-  } else {
-    await sql`update variants set inventory_policy = 'deny' where inventory_qty <= 0`
-  }
-  revalidatePath("/", "layout")
-  redirect("/admin?stock=1")
 }
 
 export async function runImport(formData: FormData) {

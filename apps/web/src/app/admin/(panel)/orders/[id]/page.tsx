@@ -33,7 +33,6 @@ export default async function OrderDetailPage({
     shippingAddress: Address
     trackingCarrier: string
     trackingNumber: string
-    inventoryWarning: boolean
     emailStatus: string
     shippingEmailStatus: string
     shippingEmailedTracking: string
@@ -43,7 +42,7 @@ export default async function OrderDetailPage({
       total_cents as "totalCents", refunded_cents as "refundedCents", subtotal_cents as "subtotalCents", shipping_cents as "shippingCents",
       tax_cents as "taxCents", currency, shipping_name as "shippingName", shipping_address as "shippingAddress",
       tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber",
-      inventory_warning as "inventoryWarning", email_status as "emailStatus",
+      email_status as "emailStatus",
       shipping_email_status as "shippingEmailStatus", shipping_emailed_tracking as "shippingEmailedTracking",
       stripe_session_id as "stripeSessionId"
     from orders where id = ${id}
@@ -63,7 +62,6 @@ export default async function OrderDetailPage({
       {query.saved ? <p className="text-sm">Order updated.</p> : null}
       {query.email ? <p className="text-sm">Email status: {query.email}</p> : null}
       {query.shipping ? <p className="text-sm">{shippingMessage(query.shipping)}</p> : null}
-      {order.inventoryWarning ? <p className="text-sm">Payment was captured, but stock could not be reduced for every line. Check inventory.</p> : null}
       <dl className="grid gap-1 text-sm">
         <div>Payment: {paymentLabel(order.paymentStatus, order)}</div>
         <div>Status: {order.status}</div>
