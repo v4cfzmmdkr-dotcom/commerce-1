@@ -294,7 +294,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   width: fit-content;
   max-width: min(1680px, 100%);
   margin-inline: auto;
-  padding: 4px;
+  padding: 7px;
   border-radius: 999px;
   overflow: hidden;
   pointer-events: auto;
@@ -333,7 +333,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 1rem;
   border-radius: 999px;
   color: color-mix(in srgb, var(--fg) 72%, transparent);
