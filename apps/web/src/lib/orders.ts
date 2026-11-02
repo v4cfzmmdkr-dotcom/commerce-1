@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import type Stripe from "stripe"
 import { getSql } from "@/db/client"
-import { sendOrderEmail } from "@/lib/email"
+import { sendOrderAlert, sendOrderEmail } from "@/lib/email"
 import { merchandiseSubtotal, quoteOrder, type PricedLine } from "@/lib/pricing"
 import { nullableCents, selectShippingRate, type ShippingRate } from "@/lib/shipping"
 import { getSettings } from "@/lib/settings"
@@ -264,7 +264,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     if (order.cart_id) {
       await supabaseMutate(`cart_items?cart_id=eq.${order.cart_id}`, "DELETE")
     }
-    const emailStatus = await sendOrderEmail({
+    const emailOrder = {
       number: order.number,
       publicToken: order.public_token,
       email: order.email,
@@ -278,8 +278,10 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
         quantity: Number(item.quantity),
         unitPriceCents: Number(item.unit_price_cents),
       })),
-    })
+    }
+    const emailStatus = await sendOrderEmail(emailOrder)
     await supabaseMutate(`orders?id=eq.${order.id}`, "PATCH", { email_status: emailStatus })
+    await alertOwner({ ...emailOrder, id: order.id })
     return { already: false, paid: true }
   }
   const sql = getSql()
@@ -334,7 +336,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
   })
   if (!claimed) return { already: true, paid: true }
 
-  const emailStatus = await sendOrderEmail({
+  const emailOrder = {
     number: order.number,
     publicToken: order.publicToken,
     email: order.email,
@@ -348,9 +350,23 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       quantity: Number(item.quantity),
       unitPriceCents: Number(item.unitPriceCents),
     })),
-  })
+  }
+  const emailStatus = await sendOrderEmail(emailOrder)
   await sql`update orders set email_status = ${emailStatus} where id = ${order.id}`
+  await alertOwner({ ...emailOrder, id: order.id })
   return { already: false, paid: true }
+}
+
+// A failed alert must not fail the payment confirmation.
+async function alertOwner(order: Parameters<typeof sendOrderAlert>[1]) {
+  try {
+    const { orderAlertEmail } = await getSettings()
+    if (!orderAlertEmail) return
+    const status = await sendOrderAlert(orderAlertEmail, order)
+    if (status !== "sent") console.error(`Order alert for ${order.number} ${status}`)
+  } catch (error) {
+    console.error(`Order alert for ${order.number} failed: ${error instanceof Error ? error.message : "unknown error"}`)
+  }
 }
 
 export async function markOrderFailed(orderId: string) {

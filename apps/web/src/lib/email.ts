@@ -79,6 +79,24 @@ export async function sendOrderEmail(order: EmailOrder) {
   )
 }
 
+export async function sendOrderAlert(to: string, order: EmailOrder & { id: string }) {
+  const link = `${siteUrl()}/admin/orders/${order.id}`
+  const lines = order.items
+    .map((item) => `<li>${item.quantity} × ${itemName(item)} — ${formatMoney(item.unitPriceCents * item.quantity, order.currency)}</li>`)
+    .join("")
+  return sendEmail(
+    to,
+    `New order ${order.number} — ${formatMoney(order.totalCents, order.currency)}`,
+    `<p>A new order has been paid: <strong>${escapeHtml(order.number)}</strong>.</p>
+      <p>Customer: ${escapeHtml(order.email)}</p>
+      <p>Total: ${formatMoney(order.totalCents, order.currency)}</p>
+      <p>Delivery: ${escapeHtml(order.shippingName)}</p>
+      <p>${addressHtml(order.shippingAddress)}${order.shippingAddress.phone ? `<br>${escapeHtml(order.shippingAddress.phone)}` : ""}</p>
+      <ul>${lines}</ul>
+      <p><a href="${link}">Open the order in admin</a></p>`,
+  )
+}
+
 export async function sendShippingEmail(order: ShippingEmailOrder) {
   const link = `${siteUrl()}/orders/${order.publicToken}`
   const track = trackingUrl(order.trackingCarrier, order.trackingNumber)

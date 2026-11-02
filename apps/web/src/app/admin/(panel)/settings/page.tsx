@@ -15,6 +15,10 @@ export default async function SettingsPage({
       <label className="label">Tagline<input className="field normal-case" name="tagline" defaultValue={settings.tagline} /></label>
       <label className="label">Announcement<input className="field normal-case" name="announcement" defaultValue={settings.announcement} /></label>
       <label className="label">Support email<input className="field normal-case" name="supportEmail" defaultValue={settings.supportEmail} /></label>
+      <label className="label">
+        New order alerts
+        <input className="field normal-case" type="email" name="orderAlertEmail" defaultValue={settings.orderAlertEmail} placeholder="Leave empty to turn off" />
+      </label>
       <label className="label">GST percent<input className="field normal-case" name="gst" defaultValue={(settings.gstRateBps / 100).toFixed(2)} /></label>
       <label className="flex items-center gap-2 text-sm normal-case">
         <input type="checkbox" name="pricesIncludeTax" defaultChecked={settings.pricesIncludeTax} />

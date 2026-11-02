@@ -106,6 +106,10 @@ export async function saveSettings(formData: FormData) {
   await requireAdmin()
   const gst = Number(text(formData, "gst"))
   if (!Number.isFinite(gst) || gst < 0 || gst > 50) throw new Error("GST percent must be between 0 and 50")
+  const orderAlertEmail = text(formData, "orderAlertEmail").toLowerCase()
+  if (orderAlertEmail && (orderAlertEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderAlertEmail))) {
+    throw new Error("Enter a valid email for new order alerts")
+  }
   const sql = getSql()
   await sql`
     update store_settings set
@@ -113,6 +117,7 @@ export async function saveSettings(formData: FormData) {
       tagline = ${text(formData, "tagline")},
       announcement = ${text(formData, "announcement")},
       support_email = ${text(formData, "supportEmail")},
+      order_alert_email = ${orderAlertEmail},
       gst_rate_bps = ${Math.round(gst * 100)},
       prices_include_tax = ${formData.get("pricesIncludeTax") === "on"},
       about_html = ${cleanHtml(String(formData.get("aboutHtml") || ""))},

@@ -7,6 +7,7 @@ export type StoreSettings = {
   tagline: string
   announcement: string
   supportEmail: string
+  orderAlertEmail: string
   currency: string
   gstRateBps: number
   pricesIncludeTax: boolean
@@ -24,6 +25,7 @@ export function defaultSettings(): StoreSettings {
     tagline: "Australian made parts",
     announcement: "Dispatched within 48 hours.",
     supportEmail: "",
+    orderAlertEmail: "",
     currency: "aud",
     gstRateBps: 1000,
     pricesIncludeTax: true,
@@ -44,6 +46,7 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
     tagline: String(row.tagline || ""),
     announcement: String(row.announcement || ""),
     supportEmail: String(row.support_email || ""),
+    orderAlertEmail: String(row.order_alert_email || ""),
     currency: String(row.currency || "aud"),
     gstRateBps: Number(row.gst_rate_bps ?? 1000),
     pricesIncludeTax: Boolean(row.prices_include_tax),
