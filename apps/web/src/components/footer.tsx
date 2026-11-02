@@ -6,6 +6,9 @@ export function Footer({ settings }: { settings: StoreSettings }) {
     <footer className="site-footer pb-[env(safe-area-inset-bottom)]">
       <div className="wrap-wide grid gap-8 py-12 md:grid-cols-3">
         <div>
+          <Link href="/" className="mb-4 inline-block" aria-label={`${settings.name} home`}>
+            <img src={settings.logoUrl || "/brand/logo.png"} alt="" className="h-10 w-auto" />
+          </Link>
           <p className="text-sm font-semibold">{settings.name}</p>
           <p className="mt-3 max-w-xs text-sm">{settings.tagline}</p>
         </div>
