@@ -12,7 +12,7 @@ export function ProductGrid({ products, currency }: { products: ProductCard[], c
         <Link key={product.id} href={`/products/${product.handle}`} className="group no-underline">
           <div className="product-media">
             {product.imageUrl ? (
-              <img src={product.imageUrl} alt={product.imageAlt || product.title} />
+              <img src={product.imageUrl} alt={product.imageAlt || product.title} loading="lazy" decoding="async" />
             ) : (
               <div className="flex h-full items-end p-3 text-xs tracking-wide">No image</div>
             )}

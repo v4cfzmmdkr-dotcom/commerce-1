@@ -4,7 +4,7 @@ import type { StoreSettings } from "@/lib/settings"
 export function Footer({ settings }: { settings: StoreSettings }) {
   return (
     <footer className="site-footer pb-[env(safe-area-inset-bottom)]">
-      <div className="wrap grid gap-8 py-12 md:grid-cols-3">
+      <div className="wrap-wide grid gap-8 py-12 md:grid-cols-3">
         <div>
           <p className="text-sm font-semibold">{settings.name}</p>
           <p className="mt-3 max-w-xs text-sm">{settings.tagline}</p>

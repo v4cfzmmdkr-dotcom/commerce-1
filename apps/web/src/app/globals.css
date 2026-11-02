@@ -112,6 +112,14 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   margin-inline: auto;
 }
 
+.wrap-wide {
+  width: min(1680px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+@media (min-width: 1024px) {
+  .wrap-wide { width: min(1680px, calc(100% - 4rem)); }
+}
+
 .nav-link,
 .tap-link {
   display: inline-flex;
@@ -726,8 +734,17 @@ label:has(> input[type="radio"]) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap);
 }
-@media (min-width: 800px) {
+@media (min-width: 640px) {
+  .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 900px) {
   .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (min-width: 1440px) {
+  .card-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 
 .collection-group {
@@ -763,6 +780,12 @@ label:has(> input[type="radio"]) {
 
   .collection-tile-wide .product-media {
     aspect-ratio: 4 / 3;
+  }
+}
+
+@media (min-width: 1280px) {
+  .collection-mosaic {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 

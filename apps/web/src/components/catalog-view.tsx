@@ -39,7 +39,7 @@ export function CatalogView({
     .filter(Boolean).length
 
   return (
-    <div className="wrap py-[var(--section)]">
+    <div className="wrap-wide py-[var(--section)]">
       <section>
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>

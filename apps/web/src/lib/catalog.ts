@@ -156,7 +156,7 @@ async function listByPriceFromRest(
 }
 
 async function listProductsFromRest(query: CatalogQuery) {
-  const pageSize = query.pageSize ?? 24
+  const pageSize = query.pageSize ?? 60
   const page = Math.max(1, query.page ?? 1)
   const offset = (page - 1) * pageSize
   let collectionIds: string[] | null = null
@@ -224,7 +224,7 @@ export async function listProducts(query: CatalogQuery) {
   }
   try {
     const sql = getSql()
-  const pageSize = query.pageSize ?? 24
+  const pageSize = query.pageSize ?? 60
   const page = Math.max(1, query.page ?? 1)
   const offset = (page - 1) * pageSize
   const search = query.q?.trim()
@@ -667,7 +667,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
 
 export async function listFeaturedProducts() {
   if (catalogViaHttps()) {
-    const latest = await listProductsFromRest({ pageSize: 8 })
+    const latest = await listProductsFromRest({ pageSize: 12 })
     return latest?.items ?? []
   }
   if (!databaseConfigured()) return []
@@ -692,7 +692,7 @@ export async function listFeaturedProducts() {
       ) img on true
       where p.status = 'active' and p.featured = true
       order by p.updated_at desc
-      limit 8
+      limit 12
     `
     if (featuredRows.length) {
       return featuredRows.map((row) => ({
@@ -702,7 +702,7 @@ export async function listFeaturedProducts() {
         purchasable: Boolean(row.purchasable),
       }))
     }
-    const latest = await listProducts({ pageSize: 8 })
+    const latest = await listProducts({ pageSize: 12 })
     return latest.items
   } catch {
     return []
