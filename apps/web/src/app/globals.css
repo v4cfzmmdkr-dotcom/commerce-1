@@ -866,6 +866,34 @@ a:hover .product-media img {
   border-top-color: var(--border);
 }
 
+.cookie-banner {
+  position: fixed;
+  z-index: 60;
+  left: max(1rem, env(safe-area-inset-left));
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  margin: 0 auto;
+  max-width: 44rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+  animation: cookie-banner-in 0.3s ease-out;
+}
+.cookie-banner p { flex: 1 1 18rem; margin: 0; }
+.cookie-banner-actions { display: flex; gap: 0.5rem; margin-left: auto; }
+
+@keyframes cookie-banner-in {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .hero-video { display: none; }

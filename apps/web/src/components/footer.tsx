@@ -14,6 +14,7 @@ export function Footer({ settings }: { settings: StoreSettings }) {
           <Link className="nav-link" href="/contact">Contact</Link>
           <Link className="nav-link" href="/shipping">Shipping</Link>
           <Link className="nav-link" href="/orders/lookup">Track an order</Link>
+          <Link className="nav-link" href="/cookies">Cookies</Link>
         </nav>
         <div className="text-sm">
           {settings.supportEmail ? <p>{settings.supportEmail}</p> : <p>Prices in AUD and include GST unless a product says otherwise.</p>}

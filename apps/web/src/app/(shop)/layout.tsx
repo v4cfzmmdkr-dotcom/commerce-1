@@ -1,5 +1,4 @@
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { CookieConsent } from "@/components/cookie-consent"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { cartCount } from "@/lib/cart"
@@ -23,8 +22,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <Header settings={settings} collections={collections} cartCount={count} />
       <main id="content">{children}</main>
       <Footer settings={settings} />
-      <Analytics />
-      <SpeedInsights />
+      <CookieConsent />
     </div>
   )
 }
