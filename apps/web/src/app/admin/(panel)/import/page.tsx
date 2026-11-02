@@ -1,16 +1,21 @@
-import { downloadImageBatch, runImport } from "@/app/admin/actions"
+import { runImport } from "@/app/admin/actions"
+import { ImageDownload } from "@/components/image-download"
 import { getSql } from "@/db/client"
 import type { ImportReport } from "@/lib/types"
+
+export const maxDuration = 60
 
 export default async function ImportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ run?: string, collections?: string, collectionError?: string, images?: string }>
+  searchParams: Promise<{ run?: string, collections?: string, collectionError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
   const pending = await sql<{ count: number }[]>`
-    select count(*)::int as count from product_images where storage_path is null and source_url is not null
+    select
+      (select count(*) from product_images where storage_path is null and source_url is not null)::int
+      + (select count(*) from collections where image_path is null and image_url is not null)::int as count
   `
   const runs = params.run
     ? await sql<Array<{ report: ImportReport }>>`select report from import_runs where id = ${params.run}`
@@ -21,7 +26,6 @@ export default async function ImportPage({
       <h1 className="text-3xl font-semibold">Import</h1>
       <p className="text-sm">Upload a Shopify product CSV. Products are matched by handle, so importing the same file again updates them. Images are copied into this shop’s storage. A large catalogue should also be imported with the local command so every image can finish.</p>
       <p className="text-sm">{pending[0]?.count ?? 0} images are still hosted on Shopify.</p>
-      {params.images ? <p className="text-sm">Image batch finished.</p> : null}
       {params.collections ? <p className="text-sm">Synced {params.collections} collections.</p> : null}
       {params.collectionError ? <p className="text-sm">{params.collectionError}</p> : null}
       <form action={runImport} className="grid gap-3">
@@ -31,9 +35,7 @@ export default async function ImportPage({
         <label className="label">Store URL<input className="field normal-case" name="storeUrl" defaultValue="https://nicheparts.com.au" /></label>
         <button className="btn w-fit" type="submit">Import CSV</button>
       </form>
-      <form action={downloadImageBatch}>
-        <button className="btn-ghost" type="submit">Download the next image batch</button>
-      </form>
+      <ImageDownload pending={pending[0]?.count ?? 0} />
       {report ? (
         <section className="grid gap-2 text-sm">
           <h2 className="text-lg">Last report</h2>

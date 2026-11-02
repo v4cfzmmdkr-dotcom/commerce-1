@@ -232,7 +232,7 @@ export async function importShopifyCsv(buffer: Buffer, filename = "upload.csv") 
   return { id, report }
 }
 
-export async function migrateRemoteImages(options: { limit: number, budgetMs?: number }) {
+export async function migrateRemoteImages(options: { limit: number, budgetMs?: number, concurrency?: number }) {
   const sql = getSql()
   const rows = await sql<Array<{ id: string, sourceUrl: string, position: number, handle: string }>>`
     select i.id, i.source_url as "sourceUrl", i.position, p.handle
@@ -246,30 +246,59 @@ export async function migrateRemoteImages(options: { limit: number, budgetMs?: n
   let stored = 0
   let failed = 0
   const failures: ParseIssue[] = []
-  for (const row of rows) {
-    if (options.budgetMs && Date.now() - started > options.budgetMs) break
-    try {
-      const saved = await downloadToStorage(row.sourceUrl, row.handle, Number(row.position))
-      await sql`
-        update product_images
-        set url = ${saved.url}, storage_path = ${saved.path}
-        where id = ${row.id}
-      `
-      stored += 1
-    } catch (error) {
-      failed += 1
-      failures.push({
-        record: 0,
-        handle: row.handle,
-        level: "error",
-        message: error instanceof Error ? error.message : "Image download failed",
-      })
+  const queue = [...rows]
+  async function worker() {
+    for (let row = queue.shift(); row; row = queue.shift()) {
+      if (options.budgetMs && Date.now() - started > options.budgetMs) return
+      try {
+        const saved = await downloadToStorage(row.sourceUrl, row.handle, Number(row.position))
+        await sql`
+          update product_images
+          set url = ${saved.url}, storage_path = ${saved.path}
+          where id = ${row.id}
+        `
+        stored += 1
+      } catch (error) {
+        failed += 1
+        failures.push({
+          record: 0,
+          handle: row.handle,
+          level: "error",
+          message: error instanceof Error ? error.message : "Image download failed",
+        })
+      }
     }
   }
+  await Promise.all(Array.from({ length: Math.max(1, options.concurrency ?? 1) }, worker))
   const pendingRows = await sql<{ count: number }[]>`
     select count(*)::int as count from product_images where storage_path is null and source_url is not null
   `
   return { stored, failed, pending: pendingRows[0]?.count ?? 0, failures }
+}
+
+export async function migrateCollectionImages() {
+  const sql = getSql()
+  const rows = await sql<Array<{ id: string, handle: string, imageUrl: string, position: number }>>`
+    select id, handle, image_url as "imageUrl", position
+    from collections
+    where image_path is null and image_url is not null
+  `
+  let stored = 0
+  let failed = 0
+  for (const row of rows) {
+    try {
+      const saved = await downloadToStorage(row.imageUrl, `collections/${row.handle}`, Number(row.position))
+      await sql`
+        update collections
+        set image_url = ${saved.url}, image_path = ${saved.path}, updated_at = now()
+        where id = ${row.id}
+      `
+      stored += 1
+    } catch {
+      failed += 1
+    }
+  }
+  return { stored, failed, pending: failed }
 }
 
 export async function syncCollections(

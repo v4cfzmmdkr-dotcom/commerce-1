@@ -10,7 +10,7 @@ import { parseMoneyToCents } from "@/lib/money"
 import { sendOrderEmail, sendShippingEmail } from "@/lib/email"
 import { SHIPPING_COUNTRY } from "@/lib/shipping"
 import { deleteObject, extensionFor, saveObject } from "@/lib/storage"
-import { importShopifyCsv, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
+import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
 import { slugify } from "@/lib/slug"
 import type { Address } from "@/lib/types"
@@ -553,9 +553,17 @@ export async function runImport(formData: FormData) {
   redirect(`/admin/import?run=${imported.id}${collectionNote}`)
 }
 
-export async function downloadImageBatch() {
+export async function downloadImageStep() {
   await requireAdmin()
-  await migrateRemoteImages({ limit: 40, budgetMs: 20000 })
+  const products = await migrateRemoteImages({ limit: 150, budgetMs: 40000, concurrency: 6 })
+  const collections = products.pending === 0
+    ? await migrateCollectionImages()
+    : { stored: 0, failed: 0, pending: 0 }
   revalidatePath("/", "layout")
-  redirect("/admin/import?images=1")
+  return {
+    stored: products.stored + collections.stored,
+    failed: products.failed + collections.failed,
+    pending: products.pending + collections.pending,
+    error: products.failures[0]?.message ?? null,
+  }
 }
