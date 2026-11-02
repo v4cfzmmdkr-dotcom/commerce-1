@@ -112,6 +112,13 @@ export function AddressFinder({
 
   return (
     <div className="grid gap-2">
+      <div className="address-map-wrap mb-2">
+        <div ref={mapEl} className="address-map" />
+        <div className="address-map-zoom">
+          <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>+</button>
+          <button type="button" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>−</button>
+        </div>
+      </div>
       <label className="label">
         Address
         <span className="address-search">
@@ -153,13 +160,6 @@ export function AddressFinder({
           ))}
         </ul>
       ) : null}
-      <div className="address-map-wrap">
-        <div ref={mapEl} className="address-map" />
-        <div className="address-map-zoom">
-          <button type="button" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>+</button>
-          <button type="button" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>−</button>
-        </div>
-      </div>
       <p className="text-xs">Pick a suggestion or tap the map to fill in the rest. Map data from OpenStreetMap.</p>
       {status ? <p className="text-sm" role="status">{status}</p> : null}
     </div>
