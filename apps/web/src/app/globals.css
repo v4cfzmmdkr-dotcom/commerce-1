@@ -962,6 +962,8 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   width: min(1680px, calc(100% - 2rem));
   height: calc(100% + 0.625rem);
   transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.45) 22%, #000 48%);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.45) 0%, rgb(0 0 0 / 0.45) 22%, #000 48%);
 }
 
 .hero-scrim {
