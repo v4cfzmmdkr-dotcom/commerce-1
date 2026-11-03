@@ -5,5 +5,6 @@ initBotId({
   protect: [
     { path: "/checkout", method: "POST" },
     { path: "/api/geocode", method: "GET" },
+    { path: "/api/search", method: "GET" },
   ],
 })

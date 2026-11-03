@@ -1,3 +1,4 @@
+import { checkBotId } from "botid/server"
 import { NextResponse } from "next/server"
 import { listProducts } from "@/lib/catalog"
 import { formatMoney } from "@/lib/money"
@@ -8,6 +9,7 @@ export const runtime = "nodejs"
 export async function GET(request: Request) {
   const query = new URL(request.url).searchParams.get("q")?.trim().slice(0, 80) ?? ""
   if (query.length < 2) return NextResponse.json({ results: [], total: 0 })
+  if ((await checkBotId()).isBot) return NextResponse.json({ error: "Access denied" }, { status: 403 })
   const [result, settings] = await Promise.all([
     listProducts({ q: query, pageSize: 6 }),
     getSettings(),
