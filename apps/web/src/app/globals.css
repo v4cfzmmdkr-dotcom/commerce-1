@@ -2282,6 +2282,7 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
 }
 
 .option-note {
+  margin-top: 0.125rem;
   font-size: 0.8125rem;
   opacity: 0.65;
 }
@@ -2289,13 +2290,14 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
 .swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1.125rem;
+  padding: 6px;
 }
 
 .swatch {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 0;
   padding: 0;

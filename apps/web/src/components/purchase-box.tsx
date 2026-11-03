@@ -89,7 +89,7 @@ export function PurchaseBox({
   }
 
   return (
-    <form action={action} className="grid gap-5">
+    <form action={action} className="grid gap-8">
       {selected ? <input type="hidden" name="variantId" value={selected.id} /> : null}
       {groups.map((group) => {
         const value = chosen[group.slot]
@@ -119,14 +119,16 @@ export function PurchaseBox({
           />
         )
       })}
-      <p className="text-2xl">{selected ? formatMoney(selected.priceCents, currency) : "Unavailable"}</p>
-      <label className="label max-w-28">
-        Qty
-        <input className="field normal-case" name="quantity" type="number" min={1} max={99} defaultValue={1} />
-      </label>
-      <SubmitButton disabled={!purchasable} label={purchasable ? "Add to cart" : selected ? "Sold out" : "Unavailable"} />
-      {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
-      {state?.ok ? <p className="text-sm" role="status">Added to cart.</p> : null}
+      <p className="text-2xl leading-none">{selected ? formatMoney(selected.priceCents, currency) : "Unavailable"}</p>
+      <div className="grid gap-4">
+        <label className="label max-w-28">
+          Qty
+          <input className="field normal-case" name="quantity" type="number" min={1} max={99} defaultValue={1} />
+        </label>
+        <SubmitButton disabled={!purchasable} label={purchasable ? "Add to cart" : selected ? "Sold out" : "Unavailable"} />
+        {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
+        {state?.ok ? <p className="text-sm" role="status">Added to cart.</p> : null}
+      </div>
     </form>
   )
 }
@@ -147,7 +149,7 @@ function ColourGroup({
   onChange: (value: string) => void
 }) {
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid gap-3">
       <legend className="mb-3 text-xs uppercase tracking-wide">
         {label}<span className="option-current">{value}</span>
       </legend>
@@ -189,9 +191,9 @@ function OptionGroup({
   onChange: (value: string) => void
 }) {
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid gap-3">
       <legend className="mb-3 text-xs uppercase tracking-wide">{label}</legend>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {values.map((item) => (
           <button
             key={item}
