@@ -1794,6 +1794,24 @@ a:hover .product-media img {
   background: color-mix(in srgb, var(--fg) 11%, transparent);
 }
 
+.admin-shell .btn-ghost.btn-tint-red {
+  background: color-mix(in srgb, #ff3b30 15%, transparent);
+  color: #e0291f;
+}
+
+.admin-shell .btn-ghost.btn-tint-red:hover {
+  background: color-mix(in srgb, #ff3b30 22%, transparent);
+}
+
+.admin-shell .btn-ghost.btn-tint-blue {
+  background: color-mix(in srgb, #0a84ff 14%, transparent);
+  color: #0071e3;
+}
+
+.admin-shell .btn-ghost.btn-tint-blue:hover {
+  background: color-mix(in srgb, #0a84ff 21%, transparent);
+}
+
 .admin-bar {
   position: sticky;
   top: 0;

@@ -186,7 +186,7 @@ export default async function ProductsPage({
                 <input type="hidden" name="listed" value={listed ? "0" : "1"} />
                 <input type="hidden" name="back" value={back} />
                 <span className="admin-note">{listed ? "Listed" : "Hidden"}</span>
-                <button className="btn-ghost" type="submit">{listed ? "Hide" : "List"}</button>
+                <button className={`btn-ghost ${listed ? "btn-tint-blue" : "btn-tint-red"}`} type="submit">{listed ? "Hide" : "List"}</button>
               </form>
             </SwipeToDelete>
           )
