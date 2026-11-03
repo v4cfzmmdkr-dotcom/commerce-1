@@ -14,6 +14,11 @@ export const social = {
     label: "eBay",
     detail: "Store",
   },
+  google: {
+    href: "https://share.google/wuQzUzvwlYySloVea",
+    label: "Google",
+    detail: "Niche Parts on Google",
+  },
   email: {
     address: "contact@nicheparts.com.au",
     href: "mailto:contact@nicheparts.com.au",

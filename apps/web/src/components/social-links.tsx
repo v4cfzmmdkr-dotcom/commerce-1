@@ -12,6 +12,9 @@ export function SocialLinks() {
       <a className="hero-social-ebay no-underline" href={social.ebay.href} target="_blank" rel="noreferrer" aria-label="eBay store">
         eBay
       </a>
+      <a className="no-underline" href={social.google.href} target="_blank" rel="noreferrer" aria-label={social.google.detail}>
+        <GoogleIcon />
+      </a>
     </div>
   )
 }
@@ -49,6 +52,14 @@ function FacebookIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M14.2 8.5H16.5V5.2h-2.3c-2.6 0-4.4 1.7-4.4 4.3V12H7.5v3.2h2.3V21h3.2v-5.8h2.5l.6-3.2h-3.1v-2.2c0-.9.5-1.3 1.2-1.3z" />
+    </svg>
+  )
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.32 2.98-7.35zM12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.76-5.59-4.12H3.07v2.6A10 10 0 0 0 12 22zM6.41 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.31.31-1.91v-2.6H3.07a10 10 0 0 0 0 9.02l3.34-2.6zM12 5.97c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.6C7.2 7.73 9.4 5.97 12 5.97z" />
     </svg>
   )
 }
