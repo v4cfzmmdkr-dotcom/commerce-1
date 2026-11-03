@@ -1,6 +1,7 @@
 import { CartIcon } from "@/components/cart-icon"
 import { CollectionNav } from "@/components/collection-nav"
 import { HeaderSearch } from "@/components/header-search"
+import { HomeOnly } from "@/components/home-only"
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
@@ -47,7 +48,7 @@ export function Header({
   return (
     <>
       <header className="site-header bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
-        {settings.announcement ? <Announcement text={settings.announcement} /> : null}
+        {settings.announcement ? <HomeOnly><Announcement text={settings.announcement} /></HomeOnly> : null}
         <div className="site-header-bar wrap-wide" style={{ minHeight: "var(--header-h)" }}>
           <Link href="/" className="site-header-brand tap-link gap-3" aria-label={`${settings.name} home`}>
             <span className="app-icon">
