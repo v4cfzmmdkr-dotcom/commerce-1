@@ -5,18 +5,15 @@ export type ColourOption = { name: string, hex: string, enabled: boolean }
 export const presetColours: Array<{ name: string, hex: string }> = [
   { name: "Black", hex: "#1d1d1f" },
   { name: "White", hex: "#f5f5f7" },
-  { name: "Grey", hex: "#8e8e93" },
-  { name: "Silver", hex: "#c7c7cc" },
-  { name: "Red", hex: "#e5383b" },
-  { name: "Orange", hex: "#ff9500" },
-  { name: "Yellow", hex: "#ffcc00" },
-  { name: "Green", hex: "#34c759" },
-  { name: "Blue", hex: "#0a84ff" },
-  { name: "Navy", hex: "#1f3a68" },
-  { name: "Purple", hex: "#af52de" },
-  { name: "Pink", hex: "#ff6fa8" },
-  { name: "Brown", hex: "#8b5e3c" },
-  { name: "Beige", hex: "#d8c8a8" },
+  { name: "Orange", hex: "#ff671f" },
+  { name: "Red", hex: "#d6001c" },
+  { name: "Green", hex: "#009639" },
+  { name: "Navy Blue", hex: "#0086d6" },
+  { name: "Pine Green", hex: "#034638" },
+  { name: "Dark Brown", hex: "#4f2c1d" },
+  { name: "Lemon Yellow", hex: "#f7d959" },
+  { name: "Lime", hex: "#c0df16" },
+  { name: "Reflex Blue", hex: "#001489" },
 ]
 
 export const defaultColours = ["Black", "White"]
