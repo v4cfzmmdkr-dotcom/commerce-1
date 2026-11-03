@@ -1,10 +1,12 @@
 import Link from "next/link"
+import { deleteOrder } from "@/app/admin/actions"
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
 import { paymentLabel } from "@/lib/payment-status"
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
-  const { show } = await searchParams
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ show?: string, notice?: string }> }) {
+  const { show, notice } = await searchParams
   const archived = show === "archived"
   const sql = getSql()
   const isArchived = sql`(tracking_number <> '' and shipping_email_status = 'sent' and shipping_emailed_tracking = tracking_number)`
@@ -46,6 +48,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           Archived ({counts[0].archived})
         </Link>
       </nav>
+      {archived && notice === "deleted" ? <p className="text-sm">Order deleted.</p> : null}
+      {archived && notice === "kept" ? <p className="text-sm">That order is no longer archived, so it was not deleted.</p> : null}
       <p className="admin-note text-sm">
         {archived
           ? "Orders move here once tracking is added and the shipping email has been sent."
@@ -61,6 +65,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <th>Payment</th>
               <th>Fulfilment</th>
               <th>Total</th>
+              {archived ? <th><span className="sr-only">Actions</span></th> : null}
             </tr>
           </thead>
           <tbody>
@@ -71,6 +76,14 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <td>{paymentLabel(order.paymentStatus, order)}</td>
                 <td>{order.fulfillmentStatus}</td>
                 <td>{formatMoney(Number(order.totalCents), order.currency)}</td>
+                {archived ? (
+                  <td className="text-right">
+                    <form action={deleteOrder}>
+                      <input type="hidden" name="id" value={order.id} />
+                      <ConfirmDeleteButton message={`Delete order ${order.number}? This removes it from the dashboard and cannot be undone.`} />
+                    </form>
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>

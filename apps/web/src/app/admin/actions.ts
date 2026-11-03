@@ -285,6 +285,22 @@ export async function deleteProduct(formData: FormData) {
   redirect(back("deleted"))
 }
 
+export async function deleteOrder(formData: FormData) {
+  await requireAdmin()
+  const id = text(formData, "id")
+  const sql = getSql()
+  const deleted = await sql`
+    delete from orders
+    where id = ${id}
+      and tracking_number <> ''
+      and shipping_email_status = 'sent'
+      and shipping_emailed_tracking = tracking_number
+    returning id
+  `
+  revalidatePath("/admin", "layout")
+  redirect(`/admin/orders?show=archived&notice=${deleted.length ? "deleted" : "kept"}`)
+}
+
 export async function uploadImages(formData: FormData) {
   await requireAdmin()
   const id = text(formData, "id")
