@@ -1864,13 +1864,6 @@ a:hover .product-media img {
   padding: 0;
 }
 
-.admin-account {
-  overflow: hidden;
-  color: var(--admin-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .admin-tabs {
   display: flex;
   gap: 0.25rem;
