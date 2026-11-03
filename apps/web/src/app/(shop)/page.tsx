@@ -110,8 +110,8 @@ export default async function HomePage() {
         </section>
       ))}
       <section className="wrap-wide py-[var(--section)]">
-        <div className="mb-6 flex items-end justify-between">
-          <h2 className="text-sm font-semibold">Parts</h2>
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <h2 className="collection-group-title">Parts</h2>
           <Link href="/search" className="text-sm">View all</Link>
         </div>
         <ProductGrid products={products} currency={settings.currency} />
