@@ -44,6 +44,18 @@ export async function saveColours(formData: FormData) {
   redirect(back({ colours: "saved", added: String(result.added) }))
 }
 
+export async function removeColour(formData: FormData) {
+  await requireAdmin()
+  const name = String(formData.get("name") || "").toLowerCase()
+  const sql = getSql()
+  const [row] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
+  const colours = parseColours(row?.colours).filter((colour) => colour.name.toLowerCase() !== name)
+  if (!colours.some((colour) => colour.enabled)) redirect(back({ colourError: "Keep at least one colour switched on" }))
+  await sql`update store_settings set colours = ${sql.json(colours)}, updated_at = now() where id = 'default'`
+  revalidatePath("/", "layout")
+  redirect(back({ colours: "removed" }))
+}
+
 export async function saveMaterialSettings(formData: FormData) {
   await requireAdmin()
   const enabled = new Set(formData.getAll("materials").map(String))

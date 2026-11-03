@@ -3,6 +3,7 @@ import type { CSSProperties } from "react"
 import { copyListing, createProduct, deleteProduct, setListed } from "@/app/admin/actions"
 import { saveColours, saveMaterialSettings } from "@/app/admin/option-actions"
 import { PendingButton } from "@/components/pending-button"
+import { RemoveColourButton } from "@/components/remove-colour-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
 import { defaultMaterial, materialOptions } from "@/lib/product-options"
@@ -67,6 +68,7 @@ export default async function ProductsPage({
               <input type="checkbox" name="colours" value={colour.name} defaultChecked={colour.enabled} />
               <span className="colour-chip-dot" style={{ "--swatch": colour.hex } as CSSProperties} aria-hidden />
               {colour.name}
+              <RemoveColourButton name={colour.name} />
             </label>
           ))}
         </div>
@@ -77,6 +79,7 @@ export default async function ProductsPage({
           </label>
           <input className="colour-picker" type="color" name="newHex" defaultValue="#6b8e23" aria-label="Swatch for the new colour" />
         </div>
+        {params.colours === "removed" ? <p className="text-sm" role="status">Colour removed.</p> : null}
         {params.colours === "saved" ? (
           <p className="text-sm" role="status">
             Colours saved{added ? `, and ${added} new ${added === 1 ? "variant was" : "variants were"} added` : ""}.

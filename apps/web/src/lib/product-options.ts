@@ -58,12 +58,8 @@ export function parseColours(value: unknown): ColourOption[] {
     if (!name || !HEX.test(hex) || colours.some((colour) => same(colour.name, name))) continue
     colours.push({ name, hex: hex.toLowerCase(), enabled: (item as { enabled?: unknown }).enabled !== false })
   }
-  const fresh = !colours.length
-  for (const preset of presetColours) {
-    if (colours.some((colour) => same(colour.name, preset.name))) continue
-    colours.push({ ...preset, enabled: fresh && defaultColours.includes(preset.name) })
-  }
-  return colours
+  if (colours.length) return colours
+  return presetColours.map((preset) => ({ ...preset, enabled: defaultColours.includes(preset.name) }))
 }
 
 export function enabledColourNames(colours: ColourOption[]) {

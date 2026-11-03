@@ -2415,3 +2415,46 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.colour-chip:has(.colour-chip-remove) {
+  padding-right: 0.3rem;
+}
+
+.colour-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 0.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  color: color-mix(in srgb, var(--fg) 60%, transparent);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform var(--press-out);
+}
+
+.colour-chip-remove svg {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.colour-chip-remove:hover {
+  background: color-mix(in srgb, var(--fg) 16%, transparent);
+  color: var(--fg);
+}
+
+.colour-chip-remove:active:not(:disabled) {
+  transform: scale(0.85);
+  transition: transform var(--press-in);
+}
+
+.colour-chip-remove:disabled {
+  opacity: 0.4;
+}

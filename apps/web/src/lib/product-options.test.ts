@@ -39,7 +39,7 @@ describe("parseColours", () => {
     expect(colours.some((colour) => colour.name === "Red" && !colour.enabled)).toBe(true)
   })
 
-  it("keeps saved choices and custom colours, dropping bad entries", () => {
+  it("keeps saved choices and custom colours, dropping bad entries and removed colours", () => {
     const colours = parseColours([
       { name: "Olive", hex: "#6B8E23", enabled: true },
       { name: "Black", hex: "#1d1d1f", enabled: false },
@@ -47,7 +47,7 @@ describe("parseColours", () => {
     ])
     expect(colours[0]).toEqual({ name: "Olive", hex: "#6b8e23", enabled: true })
     expect(colours.find((colour) => colour.name === "Black")?.enabled).toBe(false)
-    expect(colours.find((colour) => colour.name === "White")?.enabled).toBe(false)
+    expect(colours.some((colour) => colour.name === "White")).toBe(false)
     expect(colours.some((colour) => colour.name === "Broken")).toBe(false)
   })
 })
