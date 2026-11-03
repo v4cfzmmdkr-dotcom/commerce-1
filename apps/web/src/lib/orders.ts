@@ -264,7 +264,8 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       product_title: string
       variant_title: string
       unit_price_cents: number
-    }>>(`order_items?order_id=eq.${order.id}&select=quantity,product_title,variant_title,unit_price_cents`)
+      variant: { product: { product_images: Array<{ url: string, position: number }> } | null } | null
+    }>>(`order_items?order_id=eq.${order.id}&select=quantity,product_title,variant_title,unit_price_cents,variant:variants(product:products(product_images(url,position)))`)
     const items = itemRows?.data ?? []
     if (order.cart_id) {
       await supabaseMutate(`cart_items?cart_id=eq.${order.cart_id}`, "DELETE")
@@ -282,6 +283,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
         variantTitle: item.variant_title,
         quantity: Number(item.quantity),
         unitPriceCents: Number(item.unit_price_cents),
+        imageUrl: [...item.variant?.product?.product_images ?? []].sort((left, right) => left.position - right.position)[0]?.url ?? null,
       })),
     }
     const emailStatus = await sendOrderEmail({
@@ -320,9 +322,12 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     productTitle: string
     variantTitle: string
     unitPriceCents: number
+    imageUrl: string | null
   }>>`
     select quantity, product_title as "productTitle",
-      variant_title as "variantTitle", unit_price_cents as "unitPriceCents"
+      variant_title as "variantTitle", unit_price_cents as "unitPriceCents",
+      (select pi.url from variants v join product_images pi on pi.product_id = v.product_id
+        where v.id = order_items.variant_id order by pi.position limit 1) as "imageUrl"
     from order_items where order_id = ${order.id}
   `
   const paymentIntent = typeof session.payment_intent === "string"
@@ -361,6 +366,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
       variantTitle: item.variantTitle,
       quantity: Number(item.quantity),
       unitPriceCents: Number(item.unitPriceCents),
+      imageUrl: item.imageUrl,
     })),
   }
   const emailStatus = await sendOrderEmail({

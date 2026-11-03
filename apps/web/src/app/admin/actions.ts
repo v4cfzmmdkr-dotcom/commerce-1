@@ -507,8 +507,10 @@ async function notifyShipped(id: string) {
   `
   const order = rows[0]
   if (!order || !order.trackingNumber) return null
-  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number }>>`
-    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents"
+  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number, imageUrl: string | null }>>`
+    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents",
+      (select pi.url from variants v join product_images pi on pi.product_id = v.product_id
+        where v.id = order_items.variant_id order by pi.position limit 1) as "imageUrl"
     from order_items where order_id = ${id}
   `
   const status = await sendShippingEmail({
@@ -554,8 +556,10 @@ export async function resendOrderEmail(formData: FormData) {
   `
   const order = rows[0]
   if (!order) throw new Error("Order not found")
-  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number }>>`
-    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents"
+  const items = await sql<Array<{ productTitle: string, variantTitle: string, quantity: number, unitPriceCents: number, imageUrl: string | null }>>`
+    select product_title as "productTitle", variant_title as "variantTitle", quantity, unit_price_cents as "unitPriceCents",
+      (select pi.url from variants v join product_images pi on pi.product_id = v.product_id
+        where v.id = order_items.variant_id order by pi.position limit 1) as "imageUrl"
     from order_items where order_id = ${id}
   `
   const emailStatus = await sendOrderEmail({

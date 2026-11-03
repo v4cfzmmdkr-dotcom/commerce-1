@@ -20,4 +20,10 @@ export const social = {
     label: "Email",
     detail: "contact@nicheparts.com.au",
   },
+  phone: {
+    number: "0450 635 422",
+    href: "tel:+61450635422",
+    label: "Customer support",
+    detail: "0450 635 422",
+  },
 }
