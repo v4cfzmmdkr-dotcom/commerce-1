@@ -1,7 +1,8 @@
 import { getSql, databaseConfigured, textArray } from "@/db/client"
 import { brandPattern, countBrands, findBrand, type BrandCount } from "@/lib/brands"
 import { isPurchasable } from "@/lib/money"
-import { keepBlackWhiteColours } from "@/lib/product-colours"
+import { getSettings } from "@/lib/settings"
+import { enabledColourNames, offeredVariants, parseMaterials } from "@/lib/product-options"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
 import type { ProductMetadata } from "@/lib/types"
 
@@ -591,6 +592,7 @@ export async function popularTags(collectionId?: string) {
 }
 
 export async function getPublicProduct(handle: string): Promise<PublicProduct | null> {
+  const colours = enabledColourNames((await getSettings()).colours)
   if (catalogViaHttps()) {
     const rest = await supabaseRest<Array<{
       id: string
@@ -601,6 +603,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
       seo_title: string
       seo_description: string
       metadata: ProductMetadata
+      materials: string[] | null
       product_images?: Array<{ id: string, url: string, alt: string | null, position: number }>
       variants?: Array<{
         id: string
@@ -618,7 +621,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
         inventory_policy: string
         available: boolean
       }>
-    }>>(`products?handle=eq.${encodeURIComponent(handle)}&status=eq.active&select=id,handle,title,description_html,tags,seo_title,seo_description,metadata,product_images(id,url,alt,position),variants(id,title,sku,option1_name,option1_value,option2_name,option2_value,option3_name,option3_value,price_cents,compare_at_cents,inventory_qty,inventory_policy,available)&limit=1`)
+    }>>(`products?handle=eq.${encodeURIComponent(handle)}&status=eq.active&select=id,handle,title,description_html,tags,seo_title,seo_description,metadata,materials,product_images(id,url,alt,position),variants(id,title,sku,option1_name,option1_value,option2_name,option2_value,option3_name,option3_value,price_cents,compare_at_cents,inventory_qty,inventory_policy,available)&limit=1`)
     const product = rest?.data?.[0]
     if (!product) return null
     const images = [...(product.product_images ?? [])].sort((left, right) => left.position - right.position)
@@ -632,7 +635,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
       seoDescription: product.seo_description,
       metadata: product.metadata ?? {},
       images: images.map((image) => ({ id: image.id, url: image.url, alt: image.alt ?? "" })),
-      variants: keepBlackWhiteColours((product.variants ?? []).map((variant) => ({
+      variants: offeredVariants((product.variants ?? []).map((variant) => ({
         id: variant.id,
         title: variant.title,
         sku: variant.sku,
@@ -647,7 +650,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
         inventoryQty: Number(variant.inventory_qty),
         inventoryPolicy: variant.inventory_policy,
         available: Boolean(variant.available),
-      }))),
+      })), colours, parseMaterials(product.materials)),
     }
   }
   if (!databaseConfigured()) return null
@@ -661,9 +664,10 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
     seoTitle: string
     seoDescription: string
     metadata: ProductMetadata
+    materials: string[]
   }>>`
     select id, handle, title, description_html as "descriptionHtml", tags,
-      seo_title as "seoTitle", seo_description as "seoDescription", metadata
+      seo_title as "seoTitle", seo_description as "seoDescription", metadata, materials
     from products
     where handle = ${handle} and status = 'active'
     limit 1
@@ -687,18 +691,19 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
     where product_id = ${product.id}
     order by position asc
   `
+  const { materials, ...details } = product
   return {
-    ...product,
+    ...details,
     tags: textArray(product.tags),
     metadata: product.metadata ?? {},
     images,
-    variants: keepBlackWhiteColours(variants.map((variant) => ({
+    variants: offeredVariants(variants.map((variant) => ({
       ...variant,
       priceCents: Number(variant.priceCents),
       compareAtCents: variant.compareAtCents == null ? null : Number(variant.compareAtCents),
       inventoryQty: Number(variant.inventoryQty),
       available: Boolean(variant.available),
-    }))),
+    })), colours, parseMaterials(materials)),
   }
 }
 

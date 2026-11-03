@@ -106,7 +106,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
         <div className="mt-6">
-          <PurchaseBox variants={product.variants} currency={settings.currency} />
+          <PurchaseBox variants={product.variants} currency={settings.currency} colours={settings.colours} />
         </div>
         <div
           className="prose mt-8 text-sm"

@@ -1,13 +1,16 @@
 import Link from "next/link"
+import type { CSSProperties } from "react"
 import { copyListing, createProduct, deleteProduct, setListed } from "@/app/admin/actions"
+import { saveColours } from "@/app/admin/option-actions"
 import { PendingButton } from "@/components/pending-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
+import { getSettings } from "@/lib/settings"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -15,7 +18,8 @@ export default async function ProductsPage({
   const show = params.show === "listed" || params.show === "hidden" ? params.show : null
   const search = term ? sql`and (p.title ilike ${term} or p.handle ilike ${term})` : sql``
   const listing = show === "listed" ? sql`and p.status = 'active'` : show === "hidden" ? sql`and p.status <> 'active'` : sql``
-  const [products, counts] = await Promise.all([
+  const added = Number(params.added) || 0
+  const [products, counts, settings] = await Promise.all([
     sql<Array<{ id: string, title: string, status: string }>>`
       select p.id, p.title, p.status
       from products p
@@ -26,6 +30,7 @@ export default async function ProductsPage({
       select count(*) filter (where status = 'active')::int as listed, count(*) filter (where status <> 'active')::int as hidden
       from products
     `,
+    getSettings(),
   ])
   const query = new URLSearchParams()
   if (params.q?.trim()) query.set("q", params.q.trim())
@@ -46,6 +51,39 @@ export default async function ProductsPage({
         <input className="field max-w-sm" name="q" defaultValue={params.q || ""} placeholder="Search title or handle" />
         {show ? <input type="hidden" name="show" value={show} /> : null}
         <button className="btn" type="submit">Search</button>
+      </form>
+      <form action={saveColours} className="admin-card grid gap-4">
+        <div>
+          <h2>Colours</h2>
+          <p className="admin-note mt-1 text-sm">
+            Choose the colours customers can pick. This applies to every product. Switching a colour on adds it to every product at the same price as Black.
+          </p>
+        </div>
+        <div className="colour-chips">
+          {settings.colours.map((colour) => (
+            <label key={colour.name} className="colour-chip">
+              <input type="checkbox" name="colours" value={colour.name} defaultChecked={colour.enabled} />
+              <span className="colour-chip-dot" style={{ "--swatch": colour.hex } as CSSProperties} aria-hidden />
+              {colour.name}
+            </label>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="label max-w-xs flex-1">
+            Add a colour
+            <input className="field normal-case" name="newName" maxLength={30} placeholder="Olive" />
+          </label>
+          <input className="colour-picker" type="color" name="newHex" defaultValue="#6b8e23" aria-label="Swatch for the new colour" />
+        </div>
+        {params.colours === "saved" ? (
+          <p className="text-sm" role="status">
+            Colours saved{added ? `, and ${added} new ${added === 1 ? "variant was" : "variants were"} added` : ""}.
+          </p>
+        ) : null}
+        {params.colourError ? <p className="text-sm" role="alert">{params.colourError}</p> : null}
+        <div>
+          <PendingButton pendingText="Saving colours…">Save colours</PendingButton>
+        </div>
       </form>
       <form action={copyListing} className="admin-card grid gap-3">
         <div>

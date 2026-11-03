@@ -1,4 +1,5 @@
 import { getSql, databaseConfigured } from "@/db/client"
+import { parseColours, type ColourOption } from "@/lib/product-options"
 import { defaultTheme, parseTheme } from "@/lib/theme"
 import type { ThemeSettings } from "@/lib/types"
 
@@ -19,6 +20,7 @@ export type StoreSettings = {
   logoUrl: string | null
   bannerUrl: string | null
   bannerKind: "" | "image" | "video"
+  colours: ColourOption[]
 }
 
 export function defaultSettings(): StoreSettings {
@@ -41,6 +43,7 @@ export function defaultSettings(): StoreSettings {
     logoUrl: null,
     bannerUrl: "/brand/hero.jpg",
     bannerKind: "image",
+    colours: parseColours([]),
   }
 }
 
@@ -62,6 +65,7 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
     logoUrl: row.logo_url ? String(row.logo_url) : null,
     bannerUrl: row.banner_url ? String(row.banner_url) : null,
     bannerKind: row.banner_kind === "video" ? "video" : row.banner_kind === "image" ? "image" : "",
+    colours: parseColours(row.colours),
   }
 }
 

@@ -2,6 +2,8 @@ import { cookies } from "next/headers"
 import { randomUUID } from "node:crypto"
 import { getSql } from "@/db/client"
 import { isPurchasable, maxPurchasable } from "@/lib/money"
+import { enabledColourNames, parseMaterials, variantOffered } from "@/lib/product-options"
+import { getSettings } from "@/lib/settings"
 import { dataApiEnabled, supabaseMutate, supabaseRest } from "@/lib/supabase-rest"
 
 const cartCookie = "np_cart"
@@ -165,6 +167,21 @@ export async function cartCount() {
   }
 }
 
+type OfferedCheck = {
+  option1Name: string
+  option1Value: string
+  option2Name: string
+  option2Value: string
+  option3Name: string
+  option3Value: string
+  materials: unknown
+}
+
+async function stillOffered(variant: OfferedCheck) {
+  const colours = enabledColourNames((await getSettings()).colours)
+  return variantOffered(variant, colours, parseMaterials(variant.materials))
+}
+
 export async function addVariantToCart(variantId: string, quantity: number) {
   if (!idPattern.test(variantId)) throw new Error("That option is not available")
   if (dataApiEnabled()) {
@@ -174,8 +191,14 @@ export async function addVariantToCart(variantId: string, quantity: number) {
       inventory_qty: number
       inventory_policy: string
       available: boolean
-      products: { status: string }
-    }>>(`variants?id=eq.${variantId}&select=id,price_cents,inventory_qty,inventory_policy,available,products(status)`)
+      option1_name: string
+      option1_value: string
+      option2_name: string
+      option2_value: string
+      option3_name: string
+      option3_value: string
+      products: { status: string, materials: string[] | null }
+    }>>(`variants?id=eq.${variantId}&select=id,price_cents,inventory_qty,inventory_policy,available,option1_name,option1_value,option2_name,option2_value,option3_name,option3_value,products(status,materials)`)
     const row = result?.data[0]
     const variant = row
       ? {
@@ -185,9 +208,16 @@ export async function addVariantToCart(variantId: string, quantity: number) {
         inventoryPolicy: row.inventory_policy,
         available: Boolean(row.available),
         status: row.products?.status,
+        option1Name: row.option1_name,
+        option1Value: row.option1_value,
+        option2Name: row.option2_name,
+        option2Value: row.option2_value,
+        option3Name: row.option3_name,
+        option3Value: row.option3_value,
+        materials: row.products?.materials,
       }
       : null
-    if (!variant || variant.status !== "active" || !isPurchasable(variant)) {
+    if (!variant || variant.status !== "active" || !isPurchasable(variant) || !(await stillOffered(variant))) {
       throw new Error("That option is not available")
     }
     const qty = Math.max(1, Math.min(quantity, maxPurchasable(variant)))
@@ -220,15 +250,19 @@ export async function addVariantToCart(variantId: string, quantity: number) {
     inventoryPolicy: string
     available: boolean
     status: string
-  }>>`
+  } & OfferedCheck>>`
     select v.id, v.price_cents as "priceCents", v.inventory_qty as "inventoryQty",
-      v.inventory_policy as "inventoryPolicy", v.available, p.status
+      v.inventory_policy as "inventoryPolicy", v.available, p.status,
+      v.option1_name as "option1Name", v.option1_value as "option1Value",
+      v.option2_name as "option2Name", v.option2_value as "option2Value",
+      v.option3_name as "option3Name", v.option3_value as "option3Value",
+      p.materials
     from variants v
     join products p on p.id = v.product_id
     where v.id = ${variantId}
   `
   const variant = rows[0]
-  if (!variant || variant.status !== "active" || !isPurchasable(variant)) {
+  if (!variant || variant.status !== "active" || !isPurchasable(variant) || !(await stillOffered(variant))) {
     throw new Error("That option is not available")
   }
   const qty = Math.max(1, Math.min(quantity, maxPurchasable(variant)))

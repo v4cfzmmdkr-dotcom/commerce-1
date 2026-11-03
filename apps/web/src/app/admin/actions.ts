@@ -14,6 +14,7 @@ import { ListingError, importListing } from "@/lib/listing-import"
 import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
 import { receiptSeller } from "@/lib/orders"
+import { syncProductOptions } from "@/lib/product-options-sync"
 import { slugify } from "@/lib/slug"
 import { normaliseAbn } from "@/lib/tax-invoice"
 import type { Address } from "@/lib/types"
@@ -151,9 +152,10 @@ export async function createProduct(formData: FormData) {
     insert into products (id, handle, title, status) values (${id}, ${handle}, ${title}, 'draft')
   `
   await sql`
-    insert into variants (id, product_id, title, price_cents, inventory_qty, inventory_policy, position)
-    values (${randomUUID()}, ${id}, '', ${price}, 0, 'continue', 0)
+    insert into variants (id, product_id, title, option1_name, option1_value, option2_name, option2_value, price_cents, inventory_qty, inventory_policy, position)
+    values (${randomUUID()}, ${id}, 'Black / PETG', 'Colour', 'Black', 'Material', 'PETG', ${price}, 0, 'continue', 0)
   `
+  await syncProductOptions([id])
   redirect(`/admin/products/${id}`)
 }
 
@@ -214,7 +216,9 @@ export async function saveProduct(formData: FormData) {
         option1_value = ${text(formData, `option1Value_${variantId}`)},
         option2_name = ${text(formData, `option2Name_${variantId}`)},
         option2_value = ${text(formData, `option2Value_${variantId}`)},
-        title = ${[text(formData, `option1Value_${variantId}`), text(formData, `option2Value_${variantId}`)].filter((value) => value && value.toLowerCase() !== "default title").join(" / ")},
+        option3_name = ${formData.has(`option3Name_${variantId}`) ? text(formData, `option3Name_${variantId}`) : sql`option3_name`},
+        option3_value = ${formData.has(`option3Value_${variantId}`) ? text(formData, `option3Value_${variantId}`) : sql`option3_value`},
+        title = ${[text(formData, `option1Value_${variantId}`), text(formData, `option2Value_${variantId}`), text(formData, `option3Value_${variantId}`)].filter((value) => value && value.toLowerCase() !== "default title").join(" / ")},
         price_cents = ${price},
         compare_at_cents = ${compare === "invalid" ? null : compare},
         inventory_policy = 'continue',

@@ -1,16 +1,20 @@
 import { notFound } from "next/navigation"
 import { deleteImage, deleteProduct, saveProduct, uploadImages } from "@/app/admin/actions"
+import { saveMaterials } from "@/app/admin/option-actions"
 import { deletePrintFile, updatePrintFile } from "@/app/admin/print-file-actions"
+import { PendingButton } from "@/components/pending-button"
 import { PrintFileUpload } from "@/components/print-file-upload"
 import { getSql, textArray } from "@/db/client"
 import { formatFileSize } from "@/lib/print-file-rules"
+import { enabledColourNames, materialOptions, materialSlot, parseMaterials, variantOffered } from "@/lib/product-options"
+import { getSettings } from "@/lib/settings"
 
 export default async function EditProductPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ saved?: string, copied?: string, photos?: string, failed?: string }>
+  searchParams: Promise<{ saved?: string, copied?: string, photos?: string, failed?: string, materials?: string, added?: string, materialError?: string }>
 }) {
   const { id } = await params
   const query = await searchParams
@@ -28,9 +32,10 @@ export default async function EditProductPage({
     seoDescription: string
     featured: boolean
     chargeGst: boolean
+    materials: string[]
   }>>`
     select id, title, handle, description_html as "descriptionHtml", vendor, product_type as "productType",
-      tags, status, seo_title as "seoTitle", seo_description as "seoDescription", featured,
+      tags, status, seo_title as "seoTitle", seo_description as "seoDescription", featured, materials,
       coalesce((select bool_and(taxable) from variants where product_id = products.id), true) as "chargeGst"
     from products where id = ${id}
   `
@@ -43,11 +48,14 @@ export default async function EditProductPage({
     option1Value: string
     option2Name: string
     option2Value: string
+    option3Name: string
+    option3Value: string
     priceCents: number
     compareAtCents: number | null
   }>>`
     select id, sku, option1_name as "option1Name", option1_value as "option1Value",
       option2_name as "option2Name", option2_value as "option2Value",
+      option3_name as "option3Name", option3_value as "option3Value",
       price_cents as "priceCents", compare_at_cents as "compareAtCents"
     from variants where product_id = ${id}
     order by position asc
@@ -61,12 +69,21 @@ export default async function EditProductPage({
     from product_print_files where product_id = ${id} order by position asc, created_at asc
   `
   const variantLabel = (variant: (typeof variants)[number]) =>
-    [variant.option1Value, variant.option2Value].filter(Boolean).join(" / ") || variant.sku || "Default"
+    [variant.option1Value, variant.option2Value, variant.option3Value].filter(Boolean).join(" / ") || variant.sku || "Default"
+  const materials = parseMaterials(product.materials)
+  const canChooseMaterial = materialSlot(variants) !== 0
+  const colours = enabledColourNames((await getSettings()).colours)
+  const added = Number(query.added) || 0
   const dollars = (cents: number | null) => (cents == null ? "" : (Number(cents) / 100).toFixed(2))
   return (
     <div className="grid gap-8">
       <h1 className="text-3xl font-semibold">Edit product</h1>
       {query.saved ? <p className="text-sm">Saved.</p> : null}
+      {query.materials ? (
+        <p className="text-sm" role="status">
+          Materials saved{added ? `, and ${added} new ${added === 1 ? "variant was" : "variants were"} added` : ""}.
+        </p>
+      ) : null}
       {query.copied ? (
         <p className="admin-card max-w-3xl text-sm" role="status">
           Copied from {query.copied === "ebay" ? "eBay" : "Shopify"} with {query.photos ?? 0} {query.photos === "1" ? "photo" : "photos"}
@@ -96,6 +113,9 @@ export default async function EditProductPage({
         <h2 className="text-lg font-medium">Variants</h2>
         {variants.map((variant) => (
           <fieldset key={variant.id} className="admin-inset grid gap-2">
+            {variantOffered(variant, colours, materials) ? null : (
+              <p className="admin-note text-sm">Hidden from customers: its colour or material is switched off.</p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               <input className="field" name={`sku_${variant.id}`} defaultValue={variant.sku} placeholder="SKU" />
               <input className="field" name={`price_${variant.id}`} defaultValue={dollars(variant.priceCents)} placeholder="Price" required />
@@ -103,6 +123,8 @@ export default async function EditProductPage({
               <input className="field" name={`option1Value_${variant.id}`} defaultValue={variant.option1Value} placeholder="Option value" />
               <input className="field" name={`option2Name_${variant.id}`} defaultValue={variant.option2Name} placeholder="Second option name" />
               <input className="field" name={`option2Value_${variant.id}`} defaultValue={variant.option2Value} placeholder="Second option value" />
+              <input className="field" name={`option3Name_${variant.id}`} defaultValue={variant.option3Name} placeholder="Third option name" />
+              <input className="field" name={`option3Value_${variant.id}`} defaultValue={variant.option3Value} placeholder="Third option value" />
               <input className="field" name={`compare_${variant.id}`} defaultValue={dollars(variant.compareAtCents)} placeholder="Compare-at price" />
             </div>
             <label className="flex items-center gap-2 text-sm normal-case">
@@ -120,6 +142,37 @@ export default async function EditProductPage({
           </div>
         </fieldset>
         <button className="btn" type="submit">Save product</button>
+      </form>
+      <form action={saveMaterials} className="admin-card grid max-w-3xl gap-4">
+        <input type="hidden" name="id" value={product.id} />
+        <div>
+          <h2 className="text-lg font-medium">Material</h2>
+          <p className="admin-note mt-1 text-sm">
+            Customers choose from the materials ticked here before adding to cart. Colours are chosen for every product on the Products page.
+          </p>
+        </div>
+        <div className="colour-chips">
+          {materialOptions.map((material) => (
+            <label key={material.name} className="colour-chip material-chip">
+              <input type="checkbox" name="materials" value={material.name} defaultChecked={materials.includes(material.name)} disabled={!canChooseMaterial} />
+              <span className="font-medium">{material.name}</span>
+              <span className="admin-note text-xs">{material.colours ? `${material.colours.join(", ")} only` : "Every colour"}</span>
+            </label>
+          ))}
+        </div>
+        <label className="label max-w-xs">
+          PPS CF extra charge
+          <input className="field normal-case" name="extra" inputMode="decimal" placeholder="0.00" disabled={!canChooseMaterial} />
+        </label>
+        <p className="admin-note text-sm">
+          The extra charge is added to the PETG price when PPS CF variants are first created. Change it later in Variants above.
+        </p>
+        {query.materialError ? <p className="text-sm" role="alert">Tick at least one material.</p> : null}
+        {canChooseMaterial ? (
+          <PendingButton pendingText="Saving…">Save materials</PendingButton>
+        ) : (
+          <p className="text-sm">This product already uses three options, so a material choice can&apos;t be added. Remove an option to offer PPS CF.</p>
+        )}
       </form>
       <section className="admin-card grid max-w-3xl gap-3">
         <h2 className="text-lg font-medium">Images</h2>
