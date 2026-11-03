@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation"
 import { deleteImage, deleteProduct, saveProduct, uploadImages } from "@/app/admin/actions"
+import { deletePrintFile, updatePrintFile } from "@/app/admin/print-file-actions"
+import { PrintFileUpload } from "@/components/print-file-upload"
 import { getSql, textArray } from "@/db/client"
+import { formatFileSize } from "@/lib/print-file-rules"
 
 export default async function EditProductPage({
   params,
@@ -53,6 +56,12 @@ export default async function EditProductPage({
     select id, url, alt, position, storage_path as "storagePath"
     from product_images where product_id = ${id} order by position asc
   `
+  const printFiles = await sql<Array<{ id: string, fileName: string, sizeBytes: number, copies: number, notes: string, variantId: string | null }>>`
+    select id, file_name as "fileName", size_bytes::int as "sizeBytes", copies, notes, variant_id as "variantId"
+    from product_print_files where product_id = ${id} order by position asc, created_at asc
+  `
+  const variantLabel = (variant: (typeof variants)[number]) =>
+    [variant.option1Value, variant.option2Value].filter(Boolean).join(" / ") || variant.sku || "Default"
   const dollars = (cents: number | null) => (cents == null ? "" : (Number(cents) / 100).toFixed(2))
   return (
     <div className="grid gap-8">
@@ -132,6 +141,50 @@ export default async function EditProductPage({
           <input name="images" type="file" accept="image/*" multiple />
           <button className="btn w-fit" type="submit">Upload images</button>
         </form>
+      </section>
+      <section className="admin-card grid max-w-3xl gap-4">
+        <div>
+          <h2 className="text-lg font-medium">3D print files</h2>
+          <p className="admin-note mt-1 text-sm">Kept private. These are the parts printed for each one sold.</p>
+        </div>
+        {printFiles.length ? (
+          <ul className="grid gap-3">
+            {printFiles.map((file) => (
+              <li key={file.id} className="admin-inset grid gap-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <a className="min-w-0 truncate font-medium" href={`/api/admin/print-files/${file.id}`}>{file.fileName}</a>
+                  <span className="admin-note shrink-0 text-sm">{formatFileSize(file.sizeBytes)}</span>
+                </div>
+                <form action={updatePrintFile} className="grid gap-2 sm:grid-cols-[1fr_6rem]">
+                  <input type="hidden" name="id" value={file.id} />
+                  <input type="hidden" name="productId" value={product.id} />
+                  <label className="label">
+                    Prints for
+                    <select className="select normal-case" name="variantId" defaultValue={file.variantId ?? ""}>
+                      <option value="">Every variant</option>
+                      {variants.map((variant) => (
+                        <option key={variant.id} value={variant.id}>{variantLabel(variant)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="label">
+                    Copies
+                    <input className="field" name="copies" type="number" min={1} max={100} defaultValue={file.copies} />
+                  </label>
+                  <label className="label sm:col-span-2">
+                    Print notes
+                    <input className="field normal-case" name="notes" defaultValue={file.notes} placeholder="Filament, layer height, supports" />
+                  </label>
+                  <div className="flex gap-2 sm:col-span-2">
+                    <button className="btn-ghost" type="submit">Save</button>
+                    <button className="btn-ghost" type="submit" formAction={deletePrintFile}>Delete</button>
+                  </div>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <PrintFileUpload productId={product.id} />
       </section>
       <form action={deleteProduct}>
         <input type="hidden" name="id" value={product.id} />

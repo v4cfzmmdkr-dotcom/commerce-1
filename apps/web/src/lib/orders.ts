@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto"
 import type Stripe from "stripe"
 import { getSql } from "@/db/client"
 import { sendOrderAlert, sendOrderEmail, sendRefundEmail } from "@/lib/email"
+import { sendOrderToKhayt } from "@/lib/khayt"
 import { merchandiseSubtotal, quoteOrder, type PricedLine } from "@/lib/pricing"
 import { nullableCents, selectShippingRate, type ShippingRate } from "@/lib/shipping"
 import { getSettings } from "@/lib/settings"
@@ -292,6 +293,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
     })
     await supabaseMutate(`orders?id=eq.${order.id}`, "PATCH", { email_status: emailStatus })
     await alertOwner({ ...emailOrder, id: order.id })
+    await sendOrderToKhayt(order.id)
     return { already: false, paid: true }
   }
   const sql = getSql()
@@ -370,6 +372,7 @@ export async function fulfillPaidOrder(orderId: string, session: Stripe.Checkout
   })
   await sql`update orders set email_status = ${emailStatus} where id = ${order.id}`
   await alertOwner({ ...emailOrder, id: order.id })
+  await sendOrderToKhayt(order.id)
   return { already: false, paid: true }
 }
 

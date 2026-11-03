@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { resendOrderEmail, resendShippingEmail, updateOrder } from "@/app/admin/actions"
+import { resendToKhayt } from "@/app/admin/khayt-actions"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
 import { paymentLabel } from "@/lib/payment-status"
@@ -11,7 +12,7 @@ export default async function OrderDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ saved?: string, email?: string, shipping?: string }>
+  searchParams: Promise<{ saved?: string, email?: string, shipping?: string, khayt?: string }>
 }) {
   const { id } = await params
   const query = await searchParams
@@ -37,6 +38,8 @@ export default async function OrderDetailPage({
     shippingEmailStatus: string
     shippingEmailedTracking: string
     stripeSessionId: string | null
+    khaytStatus: string
+    khaytSentAt: Date | null
   }>>`
     select id, number, email, status, payment_status as "paymentStatus", fulfillment_status as "fulfillmentStatus",
       total_cents as "totalCents", refunded_cents as "refundedCents", subtotal_cents as "subtotalCents", shipping_cents as "shippingCents",
@@ -44,14 +47,28 @@ export default async function OrderDetailPage({
       tracking_carrier as "trackingCarrier", tracking_number as "trackingNumber",
       email_status as "emailStatus",
       shipping_email_status as "shippingEmailStatus", shipping_emailed_tracking as "shippingEmailedTracking",
-      stripe_session_id as "stripeSessionId"
+      stripe_session_id as "stripeSessionId", khayt_status as "khaytStatus", khayt_sent_at as "khaytSentAt"
     from orders where id = ${id}
   `
   const order = rows[0]
   if (!order) notFound()
-  const items = await sql<Array<{ productTitle: string, variantTitle: string, sku: string, quantity: number, unitPriceCents: number }>>`
-    select product_title as "productTitle", variant_title as "variantTitle", sku, quantity, unit_price_cents as "unitPriceCents"
-    from order_items where order_id = ${id}
+  const items = await sql<Array<{
+    productTitle: string
+    variantTitle: string
+    sku: string
+    quantity: number
+    unitPriceCents: number
+    printFiles: Array<{ id: string, fileName: string, copies: number, notes: string }> | null
+  }>>`
+    select i.product_title as "productTitle", i.variant_title as "variantTitle", i.sku, i.quantity,
+      i.unit_price_cents as "unitPriceCents",
+      (
+        select json_agg(json_build_object('id', f.id, 'fileName', f.file_name, 'copies', f.copies, 'notes', f.notes) order by f.position)
+        from product_print_files f
+        where f.product_id = v.product_id and (f.variant_id is null or f.variant_id = i.variant_id)
+      ) as "printFiles"
+    from order_items i left join variants v on v.id = i.variant_id
+    where i.order_id = ${id}
   `
   const address = order.shippingAddress
   const trackLink = trackingUrl(order.trackingCarrier, order.trackingNumber)
@@ -62,11 +79,13 @@ export default async function OrderDetailPage({
       {query.saved ? <p className="text-sm">Order updated.</p> : null}
       {query.email ? <p className="text-sm">Email status: {query.email}</p> : null}
       {query.shipping ? <p className="text-sm">{shippingMessage(query.shipping)}</p> : null}
+      {query.khayt ? <p className="text-sm">{khaytMessage(query.khayt)}</p> : null}
       <dl className="grid gap-1 text-sm">
         <div>Payment: {paymentLabel(order.paymentStatus, order)}</div>
         <div>Status: {order.status}</div>
         <div>Email: {order.email}</div>
         <div>Confirmation email: {order.emailStatus}</div>
+        <div>Khayt: {khaytLabel(order.khaytStatus, order.khaytSentAt)}</div>
         <div>
           Shipping email: {order.shippingEmailStatus === "sent" ? `sent (tracking ${order.shippingEmailedTracking})` : order.shippingEmailStatus || "not sent"}
         </div>
@@ -74,9 +93,21 @@ export default async function OrderDetailPage({
         <div>Subtotal {formatMoney(Number(order.subtotalCents), order.currency)} · Shipping {formatMoney(Number(order.shippingCents), order.currency)} · GST {formatMoney(Number(order.taxCents), order.currency)} · Total {formatMoney(Number(order.totalCents), order.currency)}</div>
         <div>{address.name}, {address.line1} {address.line2}, {address.city} {address.state} {address.postcode} {address.country}</div>
       </dl>
-      <ul className="admin-card text-sm">
+      <ul className="admin-card grid gap-2 text-sm">
         {items.map((item, index) => (
-          <li key={index}>{item.quantity} × {item.productTitle} {item.variantTitle} {item.sku}</li>
+          <li key={index}>
+            {item.quantity} × {item.productTitle} {item.variantTitle} {item.sku}
+            {item.printFiles?.length ? (
+              <ul className="mt-1 grid gap-0.5 pl-4">
+                {item.printFiles.map((file) => (
+                  <li key={file.id}>
+                    <a className="underline" href={`/api/admin/print-files/${file.id}`}>{file.fileName}</a>
+                    {" "}× {file.copies * Number(item.quantity)}{file.notes ? ` · ${file.notes}` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </li>
         ))}
       </ul>
       <form action={updateOrder} className="admin-card grid gap-3">
@@ -118,9 +149,31 @@ export default async function OrderDetailPage({
             <button className="btn-ghost" type="submit">Resend shipping email</button>
           </form>
         ) : null}
+        {["paid", "partially_refunded"].includes(order.paymentStatus) ? (
+          <form action={resendToKhayt}>
+            <input type="hidden" name="id" value={order.id} />
+            <button className="btn-ghost" type="submit">{order.khaytStatus === "sent" ? "Send to Khayt again" : "Send to Khayt"}</button>
+          </form>
+        ) : null}
       </div>
     </div>
   )
+}
+
+function khaytLabel(status: string, sentAt: Date | null) {
+  if (status === "sent" && sentAt) {
+    return `sent ${new Date(sentAt).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Brisbane" })}`
+  }
+  if (status === "failed") return "could not reach Khayt"
+  if (status === "rejected") return "Khayt refused the order"
+  return "not sent"
+}
+
+function khaytMessage(status: string) {
+  if (status === "sent") return "Order sent to Khayt. It appears under Online orders on the Mac within a couple of minutes."
+  if (status === "not_configured") return "Not sent: add KHAYT_IMPORT_URL (and KHAYT_IMPORT_KEY) to the site's environment variables."
+  if (status === "rejected") return "Khayt refused this order. Check that it is paid and that the import link is right."
+  return "Could not reach Khayt, or the import key was refused. Check KHAYT_IMPORT_KEY and try again."
 }
 
 function shippingMessage(status: string) {

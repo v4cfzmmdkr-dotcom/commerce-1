@@ -1937,6 +1937,58 @@ a:hover .product-media img {
   color: var(--fg);
 }
 
+.print-drop {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 1.5rem 1rem;
+  border: 1.5px dashed color-mix(in srgb, var(--fg) 22%, transparent);
+  border-radius: 1.25rem;
+  background: var(--admin-group);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.print-drop svg {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 0.25rem;
+  fill: none;
+  stroke: var(--admin-link);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.print-drop:hover,
+.print-drop[data-dragging] {
+  border-color: var(--admin-link);
+  background: color-mix(in srgb, var(--admin-link) 7%, var(--admin-group));
+}
+
+.print-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.print-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--admin-link);
+  transition: width 0.2s ease-out, background-color 0.3s ease;
+}
+
+.print-progress[data-done] span {
+  background: #34c759;
+}
+
 .admin-shell .nav-link {
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--press-out), opacity 0.3s ease;
