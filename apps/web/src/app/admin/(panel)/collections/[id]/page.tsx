@@ -76,7 +76,7 @@ export default async function EditCollectionPage({
       </form>
       <ul className="admin-list text-sm">
         {members.map((member) => (
-          <li key={member.id} className="flex items-center justify-between gap-3">
+          <li key={member.id} className="flex items-center justify-between gap-4 py-2">
             <span>{member.title}</span>
             <form action={removeFromCollection}>
               <input type="hidden" name="id" value={collection.id} />
