@@ -5,8 +5,16 @@ import { redirect } from "next/navigation"
 import { getSql, textArrayLiteral } from "@/db/client"
 import { requireAdmin } from "@/lib/auth/current"
 import { parseMoneyToCents } from "@/lib/money"
-import { cleanName, materialOptions, parseColours, parseMaterials, type ColourOption } from "@/lib/product-options"
-import { syncProductOptions } from "@/lib/product-options-sync"
+import {
+  cleanName,
+  defaultMaterial,
+  materialOptions,
+  parseColours,
+  parseMaterials,
+  type ColourOption,
+  type MaterialSetting,
+} from "@/lib/product-options"
+import { repriceMaterials, syncProductOptions } from "@/lib/product-options-sync"
 
 function back(params: Record<string, string>) {
   return `/admin/products?${new URLSearchParams(params)}`
@@ -36,22 +44,36 @@ export async function saveColours(formData: FormData) {
   redirect(back({ colours: "saved", added: String(result.added) }))
 }
 
+export async function saveMaterialSettings(formData: FormData) {
+  await requireAdmin()
+  const enabled = new Set(formData.getAll("materials").map(String))
+  if (!enabled.size) redirect(back({ materialError: "Keep at least one material switched on" }))
+  const settings: MaterialSetting[] = []
+  for (const material of materialOptions) {
+    let markupCents = 0
+    if (material.name !== defaultMaterial) {
+      const markup = parseMoneyToCents(String(formData.get(`markup_${material.name}`) || ""))
+      if (markup === "invalid") redirect(back({ materialError: `Enter the ${material.name} markup like 4.00` }))
+      markupCents = markup ?? 0
+    }
+    settings.push({ name: material.name, enabled: enabled.has(material.name), markupCents })
+  }
+  const sql = getSql()
+  await sql`update store_settings set materials = ${sql.json(settings)}, updated_at = now() where id = 'default'`
+  const { added } = await syncProductOptions()
+  const repriced = await repriceMaterials()
+  revalidatePath("/", "layout")
+  redirect(back({ materials: "saved", added: String(added), repriced: String(repriced) }))
+}
+
 export async function saveMaterials(formData: FormData) {
   await requireAdmin()
   const id = String(formData.get("id") || "")
   const chosen = formData.getAll("materials").map(String)
   if (!chosen.length) redirect(`/admin/products/${id}?materialError=1`)
-  const materials = parseMaterials(chosen)
-  const extra = parseMoneyToCents(String(formData.get("extra") || "").trim())
-  const extraCents: Record<string, number> = {}
-  if (typeof extra === "number") {
-    for (const material of materialOptions) {
-      if (material.name !== "PETG") extraCents[material.name] = extra
-    }
-  }
   const sql = getSql()
-  await sql`update products set materials = ${textArrayLiteral(materials)}::text[], updated_at = now() where id = ${id}`
-  const result = await syncProductOptions([id], extraCents)
+  await sql`update products set materials = ${textArrayLiteral(parseMaterials(chosen))}::text[], updated_at = now() where id = ${id}`
+  const result = await syncProductOptions([id])
   revalidatePath("/", "layout")
   redirect(`/admin/products/${id}?materials=saved&added=${result.added}`)
 }

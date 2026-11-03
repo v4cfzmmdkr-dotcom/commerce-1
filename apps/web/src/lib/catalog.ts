@@ -2,7 +2,7 @@ import { getSql, databaseConfigured, textArray } from "@/db/client"
 import { brandPattern, countBrands, findBrand, type BrandCount } from "@/lib/brands"
 import { isPurchasable } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
-import { enabledColourNames, offeredVariants, parseMaterials } from "@/lib/product-options"
+import { enabledColourNames, offeredVariants, shopMaterials } from "@/lib/product-options"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
 import type { ProductMetadata } from "@/lib/types"
 
@@ -592,7 +592,8 @@ export async function popularTags(collectionId?: string) {
 }
 
 export async function getPublicProduct(handle: string): Promise<PublicProduct | null> {
-  const colours = enabledColourNames((await getSettings()).colours)
+  const settings = await getSettings()
+  const colours = enabledColourNames(settings.colours)
   if (catalogViaHttps()) {
     const rest = await supabaseRest<Array<{
       id: string
@@ -650,7 +651,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
         inventoryQty: Number(variant.inventory_qty),
         inventoryPolicy: variant.inventory_policy,
         available: Boolean(variant.available),
-      })), colours, parseMaterials(product.materials)),
+      })), colours, shopMaterials(product.materials, settings.materials)),
     }
   }
   if (!databaseConfigured()) return null
@@ -703,7 +704,7 @@ export async function getPublicProduct(handle: string): Promise<PublicProduct | 
       compareAtCents: variant.compareAtCents == null ? null : Number(variant.compareAtCents),
       inventoryQty: Number(variant.inventoryQty),
       available: Boolean(variant.available),
-    })), colours, parseMaterials(materials)),
+    })), colours, shopMaterials(materials, settings.materials)),
   }
 }
 

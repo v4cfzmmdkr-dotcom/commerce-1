@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto"
 import { getSql } from "@/db/client"
-import { enabledColourNames, parseColours, parseMaterials, planVariants, type PlanVariant } from "@/lib/product-options"
+import {
+  enabledColourNames,
+  materialMarkups,
+  parseColours,
+  parseMaterialSettings,
+  planReprice,
+  planVariants,
+  shopMaterials,
+  type PlanVariant,
+} from "@/lib/product-options"
 
 type VariantRow = PlanVariant & {
   productId: string
@@ -13,15 +22,15 @@ type VariantRow = PlanVariant & {
   available: boolean
 }
 
-export async function syncProductOptions(productIds?: string[], extraCents: Record<string, number> = {}) {
+async function load(productIds?: string[]) {
   const sql = getSql()
-  const [settings] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
-  const colours = enabledColourNames(parseColours(settings?.colours))
+  const [settings] = await sql<Array<{ colours: unknown, materials: unknown }>>`
+    select colours, materials from store_settings where id = 'default'
+  `
   const products = await sql<Array<{ id: string, materials: string[] }>>`
     select id, materials from products ${productIds ? sql`where id in ${sql(productIds)}` : sql``}
   `
-  if (!products.length) return { added: 0, updated: 0 }
-  const rows = await sql<VariantRow[]>`
+  const rows = products.length ? await sql<VariantRow[]>`
     select id, product_id as "productId", sku, title,
       option1_name as "option1Name", option1_value as "option1Value",
       option2_name as "option2Name", option2_value as "option2Value",
@@ -32,13 +41,25 @@ export async function syncProductOptions(productIds?: string[], extraCents: Reco
     from variants
     ${productIds ? sql`where product_id in ${sql(productIds)}` : sql``}
     order by position
-  `
+  ` : []
   const byProduct = new Map<string, VariantRow[]>()
   for (const row of rows) byProduct.set(row.productId, [...(byProduct.get(row.productId) ?? []), row])
+  return {
+    colours: enabledColourNames(parseColours(settings?.colours)),
+    materialSettings: parseMaterialSettings(settings?.materials),
+    products,
+    byProduct,
+  }
+}
+
+export async function syncProductOptions(productIds?: string[]) {
+  const sql = getSql()
+  const { colours, materialSettings, products, byProduct } = await load(productIds)
+  const markups = materialMarkups(materialSettings)
   const updates: VariantRow[] = []
   const inserts: Array<Record<string, unknown>> = []
   for (const product of products) {
-    const plan = planVariants(byProduct.get(product.id) ?? [], colours, parseMaterials(product.materials), extraCents)
+    const plan = planVariants(byProduct.get(product.id) ?? [], colours, shopMaterials(product.materials, materialSettings), markups)
     updates.push(...plan.updates)
     for (const variant of plan.inserts) {
       inserts.push({
@@ -81,4 +102,20 @@ export async function syncProductOptions(productIds?: string[], extraCents: Reco
     }
   })
   return { added: inserts.length, updated: updates.length }
+}
+
+export async function repriceMaterials(productIds?: string[]) {
+  const sql = getSql()
+  const { materialSettings, byProduct } = await load(productIds)
+  const markups = materialMarkups(materialSettings)
+  const updates = [...byProduct.values()].flatMap((variants) => planReprice(variants, markups))
+  await sql.begin(async (tx) => {
+    for (const update of updates) {
+      await tx`
+        update variants set price_cents = ${update.priceCents}, compare_at_cents = ${update.compareAtCents}
+        where id = ${update.id}
+      `
+    }
+  })
+  return updates.length
 }

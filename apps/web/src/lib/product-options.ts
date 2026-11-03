@@ -81,6 +81,31 @@ export function parseMaterials(value: unknown) {
   return known.length ? known : [defaultMaterial]
 }
 
+export type MaterialSetting = { name: string, enabled: boolean, markupCents: number }
+
+export function parseMaterialSettings(value: unknown): MaterialSetting[] {
+  const parsed = fromJson(value)
+  const saved = (Array.isArray(parsed) ? parsed : []) as Array<{ name?: unknown, enabled?: unknown, markupCents?: unknown } | null>
+  return materialOptions.map((material) => {
+    const item = saved.find((entry) => entry && typeof entry === "object" && same(String(entry.name ?? ""), material.name))
+    const markup = Number(item?.markupCents)
+    return {
+      name: material.name,
+      enabled: item?.enabled !== false,
+      markupCents: material.name !== defaultMaterial && Number.isInteger(markup) && markup > 0 ? markup : 0,
+    }
+  })
+}
+
+export function shopMaterials(productMaterials: unknown, settings: MaterialSetting[]) {
+  const enabled = settings.filter((setting) => setting.enabled).map((setting) => setting.name)
+  return parseMaterials(productMaterials).filter((name) => enabled.includes(name))
+}
+
+export function materialMarkups(settings: MaterialSetting[]) {
+  return Object.fromEntries(settings.filter((setting) => setting.name !== defaultMaterial).map((setting) => [setting.name, setting.markupCents]))
+}
+
 export function materialColours(material: string, enabled: string[]) {
   const rule = materialOptions.find((option) => same(option.name, material))
   if (!rule) return []
@@ -148,6 +173,11 @@ export function withDefaultMaterial<T extends Options>(variants: T[]) {
     setOption(next, slot, "Material", defaultMaterial)
     return next
   })
+}
+
+export function variantMaterial(variant: Options) {
+  const slot = namedSlot(variant, (name) => same(name, "material"))
+  return slot ? valueOf(variant, slot) : ""
 }
 
 export function variantOffered(variant: Options, colours: string[], materials: string[]) {
@@ -250,4 +280,31 @@ export function planVariants<T extends PlanVariant>(
     }
   }
   return { updates, inserts }
+}
+
+export function planReprice<T extends PlanVariant>(variants: T[], markups: Record<string, number>) {
+  const materialAt = variants.map((variant) => namedSlot(variant, (name) => same(name, "material"))).find(Boolean)
+  if (!materialAt) return []
+  const key = (variant: T) => ([1, 2, 3] as const)
+    .filter((slot) => slot !== materialAt)
+    .map((slot) => valueOf(variant, slot).trim().toLowerCase())
+    .join("|")
+  const bases = new Map<string, T>()
+  for (const variant of variants) {
+    if (same(valueOf(variant, materialAt), defaultMaterial) && !bases.has(key(variant))) bases.set(key(variant), variant)
+  }
+  const updates: Array<{ id: string, priceCents: number, compareAtCents: number | null }> = []
+  for (const variant of variants) {
+    const material = materialOptions.find((option) => same(option.name, valueOf(variant, materialAt)))
+    if (!material || material.name === defaultMaterial) continue
+    const base = bases.get(key(variant))
+    if (!base) continue
+    const markup = markups[material.name] ?? 0
+    const priceCents = base.priceCents + markup
+    const compareAtCents = base.compareAtCents === null ? null : base.compareAtCents + markup
+    if (priceCents !== variant.priceCents || compareAtCents !== variant.compareAtCents) {
+      updates.push({ id: variant.id, priceCents, compareAtCents })
+    }
+  }
+  return updates
 }

@@ -4,8 +4,11 @@ import {
   materialSlot,
   offeredVariants,
   parseColours,
+  parseMaterialSettings,
   parseMaterials,
+  planReprice,
   planVariants,
+  shopMaterials,
   variantOffered,
   withDefaultMaterial,
   type PlanVariant,
@@ -133,5 +136,34 @@ describe("planVariants", () => {
   it("does nothing when everything already exists", () => {
     const plan = planVariants([variant("b", "Black", "PETG"), variant("c", "Black", "PPS CF")], ["Black"], ["PETG", "PPS CF"])
     expect(plan).toEqual({ updates: [], inserts: [] })
+  })
+})
+
+describe("shop-wide material settings", () => {
+  it("defaults to every material on with no markup", () => {
+    expect(parseMaterialSettings(null)).toEqual([
+      { name: "PETG", enabled: true, markupCents: 0 },
+      { name: "PPS CF", enabled: true, markupCents: 0 },
+    ])
+    expect(parseMaterialSettings([{ name: "PETG", markupCents: 300 }, { name: "pps cf", enabled: false, markupCents: 450 }])).toEqual([
+      { name: "PETG", enabled: true, markupCents: 0 },
+      { name: "PPS CF", enabled: false, markupCents: 450 },
+    ])
+  })
+
+  it("hides materials switched off for the whole shop", () => {
+    const settings = parseMaterialSettings([{ name: "PPS CF", enabled: false }])
+    expect(shopMaterials(["PETG", "PPS CF"], settings)).toEqual(["PETG"])
+    expect(shopMaterials(["PPS CF"], settings)).toEqual([])
+  })
+
+  it("reprices PPS CF from the matching PETG variant", () => {
+    const updates = planReprice([
+      variant("ps", "Black", "PETG", { option3Name: "Size", option3Value: "Small", compareAtCents: 2400 }),
+      variant("pl", "Black", "PETG", { option3Name: "Size", option3Value: "Large", priceCents: 2200 }),
+      variant("cs", "Black", "PPS CF", { option3Name: "Size", option3Value: "Small", priceCents: 1800 }),
+      variant("cl", "Black", "PPS CF", { option3Name: "Size", option3Value: "Large", priceCents: 2650 }),
+    ], { "PPS CF": 450 })
+    expect(updates).toEqual([{ id: "cs", priceCents: 2250, compareAtCents: 2850 }])
   })
 })

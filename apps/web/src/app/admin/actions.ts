@@ -14,7 +14,7 @@ import { ListingError, importListing } from "@/lib/listing-import"
 import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
 import { receiptSeller } from "@/lib/orders"
-import { syncProductOptions } from "@/lib/product-options-sync"
+import { repriceMaterials, syncProductOptions } from "@/lib/product-options-sync"
 import { slugify } from "@/lib/slug"
 import { normaliseAbn } from "@/lib/tax-invoice"
 import type { Address } from "@/lib/types"
@@ -241,6 +241,7 @@ export async function saveProduct(formData: FormData) {
     `
   }
   await sql`update variants set taxable = ${formData.get("chargeGst") === "on"} where product_id = ${id}`
+  await repriceMaterials([id])
   revalidatePath("/", "layout")
   redirect(`/admin/products/${id}?saved=1`)
 }

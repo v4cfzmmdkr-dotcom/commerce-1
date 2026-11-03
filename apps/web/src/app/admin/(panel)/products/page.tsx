@@ -1,16 +1,17 @@
 import Link from "next/link"
 import type { CSSProperties } from "react"
 import { copyListing, createProduct, deleteProduct, setListed } from "@/app/admin/actions"
-import { saveColours } from "@/app/admin/option-actions"
+import { saveColours, saveMaterialSettings } from "@/app/admin/option-actions"
 import { PendingButton } from "@/components/pending-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
+import { defaultMaterial, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string, materials?: string, repriced?: string, materialError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -19,6 +20,7 @@ export default async function ProductsPage({
   const search = term ? sql`and (p.title ilike ${term} or p.handle ilike ${term})` : sql``
   const listing = show === "listed" ? sql`and p.status = 'active'` : show === "hidden" ? sql`and p.status <> 'active'` : sql``
   const added = Number(params.added) || 0
+  const repriced = Number(params.repriced) || 0
   const [products, counts, settings] = await Promise.all([
     sql<Array<{ id: string, title: string, status: string }>>`
       select p.id, p.title, p.status
@@ -83,6 +85,53 @@ export default async function ProductsPage({
         {params.colourError ? <p className="text-sm" role="alert">{params.colourError}</p> : null}
         <div>
           <PendingButton pendingText="Saving colours…">Save colours</PendingButton>
+        </div>
+      </form>
+      <form action={saveMaterialSettings} className="admin-card grid gap-4">
+        <div>
+          <h2>Materials</h2>
+          <p className="admin-note mt-1 text-sm">
+            Switch a material off to hide it on every product. Each product also chooses its own materials on its edit page.
+          </p>
+        </div>
+        <div className="grid gap-3">
+          {materialOptions.map((material) => {
+            const setting = settings.materials.find((item) => item.name === material.name)
+            return (
+              <div key={material.name} className="flex flex-wrap items-center gap-3">
+                <label className="colour-chip material-chip">
+                  <input type="checkbox" name="materials" value={material.name} defaultChecked={setting?.enabled !== false} />
+                  <span className="font-medium">{material.name}</span>
+                  <span className="admin-note text-xs">{material.colours ? `${material.colours.join(", ")} only` : "Every colour"}</span>
+                </label>
+                {material.name === defaultMaterial ? (
+                  <span className="admin-note text-sm">Base price</span>
+                ) : (
+                  <label className="flex items-center gap-2 whitespace-nowrap text-sm normal-case">
+                    Markup over PETG ($)
+                    <input
+                      className="field w-28 normal-case"
+                      name={`markup_${material.name}`}
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      defaultValue={((setting?.markupCents ?? 0) / 100).toFixed(2)}
+                      aria-label={`${material.name} markup over PETG`}
+                    />
+                  </label>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <p className="admin-note text-sm">Saving updates the price of every PPS CF option to its PETG price plus the markup.</p>
+        {params.materials === "saved" ? (
+          <p className="text-sm" role="status">
+            Materials saved{repriced ? `, ${repriced} ${repriced === 1 ? "price" : "prices"} updated` : ""}{added ? `, ${added} new ${added === 1 ? "variant" : "variants"} added` : ""}.
+          </p>
+        ) : null}
+        {params.materialError ? <p className="text-sm" role="alert">{params.materialError}</p> : null}
+        <div>
+          <PendingButton pendingText="Saving materials…">Save materials</PendingButton>
         </div>
       </form>
       <form action={copyListing} className="admin-card grid gap-3">

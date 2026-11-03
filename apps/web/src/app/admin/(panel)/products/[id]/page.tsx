@@ -6,7 +6,16 @@ import { PendingButton } from "@/components/pending-button"
 import { PrintFileUpload } from "@/components/print-file-upload"
 import { getSql, textArray } from "@/db/client"
 import { formatFileSize } from "@/lib/print-file-rules"
-import { enabledColourNames, materialOptions, materialSlot, parseMaterials, variantOffered } from "@/lib/product-options"
+import {
+  defaultMaterial,
+  enabledColourNames,
+  materialOptions,
+  materialSlot,
+  parseMaterials,
+  shopMaterials,
+  variantMaterial,
+  variantOffered,
+} from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 
 export default async function EditProductPage({
@@ -72,7 +81,14 @@ export default async function EditProductPage({
     [variant.option1Value, variant.option2Value, variant.option3Value].filter(Boolean).join(" / ") || variant.sku || "Default"
   const materials = parseMaterials(product.materials)
   const canChooseMaterial = materialSlot(variants) !== 0
-  const colours = enabledColourNames((await getSettings()).colours)
+  const settings = await getSettings()
+  const colours = enabledColourNames(settings.colours)
+  const offeredMaterials = shopMaterials(product.materials, settings.materials)
+  const markupFor = (name: string) => settings.materials.find((material) => material.name === name)
+  const followsMarkup = (variant: (typeof variants)[number]) => {
+    const material = variantMaterial(variant)
+    return Boolean(material) && material.toLowerCase() !== defaultMaterial.toLowerCase()
+  }
   const added = Number(query.added) || 0
   const dollars = (cents: number | null) => (cents == null ? "" : (Number(cents) / 100).toFixed(2))
   return (
@@ -113,12 +129,15 @@ export default async function EditProductPage({
         <h2 className="text-lg font-medium">Variants</h2>
         {variants.map((variant) => (
           <fieldset key={variant.id} className="admin-inset grid gap-2">
-            {variantOffered(variant, colours, materials) ? null : (
+            {variantOffered(variant, colours, offeredMaterials) ? null : (
               <p className="admin-note text-sm">Hidden from customers: its colour or material is switched off.</p>
             )}
+            {followsMarkup(variant) ? (
+              <p className="admin-note text-sm">Price is the PETG price plus the {variantMaterial(variant)} markup set on the Products page.</p>
+            ) : null}
             <div className="grid gap-2 sm:grid-cols-2">
               <input className="field" name={`sku_${variant.id}`} defaultValue={variant.sku} placeholder="SKU" />
-              <input className="field" name={`price_${variant.id}`} defaultValue={dollars(variant.priceCents)} placeholder="Price" required />
+              <input className="field" name={`price_${variant.id}`} defaultValue={dollars(variant.priceCents)} placeholder="Price" required readOnly={followsMarkup(variant)} />
               <input className="field" name={`option1Name_${variant.id}`} defaultValue={variant.option1Name} placeholder="Option name" />
               <input className="field" name={`option1Value_${variant.id}`} defaultValue={variant.option1Value} placeholder="Option value" />
               <input className="field" name={`option2Name_${variant.id}`} defaultValue={variant.option2Name} placeholder="Second option name" />
@@ -156,16 +175,16 @@ export default async function EditProductPage({
             <label key={material.name} className="colour-chip material-chip">
               <input type="checkbox" name="materials" value={material.name} defaultChecked={materials.includes(material.name)} disabled={!canChooseMaterial} />
               <span className="font-medium">{material.name}</span>
-              <span className="admin-note text-xs">{material.colours ? `${material.colours.join(", ")} only` : "Every colour"}</span>
+              <span className="admin-note text-xs">
+                {markupFor(material.name)?.enabled === false
+                  ? "Switched off for the whole shop"
+                  : material.colours ? `${material.colours.join(", ")} only` : "Every colour"}
+              </span>
             </label>
           ))}
         </div>
-        <label className="label max-w-xs">
-          PPS CF extra charge
-          <input className="field normal-case" name="extra" inputMode="decimal" placeholder="0.00" disabled={!canChooseMaterial} />
-        </label>
         <p className="admin-note text-sm">
-          The extra charge is added to the PETG price when PPS CF variants are first created. Change it later in Variants above.
+          PPS CF costs the PETG price plus ${dollars(markupFor("PPS CF")?.markupCents ?? 0)}. Change the markup or switch a material off for every product on the Products page.
         </p>
         {query.materialError ? <p className="text-sm" role="alert">Tick at least one material.</p> : null}
         {canChooseMaterial ? (
