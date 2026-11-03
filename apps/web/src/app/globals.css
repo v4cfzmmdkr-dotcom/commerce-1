@@ -2439,6 +2439,23 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
   padding-left: 0.85rem;
 }
 
+.material-chip:has(input:not(:checked)),
+.material-chip[data-off] {
+  background: color-mix(in srgb, #ff3b30 13%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, #ff3b30 35%, transparent);
+  color: #c4261d;
+}
+
+.material-chip:has(input:not(:checked)) .admin-note,
+.material-chip[data-off] .admin-note {
+  color: color-mix(in srgb, #c4261d 75%, transparent);
+}
+
+.material-chip[data-off]:has(input:checked) {
+  background: color-mix(in srgb, #ff3b30 13%, transparent);
+  box-shadow: inset 0 0 0 1.5px #c4261d;
+}
+
 .material-chip:has(input:disabled) {
   opacity: 0.5;
   cursor: not-allowed;

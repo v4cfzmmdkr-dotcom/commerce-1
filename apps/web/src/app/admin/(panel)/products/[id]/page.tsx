@@ -172,7 +172,7 @@ export default async function EditProductPage({
         </div>
         <div className="colour-chips">
           {materialOptions.map((material) => (
-            <label key={material.name} className="colour-chip material-chip">
+            <label key={material.name} className="colour-chip material-chip" data-off={markupFor(material.name)?.enabled === false || undefined}>
               <input type="checkbox" name="materials" value={material.name} defaultChecked={materials.includes(material.name)} disabled={!canChooseMaterial} />
               <span className="font-medium">{material.name}</span>
               <span className="admin-note text-xs">
