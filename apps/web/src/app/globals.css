@@ -951,7 +951,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .hero-media {
   object-fit: cover;
-  object-position: center right;
+  object-position: right top;
 }
 
 .hero-scrim {
