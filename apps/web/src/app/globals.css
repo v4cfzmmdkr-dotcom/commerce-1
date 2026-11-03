@@ -1832,10 +1832,20 @@ a:hover .product-media img {
 }
 
 .admin-bar-title {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
   font-size: 1.0625rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
 }
+
+.admin-bar-title:hover { opacity: 0.7; }
+.admin-bar-title:active { opacity: 0.5; }
 
 .admin-bar-actions {
   display: flex;
