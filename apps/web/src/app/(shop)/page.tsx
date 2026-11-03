@@ -60,7 +60,7 @@ export default async function HomePage() {
   const collectionGroups = groupHomeCollections(collections, brandCounts)
   return (
     <>
-      <section className="hero relative isolate overflow-hidden">
+      <section className="hero relative isolate overflow-x-clip">
         {settings.bannerUrl && settings.bannerKind === "video" ? (
           <video
             className="hero-video absolute inset-0 h-full w-full object-cover"
@@ -73,7 +73,11 @@ export default async function HomePage() {
           />
         ) : null}
         {settings.bannerUrl && settings.bannerKind === "image" ? (
-          <img className="hero-media absolute inset-0 h-full w-full" src={settings.bannerUrl} alt="" />
+          <img
+            className={settings.bannerUrl.endsWith(".svg") ? "hero-media hero-drawing" : "hero-media absolute inset-0 h-full w-full"}
+            src={settings.bannerUrl}
+            alt=""
+          />
         ) : null}
         {settings.bannerUrl ? <div className="hero-scrim absolute inset-0" /> : null}
         <div className="wrap-wide relative py-[var(--section)]">
