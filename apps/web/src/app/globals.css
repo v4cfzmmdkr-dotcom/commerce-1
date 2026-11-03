@@ -2140,6 +2140,26 @@ a:hover .product-media img {
   font-weight: 500;
 }
 
+.admin-open-orders {
+  margin: 0.75rem 0 0.25rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.admin-open-orders > li {
+  border-top: 0.5px solid var(--admin-separator);
+}
+
+.admin-open-orders > li:last-child {
+  border-bottom: 0.5px solid var(--admin-separator);
+}
+
+.admin-open-orders .admin-row-link {
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
 .admin-stat-value {
   margin-top: 0.25rem;
   font-size: 1.75rem;
