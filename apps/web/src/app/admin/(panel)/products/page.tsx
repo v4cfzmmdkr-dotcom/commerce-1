@@ -9,6 +9,7 @@ import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
 import { defaultMaterial, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
+import { remoteImageCount } from "@/lib/shopify/import"
 import type { ImportReport } from "@/lib/types"
 
 export const maxDuration = 60
@@ -38,14 +39,10 @@ export default async function ProductsPage({
       from products
     `,
     getSettings(),
-    sql<Array<{ count: number }>>`
-      select
-        (select count(*) from product_images where storage_path is null and source_url is not null)::int
-        + (select count(*) from collections where image_path is null and image_url is not null)::int as count
-    `,
+    remoteImageCount(),
     params.run ? sql<Array<{ report: ImportReport }>>`select report from import_runs where id = ${params.run}` : [],
   ])
-  const pendingImages = remoteImages[0]?.count ?? 0
+  const pendingImages = remoteImages
   const report = runs[0]?.report
   const query = new URLSearchParams()
   if (params.q?.trim()) query.set("q", params.q.trim())

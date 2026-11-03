@@ -2,6 +2,7 @@ import Link from "next/link"
 import { AutoRefresh } from "@/components/auto-refresh"
 import { getSql } from "@/db/client"
 import { formatMoney } from "@/lib/money"
+import { remoteImageCount } from "@/lib/shopify/import"
 
 export const dynamic = "force-dynamic"
 
@@ -29,11 +30,7 @@ export default async function AdminHome() {
     sql<{ count: number }[]>`
       select count(*)::int as count from orders where payment_status in ('paid', 'partially_refunded')
     `,
-    sql<{ count: number }[]>`
-      select
-        (select count(*) from product_images where storage_path is null and source_url is not null)::int
-        + (select count(*) from collections where image_path is null and image_url is not null)::int as count
-    `,
+    remoteImageCount(),
   ])
   const paid = orders[0]
   const { listed, hidden } = products[0]
@@ -81,7 +78,7 @@ export default async function AdminHome() {
         </article>
         <article className="admin-card">
           <p className="admin-stat-label">Images still on Shopify</p>
-          <p className="admin-stat-value">{remoteImages[0]?.count ?? 0}</p>
+          <p className="admin-stat-value">{remoteImages}</p>
           <p className="mt-1 text-sm"><Link href="/admin/products#import">Download them</Link></p>
         </article>
       </div>

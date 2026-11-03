@@ -281,12 +281,26 @@ export async function migrateRemoteImages(options: { limit: number, budgetMs?: n
   return { stored, failed, pending: pendingRows[0]?.count ?? 0, failures }
 }
 
+function remoteCollectionImage(sql: ReturnType<typeof getSql>) {
+  return sql`image_path is null and image_url ~ '^https?://' and image_url not like '%/storage/v1/object/public/%'`
+}
+
+export async function remoteImageCount() {
+  const sql = getSql()
+  const [row] = await sql<{ count: number }[]>`
+    select
+      (select count(*) from product_images where storage_path is null and source_url is not null)::int
+      + (select count(*) from collections where ${remoteCollectionImage(sql)})::int as count
+  `
+  return row?.count ?? 0
+}
+
 export async function migrateCollectionImages() {
   const sql = getSql()
   const rows = await sql<Array<{ id: string, handle: string, imageUrl: string, position: number }>>`
     select id, handle, image_url as "imageUrl", position
     from collections
-    where image_path is null and image_url is not null
+    where ${remoteCollectionImage(sql)}
   `
   let stored = 0
   let failed = 0
