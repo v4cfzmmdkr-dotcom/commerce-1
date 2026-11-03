@@ -37,7 +37,7 @@ export default async function AdminHome() {
         <article className="admin-card">
           <p className="admin-stat-label">Images still on Shopify</p>
           <p className="admin-stat-value">{remoteImages[0]?.count ?? 0}</p>
-          <p className="mt-1 text-sm"><Link href="/admin/import">Download them</Link></p>
+          <p className="mt-1 text-sm"><Link href="/admin/products#import">Download them</Link></p>
         </article>
       </div>
     </div>

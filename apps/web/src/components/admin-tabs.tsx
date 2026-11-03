@@ -9,7 +9,6 @@ const links = [
   ["Collections", "/admin/collections"],
   ["Orders", "/admin/orders"],
   ["Shipping", "/admin/shipping"],
-  ["Import", "/admin/import"],
   ["Theme", "/admin/theme"],
   ["Settings", "/admin/settings"],
 ]

@@ -1,18 +1,22 @@
 import Link from "next/link"
 import type { CSSProperties } from "react"
-import { copyListing, createProduct, deleteProduct, setListed } from "@/app/admin/actions"
+import { copyListing, createProduct, deleteProduct, runImport, setListed } from "@/app/admin/actions"
 import { saveColours, saveMaterialSettings } from "@/app/admin/option-actions"
+import { ImageDownload } from "@/components/image-download"
 import { PendingButton } from "@/components/pending-button"
 import { RemoveColourButton } from "@/components/remove-colour-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
 import { defaultMaterial, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
+import type { ImportReport } from "@/lib/types"
+
+export const maxDuration = 60
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string, materials?: string, repriced?: string, materialError?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string, materials?: string, repriced?: string, materialError?: string, run?: string, collections?: string, collectionError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -22,7 +26,7 @@ export default async function ProductsPage({
   const listing = show === "listed" ? sql`and p.status = 'active'` : show === "hidden" ? sql`and p.status <> 'active'` : sql``
   const added = Number(params.added) || 0
   const repriced = Number(params.repriced) || 0
-  const [products, counts, settings] = await Promise.all([
+  const [products, counts, settings, remoteImages, runs] = await Promise.all([
     sql<Array<{ id: string, title: string, status: string }>>`
       select p.id, p.title, p.status
       from products p
@@ -34,7 +38,15 @@ export default async function ProductsPage({
       from products
     `,
     getSettings(),
+    sql<Array<{ count: number }>>`
+      select
+        (select count(*) from product_images where storage_path is null and source_url is not null)::int
+        + (select count(*) from collections where image_path is null and image_url is not null)::int as count
+    `,
+    params.run ? sql<Array<{ report: ImportReport }>>`select report from import_runs where id = ${params.run}` : [],
   ])
+  const pendingImages = remoteImages[0]?.count ?? 0
+  const report = runs[0]?.report
   const query = new URLSearchParams()
   if (params.q?.trim()) query.set("q", params.q.trim())
   if (show) query.set("show", show)
@@ -193,6 +205,41 @@ export default async function ProductsPage({
         })}
       </ul>
       <p className="text-sm"><a href="/api/admin/export/products">Export products CSV</a></p>
+      <details id="import" className="admin-card admin-disclosure" open={Boolean(params.run || params.collectionError || pendingImages)}>
+        <summary>Import a Shopify CSV</summary>
+        <div className="grid gap-4 pt-3">
+          <p className="admin-note text-sm">
+            Products are matched by handle, so importing the same file again updates them. Images are copied into this shop&apos;s storage. A large catalogue should also be imported with the local command so every image can finish.
+          </p>
+          <form action={runImport} className="grid gap-3">
+            <input name="file" type="file" accept=".csv,text/csv" required aria-label="Shopify product CSV" />
+            <label className="flex items-center gap-2 text-sm normal-case"><input type="checkbox" name="images" defaultChecked /> Download a batch of images now</label>
+            <label className="flex items-center gap-2 text-sm normal-case"><input type="checkbox" name="collections" defaultChecked /> Sync collections from the store</label>
+            <label className="label">Store URL<input className="field normal-case" name="storeUrl" defaultValue="https://nicheparts.com.au" /></label>
+            <div><PendingButton pendingText="Importing…">Import CSV</PendingButton></div>
+          </form>
+          {params.collections ? <p className="text-sm" role="status">Synced {params.collections} collections.</p> : null}
+          {params.collectionError ? <p className="text-sm" role="alert">{params.collectionError}</p> : null}
+          {report ? (
+            <section className="grid gap-1 text-sm" role="status">
+              <h3 className="font-medium">Last import</h3>
+              <p>Created {report.productsCreated}, updated {report.productsUpdated}, skipped {report.productsSkipped}, variants {report.variantsImported}.</p>
+              <p>Images waiting {report.imagesPending}. Failures {report.failures.length}. Warnings {report.warnings.length}.</p>
+              <ul>
+                {report.failures.slice(0, 20).map((issue, index) => (
+                  <li key={index}>Record {issue.record} {issue.handle}: {issue.message}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {pendingImages ? (
+            <div className="grid gap-2">
+              <p className="text-sm">{pendingImages} {pendingImages === 1 ? "image is" : "images are"} still hosted on Shopify.</p>
+              <ImageDownload pending={pendingImages} />
+            </div>
+          ) : null}
+        </div>
+      </details>
     </div>
   )
 }

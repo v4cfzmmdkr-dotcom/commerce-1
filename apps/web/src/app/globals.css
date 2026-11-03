@@ -2095,6 +2095,36 @@ a:hover .product-media img {
   background: var(--admin-group);
 }
 
+.admin-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 28px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-disclosure > summary::-webkit-details-marker { display: none; }
+
+.admin-disclosure > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--admin-secondary);
+  border-bottom: 2px solid var(--admin-secondary);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.admin-disclosure[open] > summary::after {
+  transform: rotate(-135deg) translateY(-2px);
+}
+
 .admin-list {
   margin: 0;
   padding: 0 1.25rem;

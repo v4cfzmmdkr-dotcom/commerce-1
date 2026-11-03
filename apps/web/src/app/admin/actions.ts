@@ -598,7 +598,7 @@ export async function runImport(formData: FormData) {
     await migrateRemoteImages({ limit: 40, budgetMs: 20000 })
   }
   revalidatePath("/", "layout")
-  redirect(`/admin/import?run=${imported.id}${collectionNote}`)
+  redirect(`/admin/products?run=${imported.id}${collectionNote}#import`)
 }
 
 export async function downloadImageStep() {
