@@ -892,8 +892,8 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius);
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
   border: 1px solid var(--fg);
   font: inherit;
   font-size: 1.0625rem;
@@ -2179,6 +2179,7 @@ a:hover .product-media img {
 }
 
 .site-header-search .field.glass {
+  height: 51px;
   border-radius: 999px;
   padding-inline: 1.125rem;
   transition: opacity 0.2s ease 0.55s;
@@ -2204,8 +2205,8 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
 }
 
 .header-cart.glass {
-  width: 44px;
-  height: 44px;
+  width: 51px;
+  height: 51px;
 }
 
 .catalog-filters-toggle.glass {
