@@ -970,6 +970,18 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 92%, transparent) 0%, color-mix(in srgb, var(--bg) 80%, transparent) 42%, color-mix(in srgb, var(--bg) 55%, transparent) 72%, color-mix(in srgb, var(--bg) 40%, transparent) 100%);
 }
 
+@media (prefers-color-scheme: dark) {
+  .hero-drawing {
+    filter: invert(1);
+    -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.9) 0%, #000 40%);
+    mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.9) 0%, #000 40%);
+  }
+
+  .hero-scrim {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 90%, transparent) 0%, color-mix(in srgb, var(--bg) 42%, transparent) 36%, color-mix(in srgb, var(--bg) 8%, transparent) 70%, transparent 100%);
+  }
+}
+
 .hero-kicker {
   max-width: 22ch;
   font-family: var(--font-hero-btn), "Futura PT", Futura, sans-serif;
