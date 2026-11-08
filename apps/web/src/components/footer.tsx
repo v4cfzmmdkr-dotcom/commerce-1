@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { PaymentIcons } from "@/components/payment-icons"
+import { SocialLinks } from "@/components/social-links"
 import type { StoreSettings } from "@/lib/settings"
 
 export function Footer({ settings }: { settings: StoreSettings }) {
@@ -12,7 +13,8 @@ export function Footer({ settings }: { settings: StoreSettings }) {
               <img src={settings.logoUrl || "/brand/logo.png"} alt="" />
             </span>
           </Link>
-          <p className="text-sm">
+          <SocialLinks placement="footer" />
+          <p className="mt-4 text-sm">
             <span className="font-semibold">© {new Date().getFullYear()} {settings.name}.</span> All rights reserved.
           </p>
         </div>

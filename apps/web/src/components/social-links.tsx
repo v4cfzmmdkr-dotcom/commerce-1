@@ -1,14 +1,18 @@
 import { social } from "@/lib/social"
 
-export function SocialLinks() {
+export function SocialLinks({ placement = "hero" }: { placement?: "hero" | "footer" }) {
   return (
     <div className="hero-social">
-      <a className="no-underline" href={social.instagram.href} target="_blank" rel="noreferrer" aria-label={`${social.instagram.label} ${social.instagram.detail}`}>
-        <InstagramIcon />
-      </a>
-      <a className="no-underline" href={social.facebook.href} target="_blank" rel="noreferrer" aria-label={social.facebook.label}>
-        <FacebookIcon />
-      </a>
+      {placement === "footer" ? (
+        <>
+          <a className="no-underline" href={social.instagram.href} target="_blank" rel="noreferrer" aria-label={`${social.instagram.label} ${social.instagram.detail}`}>
+            <InstagramIcon />
+          </a>
+          <a className="no-underline" href={social.facebook.href} target="_blank" rel="noreferrer" aria-label={social.facebook.label}>
+            <FacebookIcon />
+          </a>
+        </>
+      ) : null}
       <a className="hero-social-ebay no-underline" href={social.ebay.href} target="_blank" rel="noreferrer" aria-label="eBay store">
         eBay
       </a>
