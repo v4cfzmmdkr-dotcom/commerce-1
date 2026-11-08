@@ -1402,6 +1402,7 @@ label:has(> input[type="radio"]) {
   --fade-end: 3rem;
   display: grid;
   grid-auto-flow: column;
+  grid-template-rows: repeat(2, auto);
   grid-auto-columns: var(--tile);
   gap: var(--gap);
   overflow-x: auto;
@@ -1499,7 +1500,7 @@ label:has(> input[type="radio"]) {
 @media (hover: hover) and (pointer: fine) {
   .brand-carousel-nav {
     position: absolute;
-    top: calc(var(--tile) / 2);
+    top: calc((100% - 1.25rem - 4px) / 2);
     z-index: 2;
     display: inline-flex;
     align-items: center;
