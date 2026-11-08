@@ -26,10 +26,9 @@ export function CartQuantity({ itemId, quantity }: { itemId: string, quantity: n
   }
 
   return (
-    <form action={updateCart} key={quantity} className="flex items-center gap-1">
+    <form action={updateCart} key={quantity} className="cart-stepper glass">
       <input type="hidden" name="itemId" value={itemId} />
       <button
-        className="btn-ghost px-0"
         type="button"
         aria-label="Decrease quantity"
         onClick={() => step(-1)}
@@ -41,7 +40,7 @@ export function CartQuantity({ itemId, quantity }: { itemId: string, quantity: n
       <input
         ref={inputRef}
         id={`qty-${itemId}`}
-        className="field no-spin w-16 text-center"
+        className="no-spin"
         name="quantity"
         type="number"
         min={0}
@@ -51,7 +50,6 @@ export function CartQuantity({ itemId, quantity }: { itemId: string, quantity: n
         onBlur={(event) => save(event.currentTarget.form, 0)}
       />
       <button
-        className="btn-ghost px-0"
         type="button"
         aria-label="Increase quantity"
         onClick={() => step(1)}
