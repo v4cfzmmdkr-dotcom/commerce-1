@@ -13,11 +13,15 @@ export const social = {
     href: "https://ebay.io/m/1VasLG",
     label: "eBay",
     detail: "Store",
+    sales: 14,
+    positive: "100%",
   },
   google: {
     href: "https://share.google/wuQzUzvwlYySloVea",
     label: "Google",
     detail: "Niche Parts on Google",
+    rating: null as number | null,
+    reviews: 0,
   },
   email: {
     address: "contact@nicheparts.com.au",

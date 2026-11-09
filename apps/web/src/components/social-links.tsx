@@ -13,11 +13,37 @@ export function SocialLinks({ placement = "hero" }: { placement?: "hero" | "foot
           </a>
         </>
       ) : null}
-      <a className="hero-social-ebay no-underline" href={social.ebay.href} target="_blank" rel="noreferrer" aria-label="eBay store">
-        eBay
+      <a
+        className="hero-social-stat glass no-underline"
+        href={social.ebay.href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`eBay store, ${social.ebay.sales.toLocaleString("en-AU")} sold, ${social.ebay.positive} positive feedback`}
+      >
+        <span className="hero-social-mark">eBay</span>
+        <span className="hero-social-stat-copy">
+          <span>{social.ebay.sales.toLocaleString("en-AU")} sold</span>
+          <span>{social.ebay.positive} positive</span>
+        </span>
       </a>
-      <a className="no-underline" href={social.google.href} target="_blank" rel="noreferrer" aria-label={social.google.detail}>
+      <a
+        className="hero-social-stat glass no-underline"
+        href={social.google.href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={social.google.reviews > 0 && social.google.rating != null
+          ? `${social.google.detail}, rated ${social.google.rating} out of 5 from ${social.google.reviews.toLocaleString("en-AU")} reviews`
+          : `${social.google.detail}, no reviews yet`}
+      >
         <GoogleIcon />
+        <span className="hero-social-stat-copy">
+          <Stars value={social.google.reviews > 0 ? social.google.rating : null} />
+          <span>
+            {social.google.reviews > 0
+              ? `${social.google.reviews.toLocaleString("en-AU")} ${social.google.reviews === 1 ? "review" : "reviews"}`
+              : "No reviews"}
+          </span>
+        </span>
       </a>
     </div>
   )
@@ -57,6 +83,24 @@ function FacebookIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M14.2 8.5H16.5V5.2h-2.3c-2.6 0-4.4 1.7-4.4 4.3V12H7.5v3.2h2.3V21h3.2v-5.8h2.5l.6-3.2h-3.1v-2.2c0-.9.5-1.3 1.2-1.3z" />
     </svg>
+  )
+}
+
+const starPath = "m10 1.6 2.1 4.7 5.1.6-3.8 3.5 1 5-4.4-2.5L5.6 15.4l1-5L2.8 6.9l5.1-.6z"
+
+function Stars({ value }: { value: number | null }) {
+  return (
+    <span className="hero-social-stars" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((index) => {
+        const fill = value == null ? 0 : Math.max(0, Math.min(1, value - index))
+        return (
+          <svg key={index} viewBox="0 0 20 20">
+            <path className="hero-social-star-empty" d={starPath} />
+            <path className="hero-social-star-fill" d={starPath} style={{ clipPath: `inset(0 ${100 - fill * 100}% 0 0)` }} />
+          </svg>
+        )
+      })}
+    </span>
   )
 }
 
