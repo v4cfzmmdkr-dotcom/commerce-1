@@ -1,6 +1,8 @@
+import { googleReviews } from "@/lib/google-reviews"
 import { social } from "@/lib/social"
 
-export function SocialLinks({ placement = "hero" }: { placement?: "hero" | "footer" }) {
+export async function SocialLinks({ placement = "hero" }: { placement?: "hero" | "footer" }) {
+  const google = await googleReviews()
   return (
     <div className="hero-social">
       {placement === "footer" ? (
@@ -31,16 +33,16 @@ export function SocialLinks({ placement = "hero" }: { placement?: "hero" | "foot
         href={social.google.href}
         target="_blank"
         rel="noreferrer"
-        aria-label={social.google.reviews > 0 && social.google.rating != null
-          ? `${social.google.detail}, rated ${social.google.rating} out of 5 from ${social.google.reviews.toLocaleString("en-AU")} reviews`
+        aria-label={google.reviews > 0 && google.rating != null
+          ? `${social.google.detail}, rated ${google.rating} out of 5 from ${google.reviews.toLocaleString("en-AU")} ${google.reviews === 1 ? "review" : "reviews"}`
           : `${social.google.detail}, no reviews yet`}
       >
         <GoogleIcon />
         <span className="hero-social-stat-copy">
-          <Stars value={social.google.reviews > 0 ? social.google.rating : null} />
+          <Stars value={google.reviews > 0 ? google.rating : null} />
           <span>
-            {social.google.reviews > 0
-              ? `${social.google.reviews.toLocaleString("en-AU")} ${social.google.reviews === 1 ? "review" : "reviews"}`
+            {google.reviews > 0
+              ? `${google.reviews.toLocaleString("en-AU")} ${google.reviews === 1 ? "review" : "reviews"}`
               : "No reviews"}
           </span>
         </span>

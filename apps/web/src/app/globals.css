@@ -1549,6 +1549,17 @@ label:has(> input[type="radio"]) {
   transition: --fade-start 0.35s ease, --fade-end 0.35s ease;
 }
 
+.brand-carousel-mover {
+  display: flex;
+  flex: none;
+  gap: var(--gap);
+  min-width: 100%;
+}
+
+.brand-carousel-track[data-auto] .brand-carousel-mover {
+  will-change: transform;
+}
+
 .brand-carousel-set {
   display: grid;
   flex: 0 0 auto;

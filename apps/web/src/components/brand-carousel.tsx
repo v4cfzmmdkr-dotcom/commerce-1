@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 function loopWidth(element: HTMLElement) {
-  const set = element.querySelector<HTMLElement>(":scope > .brand-carousel-set")
-  if (!set) return 0
-  const gap = Number.parseFloat(getComputedStyle(element).columnGap) || 0
+  const set = element.querySelector<HTMLElement>(".brand-carousel-set")
+  if (!set?.parentElement) return 0
+  const gap = Number.parseFloat(getComputedStyle(set.parentElement).columnGap) || 0
   return set.offsetWidth + gap
 }
 
@@ -14,6 +14,7 @@ export function BrandCarousel({ label, children }: { label: string, children: Re
   const progress = useRef<HTMLDivElement>(null)
   const stopAuto = useRef<() => void>(() => {})
   const wrapping = useRef(false)
+  const gliding = useRef(false)
   const [repeat, setRepeat] = useState(false)
   const [edges, setEdges] = useState({ start: true, end: true })
 
@@ -23,11 +24,11 @@ export function BrandCarousel({ label, children }: { label: string, children: Re
     const update = () => {
       if (wrapping.current) return
       const loop = loopWidth(element)
-      const set = element.querySelector<HTMLElement>(":scope > .brand-carousel-set")
+      const set = element.querySelector<HTMLElement>(".brand-carousel-set")
       const overflows = !!set && set.offsetWidth > element.clientWidth + 1
-      const repeats = element.querySelectorAll(":scope > .brand-carousel-set").length > 1
+      const repeats = element.querySelectorAll(".brand-carousel-set").length > 1
       setRepeat((current) => (current === overflows ? current : overflows))
-      if (repeats && overflows && loop > 1 && element.scrollLeft >= loop) {
+      if (!gliding.current && repeats && overflows && loop > 1 && element.scrollLeft >= loop) {
         wrapping.current = true
         requestAnimationFrame(() => {
           const distance = loopWidth(element)
@@ -35,8 +36,10 @@ export function BrandCarousel({ label, children }: { label: string, children: Re
           wrapping.current = false
         })
       }
-      const pos = overflows && loop > 1 ? (element.scrollLeft % loop) / loop : 1
-      progress.current?.style.setProperty("--progress", String(Math.min(1, Math.max(0, pos))))
+      if (!gliding.current) {
+        const pos = overflows && loop > 1 ? (element.scrollLeft % loop) / loop : 1
+        progress.current?.style.setProperty("--progress", String(Math.min(1, Math.max(0, pos))))
+      }
       const parked = !overflows
       setEdges((current) => (current.start === parked && current.end === parked ? current : { start: parked, end: parked }))
     }
@@ -60,88 +63,186 @@ export function BrandCarousel({ label, children }: { label: string, children: Re
     let frame = 0
     let stopped = false
     let paused = false
+    let driving = false
+    let pointerDown = false
+    let suppress = 0
+    let resumeTimer = 0
     let last = 0
     let position = element.scrollLeft
     const speed = 22
 
+    const moverOf = () => element.querySelector<HTMLElement>(".brand-carousel-mover")
+    const arm = () => {
+      suppress += 1
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { suppress -= 1 })
+      })
+    }
+    const paint = () => {
+      const mover = moverOf()
+      if (!mover) return
+      const loop = loopWidth(element)
+      if (loop > 1) position = ((position % loop) + loop) % loop
+      mover.style.transform = `translate3d(${-position}px, 0, 0)`
+      const ratio = loop > 1 ? position / loop : 1
+      progress.current?.style.setProperty("--progress", String(Math.min(1, Math.max(0, ratio))))
+    }
+    const settle = () => {
+      const mover = moverOf()
+      if (!gliding.current || !mover) return
+      const loop = loopWidth(element)
+      const left = loop > 1 ? ((position % loop) + loop) % loop : position
+      gliding.current = false
+      mover.style.transform = ""
+      arm()
+      wrapping.current = true
+      driving = true
+      element.scrollLeft = left
+      driving = false
+      wrapping.current = false
+      position = element.scrollLeft
+    }
+    const glide = () => {
+      if (gliding.current || stopped || !moverOf()) return
+      position = element.scrollLeft
+      gliding.current = true
+      arm()
+      wrapping.current = true
+      driving = true
+      element.scrollLeft = 0
+      driving = false
+      wrapping.current = false
+      paint()
+    }
+    const hold = () => {
+      paused = true
+      window.clearTimeout(resumeTimer)
+      settle()
+    }
+    const scheduleResume = () => {
+      window.clearTimeout(resumeTimer)
+      if (stopped || pointerDown) return
+      resumeTimer = window.setTimeout(() => {
+        if (stopped || pointerDown) return
+        position = element.scrollLeft
+        paused = false
+        last = 0
+        glide()
+      }, 700)
+    }
     const stop = () => {
+      settle()
       stopped = true
+      paused = true
+      window.clearTimeout(resumeTimer)
       element.removeAttribute("data-auto")
     }
-    stopAuto.current = stop
+    stopAuto.current = () => {
+      hold()
+      scheduleResume()
+    }
 
     const tick = (now: number) => {
       if (stopped) return
       if (!last) last = now
-      const dt = Math.min(now - last, 48)
+      const dt = Math.min(now - last, 32)
       last = now
-      const repeats = element.querySelectorAll(":scope > .brand-carousel-set").length > 1
+      const repeats = element.querySelectorAll(".brand-carousel-set").length > 1
       const loop = loopWidth(element)
       if (!paused && repeats && loop > 1) {
+        if (!gliding.current) glide()
         position += speed * dt / 1000
-        if (position >= loop) position %= loop
-        element.scrollLeft = position
+        paint()
       }
       frame = requestAnimationFrame(tick)
     }
 
     element.setAttribute("data-auto", "")
+    glide()
     frame = requestAnimationFrame(tick)
 
     const hover = window.matchMedia("(hover: hover) and (pointer: fine)")
-    const pause = () => { paused = true }
-    const resume = () => {
-      paused = false
-      position = element.scrollLeft
-      last = 0
-    }
     const onHoverChange = () => {
       if (!hover.matches) {
-        root.removeEventListener("pointerenter", pause)
-        root.removeEventListener("pointerleave", resume)
-        paused = false
+        root.removeEventListener("pointerenter", onEnter)
+        root.removeEventListener("pointerleave", onLeave)
+        scheduleResume()
       }
     }
+    const onEnter = () => { hold() }
+    const onLeave = () => { scheduleResume() }
     if (hover.matches) {
-      root.addEventListener("pointerenter", pause)
-      root.addEventListener("pointerleave", resume)
+      root.addEventListener("pointerenter", onEnter)
+      root.addEventListener("pointerleave", onLeave)
     }
     hover.addEventListener("change", onHoverChange)
     const openBackward = (incoming = 0) => {
       const loop = loopWidth(element)
-      const repeats = element.querySelectorAll(":scope > .brand-carousel-set").length > 1
+      const repeats = element.querySelectorAll(".brand-carousel-set").length > 1
       if (!repeats || loop <= 1) return
       const next = element.scrollLeft + incoming
       if (element.scrollLeft >= 1 && next >= 1) return
       wrapping.current = true
+      driving = true
       element.scrollLeft += loop
+      driving = false
       wrapping.current = false
     }
-    const stopAndOpen = () => {
-      stop()
+    const onScroll = () => {
+      if (driving || wrapping.current || stopped || suppress > 0 || gliding.current) return
+      hold()
+      scheduleResume()
+    }
+    const onPointerDown = () => {
+      pointerDown = true
+      hold()
       openBackward()
     }
-    const stopWheel = (event: WheelEvent) => {
-      stop()
+    const onRootPointerDown = () => {
+      pointerDown = true
+      hold()
+    }
+    const onPointerUp = () => {
+      if (!pointerDown) return
+      pointerDown = false
+      scheduleResume()
+    }
+    const onWheel = (event: WheelEvent) => {
+      hold()
       const horizontal = Math.abs(event.deltaX) >= Math.abs(event.deltaY) ? event.deltaX : 0
       if (horizontal < 0) openBackward(horizontal)
+      scheduleResume()
     }
-    element.addEventListener("pointerdown", stopAndOpen)
-    element.addEventListener("wheel", stopWheel, { passive: true })
-    element.addEventListener("keydown", stop)
-    root.addEventListener("pointerdown", stop)
+    const onKey = () => {
+      hold()
+      scheduleResume()
+    }
+    element.addEventListener("scroll", onScroll, { passive: true })
+    element.addEventListener("pointerdown", onPointerDown)
+    element.addEventListener("wheel", onWheel, { passive: true })
+    element.addEventListener("keydown", onKey)
+    root.addEventListener("pointerdown", onRootPointerDown)
+    window.addEventListener("pointerup", onPointerUp)
+    window.addEventListener("pointercancel", onPointerUp)
     reduce.addEventListener("change", stop)
 
     return () => {
       cancelAnimationFrame(frame)
+      window.clearTimeout(resumeTimer)
+      gliding.current = false
+      const mover = moverOf()
+      if (mover) mover.style.transform = ""
       element.removeAttribute("data-auto")
       hover.removeEventListener("change", onHoverChange)
-      root.removeEventListener("pointerenter", pause)
-      root.removeEventListener("pointerleave", resume)
-      element.removeEventListener("pointerdown", stopAndOpen)
-      element.removeEventListener("wheel", stopWheel)
-      element.removeEventListener("keydown", stop)
-      root.removeEventListener("pointerdown", stop)
+      root.removeEventListener("pointerenter", onEnter)
+      root.removeEventListener("pointerleave", onLeave)
+      element.removeEventListener("scroll", onScroll)
+      element.removeEventListener("pointerdown", onPointerDown)
+      element.removeEventListener("wheel", onWheel)
+      element.removeEventListener("keydown", onKey)
+      root.removeEventListener("pointerdown", onRootPointerDown)
+      window.removeEventListener("pointerup", onPointerUp)
+      window.removeEventListener("pointercancel", onPointerUp)
       reduce.removeEventListener("change", stop)
     }
   }, [])
@@ -162,8 +263,10 @@ export function BrandCarousel({ label, children }: { label: string, children: Re
   return (
     <div className="brand-carousel" data-start={edges.start || undefined} data-end={edges.end || undefined}>
       <div ref={track} className="brand-carousel-track" data-loop={repeat || undefined} role="region" aria-label={label} tabIndex={0}>
-        <div className="brand-carousel-set">{children}</div>
-        {repeat ? <div className="brand-carousel-set" aria-hidden="true" inert>{children}</div> : null}
+        <div className="brand-carousel-mover">
+          <div className="brand-carousel-set">{children}</div>
+          {repeat ? <div className="brand-carousel-set" aria-hidden="true" inert>{children}</div> : null}
+        </div>
       </div>
       <div ref={progress} className="brand-carousel-progress" aria-hidden="true">
         <span />

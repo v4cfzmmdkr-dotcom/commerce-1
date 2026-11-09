@@ -20,8 +20,8 @@ export const social = {
     href: "https://share.google/wuQzUzvwlYySloVea",
     label: "Google",
     detail: "Niche Parts on Google",
-    rating: null as number | null,
-    reviews: 0,
+    rating: 5 as number | null,
+    reviews: 1,
   },
   email: {
     address: "contact@nicheparts.com.au",
