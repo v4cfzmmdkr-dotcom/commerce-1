@@ -1098,19 +1098,22 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .hero-social {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
 
 .hero-social a {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
+  aspect-ratio: 1;
   color: var(--fg);
   border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
-  border-radius: 999px;
+  border-radius: 50%;
   text-decoration: none;
 }
 
@@ -1127,6 +1130,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 .hero-social a.hero-social-stat {
   width: auto;
   height: auto;
+  aspect-ratio: auto;
   min-height: 44px;
   justify-content: flex-start;
   gap: 0.5rem;

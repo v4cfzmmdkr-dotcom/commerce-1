@@ -1,15 +1,19 @@
 import Link from "next/link"
 import { updateCart } from "@/app/(shop)/cart/actions"
 import { CartQuantity } from "@/components/cart-quantity"
+import { ProductGrid } from "@/components/product-grid"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getCart } from "@/lib/cart"
+import { listFeaturedProducts } from "@/lib/catalog"
 import { formatMoney } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
 
 export const metadata = { title: "Cart" }
 
 export default async function CartPage() {
-  const [cart, settings] = await Promise.all([getCart(), getSettings()])
+  const [cart, settings, featured] = await Promise.all([getCart(), getSettings(), listFeaturedProducts()])
+  const inCart = new Set(cart.lines.map((line) => line.productHandle))
+  const suggestions = featured.filter((product) => !inCart.has(product.handle)).slice(0, 8)
   const subtotal = cart.lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0)
   return (
     <div className="wrap py-[var(--section)]">
@@ -50,6 +54,15 @@ export default async function CartPage() {
           </aside>
         </div>
       )}
+      {suggestions.length > 0 ? (
+        <section className="mt-12">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="collection-group-title">Suggested parts</h2>
+            <Link href="/search" className="view-all glass no-underline">View all</Link>
+          </div>
+          <ProductGrid products={suggestions} currency={settings.currency} />
+        </section>
+      ) : null}
     </div>
   )
 }
