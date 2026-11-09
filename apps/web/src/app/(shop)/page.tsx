@@ -86,13 +86,18 @@ export default async function HomePage() {
         </div>
       </section>
       <section className="hero-actions wrap-wide">
-        <Link href="/search" className="btn hero-actions-btn">Browse parts</Link>
+        <Link href="/brands" className="btn hero-actions-btn">Shop by brand</Link>
         <SocialLinks />
       </section>
       {collectionGroups.map((group) => (
         <section key={group.id} className="wrap-wide collection-group">
-          <h2 className="collection-group-title">{group.heading}</h2>
-          <p className="mt-1 mb-6 max-w-xl text-sm opacity-70">{group.intro}</p>
+          <div className="mb-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="collection-group-title">{group.heading}</h2>
+              {group.id === "brands" ? <Link href="/brands" className="view-all glass no-underline">View all</Link> : null}
+            </div>
+            <p className="mt-1 max-w-xl text-sm opacity-70">{group.intro}</p>
+          </div>
           {group.layout === "brands" ? (
             <BrandCarousel label={group.heading}>
               {group.collections.map((collection) => (

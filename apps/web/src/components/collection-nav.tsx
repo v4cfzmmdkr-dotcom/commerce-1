@@ -2,23 +2,33 @@
 
 import { CartIcon } from "@/components/cart-icon"
 import { LiveSearchResults, searchOptionId, useLiveSearch } from "@/components/live-search"
+import type { NavItem } from "@/lib/nav-groups"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 export function CollectionNav({
-  links,
+  items,
   cartCount,
 }: {
-  links: Array<{ href: string, label: string }>
+  items: NavItem[]
   cartCount: number
 }) {
   const scroller = useRef<HTMLDivElement>(null)
+  const row = useRef<HTMLDivElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
+  const buttons = useRef(new Map<string, HTMLButtonElement>())
   const searchForm = useRef<HTMLFormElement>(null)
   const cartLink = useRef<HTMLAnchorElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
+  const closeTimer = useRef<number | null>(null)
+  const pinned = useRef(false)
+  const hoverOk = useRef(false)
+  const focusMenu = useRef(false)
   const pathname = usePathname()
+  const brand = useSearchParams().get("brand")
   const [search, setSearch] = useState<"in" | "out" | null>(null)
+  const [menuId, setMenuId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const live = useLiveSearch(query)
@@ -124,6 +134,101 @@ export function CollectionNav({
     setOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    const media = window.matchMedia("(hover: hover) and (pointer: fine)")
+    const update = () => { hoverOk.current = media.matches }
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
+
+  function clearCloseTimer() {
+    if (closeTimer.current === null) return
+    window.clearTimeout(closeTimer.current)
+    closeTimer.current = null
+  }
+
+  function closeMenu() {
+    clearCloseTimer()
+    pinned.current = false
+    setMenuId(null)
+  }
+
+  function openMenu(id: string, pin: boolean) {
+    clearCloseTimer()
+    pinned.current = pin
+    setMenuId(id)
+  }
+
+  function scheduleClose() {
+    if (pinned.current) return
+    clearCloseTimer()
+    closeTimer.current = window.setTimeout(() => {
+      pinned.current = false
+      setMenuId(null)
+    }, 180)
+  }
+
+  useEffect(() => {
+    closeMenu()
+  }, [pathname, brand])
+
+  useEffect(() => {
+    if (open) closeMenu()
+  }, [open])
+
+  useEffect(() => {
+    if (!menuId) return
+    if (focusMenu.current) {
+      focusMenu.current = false
+      menu.current?.querySelector("a")?.focus()
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (menu.current?.contains(target) || buttons.current.get(menuId)?.contains(target)) return
+      closeMenu()
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      const button = buttons.current.get(menuId)
+      closeMenu()
+      button?.focus()
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [menuId])
+
+  useLayoutEffect(() => {
+    const button = menuId ? buttons.current.get(menuId) : null
+    const panel = menu.current
+    const bounds = row.current
+    if (!menuId || !button || !panel || !bounds) return
+    const place = () => {
+      const item = button.getBoundingClientRect()
+      const parent = bounds.getBoundingClientRect()
+      const width = panel.offsetWidth
+      const left = Math.max(0, Math.min(item.left - parent.left, parent.width - width))
+      panel.style.left = `${left}px`
+      panel.style.top = `${item.bottom - parent.top}px`
+    }
+    place()
+    const resize = new ResizeObserver(place)
+    resize.observe(panel)
+    window.addEventListener("resize", place)
+    scroller.current?.addEventListener("scroll", place, { passive: true })
+    return () => {
+      resize.disconnect()
+      window.removeEventListener("resize", place)
+      scroller.current?.removeEventListener("scroll", place)
+    }
+  }, [menuId])
+
+  const openGroup = items.find((item) => item.kind === "menu" && item.id === menuId)
+
   return (
     <nav
       className="collection-nav"
@@ -133,21 +238,83 @@ export function CollectionNav({
       data-cart={cartCount > 0 ? "" : undefined}
     >
       <div className="nav-search-backdrop" aria-hidden="true" />
-      <div className="collection-nav-row">
+      <div ref={row} className="collection-nav-row">
         <div className="collection-nav-glass glass" inert={open}>
           <div ref={scroller} className="collection-nav-scroller">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="collection-nav-link"
-                aria-current={pathname === link.href ? "page" : undefined}
-              >
-                {link.label}
-              </Link>
+            {items.map((item) => (
+              item.kind === "link" ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="collection-nav-link"
+                  aria-current={pathname === item.href ? "page" : undefined}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <button
+                  key={item.id}
+                  ref={(node) => {
+                    if (node) buttons.current.set(item.id, node)
+                    else buttons.current.delete(item.id)
+                  }}
+                  type="button"
+                  className="collection-nav-link collection-nav-parent"
+                  aria-expanded={menuId === item.id}
+                  aria-controls={`collection-menu-${item.id}`}
+                  aria-current={item.links.some((link) => linkIsCurrent(link.href, pathname, brand)) ? "page" : undefined}
+                  onMouseEnter={() => {
+                    if (hoverOk.current) openMenu(item.id, false)
+                  }}
+                  onMouseLeave={() => {
+                    if (hoverOk.current) scheduleClose()
+                  }}
+                  onClick={(event) => {
+                    const keyboard = event.detail === 0
+                    if (menuId === item.id && (pinned.current || keyboard || !hoverOk.current)) {
+                      closeMenu()
+                      return
+                    }
+                    openMenu(item.id, true)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowDown") return
+                    event.preventDefault()
+                    focusMenu.current = true
+                    openMenu(item.id, true)
+                  }}
+                >
+                  {item.label}
+                  <Chevron />
+                </button>
+              )
             ))}
           </div>
         </div>
+        {openGroup && openGroup.kind === "menu" ? (
+          <div
+            ref={menu}
+            id={`collection-menu-${openGroup.id}`}
+            className="collection-nav-menu"
+            onMouseEnter={clearCloseTimer}
+            onMouseLeave={() => {
+              if (hoverOk.current) scheduleClose()
+            }}
+          >
+            <div className="collection-nav-menu-panel glass">
+              {openGroup.links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="collection-nav-sublink"
+                  aria-current={linkIsCurrent(link.href, pathname, brand) ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="nav-search-slot" />
         <form
           ref={searchForm}
@@ -222,6 +389,23 @@ export function CollectionNav({
         ) : null}
       </div>
     </nav>
+  )
+}
+
+function linkIsCurrent(href: string, pathname: string, brand: string | null) {
+  const url = new URL(href, "https://nicheparts.local")
+  if (url.pathname !== pathname) return false
+  const wanted = url.searchParams.get("brand")
+  if (wanted) return brand === wanted
+  if (url.pathname.startsWith("/collections/")) return !brand
+  return true
+}
+
+function Chevron() {
+  return (
+    <svg className="collection-nav-chevron" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M2.2 4.3 6 8l3.8-3.7-.9-.9L6 6.2 3.1 3.4z" />
+    </svg>
   )
 }
 

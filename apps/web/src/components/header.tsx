@@ -2,6 +2,7 @@ import { CartIcon } from "@/components/cart-icon"
 import { CollectionNav } from "@/components/collection-nav"
 import { HeaderSearch } from "@/components/header-search"
 import { HomeOnly } from "@/components/home-only"
+import { collectionNavItems } from "@/lib/nav-groups"
 import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
@@ -71,13 +72,7 @@ export function Header({
           </div>
         </div>
       </header>
-      <CollectionNav
-        cartCount={cartCount}
-        links={[
-          { href: "/search", label: "All parts" },
-          ...collections.map((collection) => ({ href: `/collections/${collection.handle}`, label: collection.title })),
-        ]}
-      />
+      <CollectionNav cartCount={cartCount} items={collectionNavItems(collections)} />
     </>
   )
 }

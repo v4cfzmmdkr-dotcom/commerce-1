@@ -365,6 +365,38 @@ function fitRank(collection: HomeCollection) {
   return index === -1 ? fitOrder.length : index
 }
 
+export type BrandDirectoryItem = {
+  key: string
+  name: string
+  href: string
+  imageUrl: string | null
+  count: number | null
+}
+
+export function brandDirectory(collections: HomeCollection[], brandCounts: BrandCount[] = []): BrandDirectoryItem[] {
+  const featured = collections
+    .filter(isBrandCollection)
+    .sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
+  const featuredItems = featured.map((collection) => ({
+    key: collection.handle,
+    name: collection.title,
+    href: `/collections/${collection.handle}`,
+    imageUrl: collection.imageUrl,
+    count: brandCounts.find((brand) => collectionKey(collection).includes(brand.slug))?.count ?? null,
+  }))
+  const rest = brandCounts
+    .filter((brand) => !featured.some((collection) => collectionKey(collection).includes(brand.slug)))
+    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
+    .map((brand) => ({
+      key: brand.slug,
+      name: brand.name,
+      href: `/search?brand=${brand.slug}`,
+      imageUrl: null,
+      count: brand.count,
+    }))
+  return [...featuredItems, ...rest]
+}
+
 export function groupHomeCollections(collections: HomeCollection[], brandCounts: BrandCount[] = []): HomeCollectionGroup[] {
   const brands = collections.filter(isBrandCollection).sort((left, right) => homeCollectionRank(left) - homeCollectionRank(right))
   const moreBrands = brandCounts
