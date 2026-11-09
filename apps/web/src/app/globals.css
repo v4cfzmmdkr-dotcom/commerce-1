@@ -1030,6 +1030,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .hero {
   min-height: clamp(22rem, 58vw, 34rem);
+  overflow: clip;
   background: var(--bg);
   color: var(--fg);
 }

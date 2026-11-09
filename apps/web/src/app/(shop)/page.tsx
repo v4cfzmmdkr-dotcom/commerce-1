@@ -60,7 +60,7 @@ export default async function HomePage() {
   const collectionGroups = groupHomeCollections(collections, brandCounts)
   return (
     <>
-      <section className="hero relative isolate overflow-x-clip">
+      <section className="hero relative isolate overflow-clip">
         {settings.bannerUrl && settings.bannerKind === "video" ? (
           <video
             className="hero-video absolute inset-0 h-full w-full object-cover"
