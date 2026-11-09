@@ -51,8 +51,15 @@ export async function generateMetadata({
   }
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ handle: string }> }) {
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ handle: string }>
+  searchParams: Promise<{ variant?: string }>
+}) {
   const { handle } = await params
+  const { variant } = await searchParams
   const [product, settings, rates] = await Promise.all([getPublicProduct(handle), getSettings(), shippingRates()])
   if (!product) notFound()
   const base = siteUrl()
@@ -106,7 +113,7 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
         <div className="mt-6">
-          <PurchaseBox variants={product.variants} currency={settings.currency} colours={settings.colours} />
+          <PurchaseBox variants={product.variants} currency={settings.currency} colours={settings.colours} initialVariantId={variant} />
         </div>
         <div
           className="prose mt-8 text-sm"

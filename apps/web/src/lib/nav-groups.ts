@@ -10,6 +10,7 @@ type Group = {
   id: string
   label: string
   handles: string[]
+  hideCollection?: boolean
   extras?: (collection: Collection) => NavLink[]
 }
 
@@ -28,6 +29,7 @@ const groups: Group[] = [
     id: "gaming",
     label: "Gaming",
     handles: ["gaming-accessories"],
+    hideCollection: true,
     extras: (collection) => [
       { href: `/collections/${collection.handle}?brand=playstation`, label: "PlayStation" },
       { href: `/collections/${collection.handle}?brand=xbox`, label: "Xbox" },
@@ -62,7 +64,7 @@ export function collectionNavItems(collections: Collection[]): NavItem[] {
       const collection = byHandle.get(handle)
       if (!collection) continue
       used.add(handle)
-      links.push({ href: `/collections/${collection.handle}`, label: collection.title })
+      if (!group.hideCollection) links.push({ href: `/collections/${collection.handle}`, label: collection.title })
       if (group.extras) links.push(...group.extras(collection))
     }
     if (links.length === 0) continue

@@ -42,12 +42,15 @@ export function PurchaseBox({
   variants,
   currency,
   colours,
+  initialVariantId,
 }: {
   variants: PublicVariant[]
   currency: string
   colours: Array<{ name: string, hex: string }>
+  initialVariantId?: string
 }) {
-  const initial = variants.find((variant) => isPurchasable(variant)) ?? variants[0]
+  const requested = variants.find((variant) => variant.id === initialVariantId)
+  const initial = requested ?? variants.find((variant) => isPurchasable(variant)) ?? variants[0]
   const [chosen, setChosen] = useState<Values>(initial ? valuesOf(initial) : ["", "", ""])
   const [state, action] = useActionState(addToCart, null)
   const groups = useMemo(() => {

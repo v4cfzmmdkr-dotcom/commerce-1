@@ -49,11 +49,10 @@ describe("collectionNavItems", () => {
       "Jigs",
     ])
     const gaming = items.find((item) => item.kind === "menu" && item.id === "gaming")
-    expect(gaming?.kind === "menu" ? gaming.links.map((link) => link.href) : []).toEqual([
-      "/collections/gaming-accessories",
-      "/collections/gaming-accessories?brand=playstation",
-      "/collections/gaming-accessories?brand=xbox",
-      "/collections/gaming-accessories?brand=nintendo",
+    expect(gaming?.kind === "menu" ? gaming.links.map((link) => link.label) : []).toEqual([
+      "PlayStation",
+      "Xbox",
+      "Nintendo",
     ])
     expect(items.find((item) => item.label === "All Brands")).toMatchObject({
       kind: "link",

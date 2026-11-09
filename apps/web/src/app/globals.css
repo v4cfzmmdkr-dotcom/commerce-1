@@ -2694,16 +2694,11 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 0;
+  border: 1px solid rgb(0 0 0 / 0.16);
   padding: 0;
   cursor: pointer;
-  background:
-    radial-gradient(circle at 32% 26%, rgb(255 255 255 / 0.55), transparent 55%),
-    var(--swatch);
-  box-shadow:
-    inset 0 0 0 0.5px rgb(0 0 0 / 0.18),
-    inset 0 -2px 4px rgb(0 0 0 / 0.12),
-    0 1px 3px rgb(0 0 0 / 0.12);
+  background: var(--swatch);
+  box-shadow: none;
 }
 
 .swatch::after {
