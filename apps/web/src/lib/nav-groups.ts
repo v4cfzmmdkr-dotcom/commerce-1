@@ -54,7 +54,7 @@ const groups: Group[] = [
 export function collectionNavItems(collections: Collection[]): NavItem[] {
   const byHandle = new Map(collections.map((collection) => [collection.handle, collection]))
   const used = new Set<string>()
-  const items: NavItem[] = [{ kind: "link", href: "/brands", label: "All parts" }]
+  const items: NavItem[] = [{ kind: "link", href: "/brands", label: "All Brands" }]
 
   for (const group of groups) {
     const links: NavLink[] = []

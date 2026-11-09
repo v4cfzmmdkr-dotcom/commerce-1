@@ -29,7 +29,7 @@ describe("collectionNavItems", () => {
   it("groups the shop collections and keeps a single collection as a link", () => {
     const items = collectionNavItems(collections)
     expect(items.map((item) => item.label)).toEqual([
-      "All parts",
+      "All Brands",
       "Tools",
       "Home",
       "Gaming",
@@ -55,7 +55,7 @@ describe("collectionNavItems", () => {
       "/collections/gaming-accessories?brand=xbox",
       "/collections/gaming-accessories?brand=nintendo",
     ])
-    expect(items.find((item) => item.label === "All parts")).toMatchObject({
+    expect(items.find((item) => item.label === "All Brands")).toMatchObject({
       kind: "link",
       href: "/brands",
     })
