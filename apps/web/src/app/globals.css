@@ -1095,12 +1095,6 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   border-top: 1px solid var(--border);
 }
 
-.hero-actions-btn {
-  font-family: var(--font-hero-btn), "Futura PT", Futura, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 .hero-social {
   display: flex;
   align-items: center;

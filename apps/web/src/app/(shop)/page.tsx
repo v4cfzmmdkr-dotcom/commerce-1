@@ -86,7 +86,6 @@ export default async function HomePage() {
         </div>
       </section>
       <section className="hero-actions wrap-wide">
-        <Link href="/brands" className="btn hero-actions-btn">Shop by brand</Link>
         <SocialLinks />
       </section>
       {collectionGroups.map((group) => (
