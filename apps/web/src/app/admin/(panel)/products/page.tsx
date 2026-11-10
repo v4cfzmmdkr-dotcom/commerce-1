@@ -7,7 +7,7 @@ import { PendingButton } from "@/components/pending-button"
 import { RemoveColourButton } from "@/components/remove-colour-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
-import { defaultMaterial, materialOptions } from "@/lib/product-options"
+import { defaultMaterial, materialColourLabel, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 import { remoteImageCount } from "@/lib/shopify/import"
 import type { ImportReport } from "@/lib/types"
@@ -114,7 +114,7 @@ export default async function ProductsPage({
                 <label className="colour-chip material-chip">
                   <input type="checkbox" name="materials" value={material.name} defaultChecked={setting?.enabled !== false} />
                   <span className="font-medium">{material.name}</span>
-                  <span className="admin-note text-xs">{material.colours ? `${material.colours.join(", ")} only` : "Every colour"}</span>
+                  <span className="admin-note text-xs">{materialColourLabel(material.colours)}</span>
                 </label>
                 {material.name === defaultMaterial ? (
                   <span className="admin-note text-sm">Base price</span>
@@ -135,7 +135,7 @@ export default async function ProductsPage({
             )
           })}
         </div>
-        <p className="admin-note text-sm">Saving updates the price of every PPS CF option to its PETG price plus the markup.</p>
+        <p className="admin-note text-sm">Saving updates the price of every ASA and PPS CF option to its PETG price plus the markup.</p>
         {params.materials === "saved" ? (
           <p className="text-sm" role="status">
             Materials saved{repriced ? `, ${repriced} ${repriced === 1 ? "price" : "prices"} updated` : ""}{added ? `, ${added} new ${added === 1 ? "variant" : "variants"} added` : ""}.

@@ -20,6 +20,7 @@ export const defaultColours = ["Black", "White"]
 
 export const materialOptions = [
   { name: "PETG", note: "Tough, everyday plastic", colours: null },
+  { name: "ASA", note: "UV stable outdoor plastic. Black or white.", colours: ["Black", "White"] },
   { name: "PPS CF", note: "Carbon fibre reinforced, heat resistant. Black only.", colours: ["Black"] },
 ] as const satisfies ReadonlyArray<{ name: string, note: string, colours: readonly string[] | null }>
 
@@ -104,6 +105,13 @@ export function materialColours(material: string, enabled: string[]) {
   if (!rule) return []
   if (!rule.colours) return enabled
   return enabled.filter((colour) => rule.colours.some((allowed) => same(allowed, colour)))
+}
+
+export function materialColourLabel(colours: readonly string[] | null) {
+  if (!colours?.length) return "Every colour"
+  if (colours.length === 1) return `${colours[0]} only`
+  if (colours.length === 2) return `${colours[0]} or ${colours[1]}`
+  return `${colours.join(", ")} only`
 }
 
 function nameOf(variant: Options, slot: Slot) {

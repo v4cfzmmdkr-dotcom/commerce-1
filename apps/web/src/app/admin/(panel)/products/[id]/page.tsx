@@ -9,6 +9,7 @@ import { formatFileSize } from "@/lib/print-file-rules"
 import {
   defaultMaterial,
   enabledColourNames,
+  materialColourLabel,
   materialOptions,
   materialSlot,
   parseMaterials,
@@ -178,19 +179,19 @@ export default async function EditProductPage({
               <span className="admin-note text-xs">
                 {markupFor(material.name)?.enabled === false
                   ? "Switched off for the whole shop"
-                  : material.colours ? `${material.colours.join(", ")} only` : "Every colour"}
+                  : materialColourLabel(material.colours)}
               </span>
             </label>
           ))}
         </div>
         <p className="admin-note text-sm">
-          PPS CF costs the PETG price plus ${dollars(markupFor("PPS CF")?.markupCents ?? 0)}. Change the markup or switch a material off for every product on the Products page.
+          {materialOptions.filter((material) => material.name !== defaultMaterial).map((material) => `${material.name} costs the PETG price plus $${dollars(markupFor(material.name)?.markupCents ?? 0)}.`).join(" ")} Change the markup or switch a material off for every product on the Products page.
         </p>
         {query.materialError ? <p className="text-sm" role="alert">Tick at least one material.</p> : null}
         {canChooseMaterial ? (
           <PendingButton pendingText="Saving…">Save materials</PendingButton>
         ) : (
-          <p className="text-sm">This product already uses three options, so a material choice can&apos;t be added. Remove an option to offer PPS CF.</p>
+          <p className="text-sm">This product already uses three options, so a material choice can&apos;t be added. Remove an option to offer ASA or PPS CF.</p>
         )}
       </form>
       <section className="admin-card grid max-w-3xl gap-3">

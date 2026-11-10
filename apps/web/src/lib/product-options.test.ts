@@ -59,9 +59,11 @@ describe("materials", () => {
     expect(parseMaterials("{PETG,\"PPS CF\"}")).toEqual(["PETG", "PPS CF"])
   })
 
-  it("limits PPS CF to black", () => {
+  it("limits PPS CF to black and ASA to black or white", () => {
     expect(materialColours("PPS CF", ["Black", "White", "Red"])).toEqual(["Black"])
     expect(materialColours("PPS CF", ["White"])).toEqual([])
+    expect(materialColours("ASA", ["Black", "White", "Red"])).toEqual(["Black", "White"])
+    expect(materialColours("ASA", ["Red"])).toEqual([])
     expect(materialColours("PETG", ["Black", "White"])).toEqual(["Black", "White"])
   })
 
@@ -88,6 +90,11 @@ describe("offered variants", () => {
     expect(offeredVariants(variants, ["Black", "White"], ["PETG"]).map((item) => item.id)).toEqual(["1", "2"])
     expect(offeredVariants(variants, ["Black", "White"], ["PETG", "PPS CF"]).map((item) => item.id)).toEqual(["1", "2", "4"])
     expect(offeredVariants(variants, ["White"], ["PPS CF"])).toEqual([])
+    expect(offeredVariants([
+      ...variants,
+      variant("6", "White", "ASA"),
+      variant("7", "Red", "ASA"),
+    ], ["Black", "White", "Red"], ["ASA"]).map((item) => item.id)).toEqual(["6"])
   })
 
   it("tidies names and titles", () => {
@@ -137,16 +144,30 @@ describe("planVariants", () => {
     const plan = planVariants([variant("b", "Black", "PETG"), variant("c", "Black", "PPS CF")], ["Black"], ["PETG", "PPS CF"])
     expect(plan).toEqual({ updates: [], inserts: [] })
   })
+
+  it("creates black and white ASA variants and skips other colours", () => {
+    const plan = planVariants([
+      variant("b", "Black", "PETG"),
+      variant("w", "White", "PETG"),
+      variant("r", "Red", "PETG"),
+    ], ["Black", "White", "Red"], ["PETG", "ASA"], { ASA: 200 })
+    expect(plan.inserts.map((item) => [item.option1Value, item.option2Value, item.priceCents, item.sku])).toEqual([
+      ["Black", "ASA", 2000, "BH-ASA"],
+      ["White", "ASA", 2000, "BH-WHITE-ASA"],
+    ])
+  })
 })
 
 describe("shop-wide material settings", () => {
   it("defaults to every material on with no markup", () => {
     expect(parseMaterialSettings(null)).toEqual([
       { name: "PETG", enabled: true, markupCents: 0 },
+      { name: "ASA", enabled: true, markupCents: 0 },
       { name: "PPS CF", enabled: true, markupCents: 0 },
     ])
     expect(parseMaterialSettings([{ name: "PETG", markupCents: 300 }, { name: "pps cf", enabled: false, markupCents: 450 }])).toEqual([
       { name: "PETG", enabled: true, markupCents: 0 },
+      { name: "ASA", enabled: true, markupCents: 0 },
       { name: "PPS CF", enabled: false, markupCents: 450 },
     ])
   })
