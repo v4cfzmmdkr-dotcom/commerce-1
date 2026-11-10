@@ -2725,6 +2725,10 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
   opacity: 0.35;
 }
 
+.swatch:disabled {
+  cursor: not-allowed;
+}
+
 .colour-chips {
   display: flex;
   flex-wrap: wrap;

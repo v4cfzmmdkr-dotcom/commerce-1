@@ -107,6 +107,13 @@ export function PurchaseBox({
     return variants.some((variant) => matches(variant, next))
   }
 
+  const materialGroup = groups.find((group) => group.kind === "material")
+  const lockedColour = (slot: Slot, colour: string) => {
+    if (!materialGroup) return false
+    const material = chosen[materialGroup.slot]
+    return !variants.some((variant) => variant[valueKeys[slot]] === colour && variant[valueKeys[materialGroup.slot]] === material)
+  }
+
   return (
     <form action={action} className="grid gap-8">
       {selected ? <input type="hidden" name="variantId" value={selected.id} /> : null}
@@ -121,6 +128,8 @@ export function PurchaseBox({
               values={group.values}
               colours={colours}
               offered={(item) => offered(group.slot, item)}
+              locked={(item) => lockedColour(group.slot, item)}
+              material={materialGroup ? chosen[materialGroup.slot] : ""}
               onChange={(item) => choose(group.slot, item)}
             />
           )
@@ -158,6 +167,8 @@ function ColourGroup({
   values,
   colours,
   offered,
+  locked,
+  material,
   onChange,
 }: {
   label: string
@@ -165,6 +176,8 @@ function ColourGroup({
   values: string[]
   colours: Array<{ name: string, hex: string }>
   offered: (value: string) => boolean
+  locked: (value: string) => boolean
+  material: string
   onChange: (value: string) => void
 }) {
   return (
@@ -175,17 +188,20 @@ function ColourGroup({
       <div className="swatches">
         {values.map((item) => {
           const hex = colours.find((colour) => colour.name.toLowerCase() === item.toLowerCase())?.hex ?? "#c7c7cc"
+          const isLocked = locked(item)
+          const name = isLocked ? `${item}, not available in ${material}` : item
           return (
             <button
               key={item}
               type="button"
               className="swatch"
               data-unavailable={offered(item) ? undefined : ""}
+              disabled={isLocked}
               style={{ "--swatch": hex } as CSSProperties}
               onClick={() => onChange(item)}
               aria-pressed={item === value}
-              aria-label={item}
-              title={item}
+              aria-label={name}
+              title={name}
             />
           )
         })}
