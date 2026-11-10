@@ -5,7 +5,7 @@ import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { addToCart } from "@/app/(shop)/cart/actions"
 import { formatMoney, isPurchasable } from "@/lib/money"
-import { materialOptions } from "@/lib/product-options"
+import { defaultMaterial, materialOptions, variantMaterial } from "@/lib/product-options"
 import type { PublicVariant } from "@/lib/catalog"
 
 type Slot = 0 | 1 | 2
@@ -50,7 +50,14 @@ export function PurchaseBox({
   initialVariantId?: string
 }) {
   const requested = variants.find((variant) => variant.id === initialVariantId)
-  const initial = requested ?? variants.find((variant) => isPurchasable(variant)) ?? variants[0]
+  const isDefaultMaterial = (variant: PublicVariant) => {
+    const material = variantMaterial(variant)
+    return !material || material.toLowerCase() === defaultMaterial.toLowerCase()
+  }
+  const initial = requested
+    ?? variants.find((variant) => isPurchasable(variant) && isDefaultMaterial(variant))
+    ?? variants.find((variant) => isPurchasable(variant))
+    ?? variants[0]
   const [chosen, setChosen] = useState<Values>(initial ? valuesOf(initial) : ["", "", ""])
   const [state, action] = useActionState(addToCart, null)
   const groups = useMemo(() => {
@@ -58,7 +65,16 @@ export function PurchaseBox({
     return ([0, 1, 2] as const)
       .map((slot) => {
         const label = variants.find((variant) => variant[nameKeys[slot]])?.[nameKeys[slot]] || "Option"
-        return { slot, label, kind: kindOf(label), values: optionValues(variants, slot) }
+        const kind = kindOf(label)
+        const values = optionValues(variants, slot)
+        if (kind === "material") {
+          const rank = (value: string) => {
+            const index = materialOptions.findIndex((material) => material.name.toLowerCase() === value.toLowerCase())
+            return index === -1 ? materialOptions.length : index
+          }
+          values.sort((left, right) => rank(left) - rank(right))
+        }
+        return { slot, label, kind, values }
       })
       .filter((group) => group.values.length > 0)
       .sort((left, right) => order[left.kind] - order[right.kind])
