@@ -348,16 +348,17 @@ function isBrandCollection(collection: { handle: string, title: string }) {
   return homeFirstBrands.some((brand) => collectionKey(collection).includes(brand))
 }
 
+const fitHandles = ["gears", "various-gears", "yamaha", "car-parts", "beko-parts"]
+
 function isFitCollection(collection: HomeCollection) {
   const haystack = collectionKey(collection)
-  if (haystack.includes("yamaha")) return false
   return ["adapter", "jig", "insert"]
     .some((term) => haystack.includes(term))
-    || collection.handle === "gears"
+    || fitHandles.includes(collection.handle)
     || collection.title.toLowerCase() === "gears"
 }
 
-const fitOrder = ["adapter", "jig", "insert", "gear"]
+const fitOrder = ["adapter", "jig", "insert", "gear", "car", "beko"]
 
 function fitRank(collection: HomeCollection) {
   const haystack = collectionKey(collection)
@@ -424,7 +425,7 @@ export function groupHomeCollections(collections: HomeCollection[], brandCounts:
     groups.push({
       id: "fit",
       heading: "Made to fit",
-      intro: "Adapters, jigs, inserts, and gears we print to order.",
+      intro: "Adapters, jigs, gears, and replacement parts we print to order.",
       layout: "mosaic",
       collections: fit,
     })

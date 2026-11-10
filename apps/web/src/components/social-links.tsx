@@ -3,24 +3,36 @@ import { social } from "@/lib/social"
 
 export async function SocialLinks({ placement = "hero" }: { placement?: "hero" | "footer" }) {
   const google = await googleReviews()
+  const ebayLabel = `eBay store, ${social.ebay.sales.toLocaleString("en-AU")} sold, ${social.ebay.positive} positive feedback`
+  const googleLabel = google.reviews > 0 && google.rating != null
+    ? `${social.google.detail}, rated ${google.rating} out of 5 from ${google.reviews.toLocaleString("en-AU")} ${google.reviews === 1 ? "review" : "reviews"}`
+    : `${social.google.detail}, no reviews yet`
+  if (placement === "footer") {
+    return (
+      <div className="hero-social">
+        <a className="no-underline" href={social.instagram.href} target="_blank" rel="noreferrer" aria-label={`${social.instagram.label} ${social.instagram.detail}`}>
+          <InstagramIcon />
+        </a>
+        <a className="no-underline" href={social.facebook.href} target="_blank" rel="noreferrer" aria-label={social.facebook.label}>
+          <FacebookIcon />
+        </a>
+        <a className="no-underline" href={social.ebay.href} target="_blank" rel="noreferrer" aria-label={ebayLabel} title={ebayLabel}>
+          <span className="hero-social-mark">eBay</span>
+        </a>
+        <a className="no-underline" href={social.google.href} target="_blank" rel="noreferrer" aria-label={googleLabel} title={googleLabel}>
+          <GoogleIcon />
+        </a>
+      </div>
+    )
+  }
   return (
     <div className="hero-social">
-      {placement === "footer" ? (
-        <>
-          <a className="no-underline" href={social.instagram.href} target="_blank" rel="noreferrer" aria-label={`${social.instagram.label} ${social.instagram.detail}`}>
-            <InstagramIcon />
-          </a>
-          <a className="no-underline" href={social.facebook.href} target="_blank" rel="noreferrer" aria-label={social.facebook.label}>
-            <FacebookIcon />
-          </a>
-        </>
-      ) : null}
       <a
         className="hero-social-stat glass no-underline"
         href={social.ebay.href}
         target="_blank"
         rel="noreferrer"
-        aria-label={`eBay store, ${social.ebay.sales.toLocaleString("en-AU")} sold, ${social.ebay.positive} positive feedback`}
+        aria-label={ebayLabel}
       >
         <span className="hero-social-mark">eBay</span>
         <span className="hero-social-stat-copy">
@@ -33,9 +45,7 @@ export async function SocialLinks({ placement = "hero" }: { placement?: "hero" |
         href={social.google.href}
         target="_blank"
         rel="noreferrer"
-        aria-label={google.reviews > 0 && google.rating != null
-          ? `${social.google.detail}, rated ${google.rating} out of 5 from ${google.reviews.toLocaleString("en-AU")} ${google.reviews === 1 ? "review" : "reviews"}`
-          : `${social.google.detail}, no reviews yet`}
+        aria-label={googleLabel}
       >
         <GoogleIcon />
         <span className="hero-social-stat-copy">

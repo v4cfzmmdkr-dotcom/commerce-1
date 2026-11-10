@@ -9,17 +9,34 @@ import Link from "next/link"
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
+// How many leading tiles span two columns so every row of the mosaic is full.
+function mosaicWideCount(count: number, columns: number) {
+  const fill = (columns - (count % columns)) % columns
+  for (let wide = fill; wide <= count; wide += columns) {
+    if (wide >= 2) return wide
+  }
+  return fill <= count ? fill : 0
+}
+
+function mosaicTileClass(index: number, count: number) {
+  return [
+    index < count % 2 ? "collection-tile-wide-sm" : "",
+    index < mosaicWideCount(count, 4) ? "collection-tile-wide-md" : "",
+    index < mosaicWideCount(count, 6) ? "collection-tile-wide-xl" : "",
+  ].filter(Boolean).join(" ")
+}
+
 function CollectionTile({
   collection,
-  wide = false,
+  className = "",
 }: {
   collection: HomeCollection
-  wide?: boolean
+  className?: string
 }) {
   return (
     <Link
       href={`/collections/${collection.handle}`}
-      className={`collection-tile no-underline${wide ? " collection-tile-wide" : ""}`}
+      className={`collection-tile no-underline ${className}`.trim()}
     >
       <div className="product-media bg-[var(--muted)]">
         {collection.imageUrl ? (
@@ -109,7 +126,7 @@ export default async function HomePage() {
                 <CollectionTile
                   key={collection.handle}
                   collection={collection}
-                  wide={group.layout === "mosaic" && index < 2}
+                  className={group.layout === "mosaic" ? mosaicTileClass(index, group.collections.length) : ""}
                 />
               ))}
             </div>
