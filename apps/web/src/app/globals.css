@@ -15,6 +15,8 @@
   --header-h: 4rem;
   --hero: 3.5rem;
   --radius: 12px;
+  --collection-nav-pad: 0.625rem;
+  --collection-nav-bar: calc(7px + 36px + 7px);
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
 }
 
@@ -311,7 +313,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 40;
-  padding: 0.625rem 1rem;
+  padding: var(--collection-nav-pad) 1rem;
   pointer-events: none;
 }
 
@@ -1030,6 +1032,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .hero {
   min-height: clamp(22rem, 58vw, 34rem);
+  margin-top: calc(-1 * (var(--collection-nav-bar) + 0.5px + var(--collection-nav-pad)));
   overflow: clip;
   background: var(--bg);
   color: var(--fg);
