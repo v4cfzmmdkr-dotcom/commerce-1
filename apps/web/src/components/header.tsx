@@ -1,22 +1,19 @@
-import { CartIcon } from "@/components/cart-icon"
 import { CollectionNav } from "@/components/collection-nav"
-import { HeaderSearch } from "@/components/header-search"
 import { HomeOnly } from "@/components/home-only"
 import { collectionNavItems } from "@/lib/nav-groups"
-import Link from "next/link"
 import type { StoreSettings } from "@/lib/settings"
 
 function AnnouncementCopy({ text }: { text: string }) {
-  const parts = text.split(/(48 hours)/gi)
+  const parts = text.split(/(48 hours|Australia Post)/gi)
   return (
     <>
-      {parts.map((part, index) => (
-        part.toLowerCase() === "48 hours" ? (
-          <span key={index} className="announcement-accent">{part}</span>
-        ) : (
-          part
-        )
-      ))}
+      {parts.map((part, index) => {
+        const key = part.toLowerCase()
+        if (key === "48 hours") return <span key={index} className="announcement-accent">{part}</span>
+        if (key === "australia post") return <img key={index} className="announcement-logo" src="/brand/australia-post.svg" alt="Australia Post" />
+        if (part.trim() === "." && parts[index - 1]?.toLowerCase() === "australia post") return null
+        return part
+      })}
     </>
   )
 }
@@ -50,29 +47,13 @@ export function Header({
     <>
       <header className="site-header bg-[var(--bg)] pt-[env(safe-area-inset-top)] text-[var(--fg)]">
         {settings.announcement ? <HomeOnly><Announcement text={settings.announcement} /></HomeOnly> : null}
-        <div className="site-header-bar wrap-wide" style={{ minHeight: "var(--header-h)" }}>
-          <Link href="/" className="site-header-brand tap-link gap-3" aria-label={`${settings.name} home`}>
-            <span className="app-icon">
-              <img src={settings.logoUrl || "/brand/logo.png"} alt={settings.name} />
-            </span>
-          </Link>
-          <div className="site-header-tools">
-            <HeaderSearch />
-            <Link
-              href="/cart"
-              className="header-cart glass tap-link justify-center"
-              aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
-            >
-              <span className="header-cart-label">Cart{cartCount > 0 ? ` (${cartCount})` : ""}</span>
-              <span className="header-cart-icon" aria-hidden="true">
-                <CartIcon />
-                {cartCount > 0 ? <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span> : null}
-              </span>
-            </Link>
-          </div>
-        </div>
       </header>
-      <CollectionNav cartCount={cartCount} items={collectionNavItems(collections)} />
+      <CollectionNav
+        cartCount={cartCount}
+        items={collectionNavItems(collections)}
+        storeName={settings.name}
+        logoUrl={settings.logoUrl || "/brand/logo.png"}
+      />
     </>
   )
 }

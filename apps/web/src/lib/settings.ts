@@ -28,7 +28,7 @@ export function defaultSettings(): StoreSettings {
   return {
     name: "Niche Parts Australia",
     tagline: "Australian made parts",
-    announcement: "Dispatched within 48 hours with Australia Post.",
+    announcement: "Stocked domestically, dispatched within 48 hours with Australia Post.",
     supportEmail: "",
     orderAlertEmail: "",
     abn: "",

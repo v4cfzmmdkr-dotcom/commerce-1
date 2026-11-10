@@ -10,16 +10,19 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 export function CollectionNav({
   items,
   cartCount,
+  storeName,
+  logoUrl,
 }: {
   items: NavItem[]
   cartCount: number
+  storeName: string
+  logoUrl: string
 }) {
   const scroller = useRef<HTMLDivElement>(null)
   const row = useRef<HTMLDivElement>(null)
   const menu = useRef<HTMLDivElement>(null)
   const buttons = useRef(new Map<string, HTMLButtonElement>())
   const searchForm = useRef<HTMLFormElement>(null)
-  const cartLink = useRef<HTMLAnchorElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
   const closeTimer = useRef<number | null>(null)
   const pinned = useRef(false)
@@ -27,12 +30,12 @@ export function CollectionNav({
   const focusMenu = useRef(false)
   const pathname = usePathname()
   const brand = useSearchParams().get("brand")
-  const [search, setSearch] = useState<"in" | "out" | null>(null)
+  const [scrolled, setScrolled] = useState(false)
   const [menuId, setMenuId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const live = useLiveSearch(query)
-  const showResults = open && search === "in" && live.term.length >= 2
+  const showResults = open && live.term.length >= 2
 
   useEffect(() => {
     const node = scroller.current
@@ -75,41 +78,11 @@ export function CollectionNav({
   }, [pathname])
 
   useEffect(() => {
-    const headerSearch = document.getElementById("header-search")
-    if (!headerSearch) return
-    const observer = new IntersectionObserver(([entry]) => {
-      const form = searchForm.current
-      const row = form?.parentElement
-      if (form && row) {
-        const from = entry.boundingClientRect
-        const to = row.getBoundingClientRect()
-        const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value))
-        const formRight = to.left + form.offsetLeft + form.offsetWidth
-        form.style.setProperty("--from-x", `${clamp(from.right - formRight, 160)}px`)
-        form.style.setProperty("--from-y", `${clamp(from.top - to.top, 120)}px`)
-        form.style.setProperty("--from-w", `${Math.min(from.width, to.width)}px`)
-        form.style.setProperty("--from-h", `${from.height}px`)
-        const headerCart = document.querySelector(".site-header-tools .header-cart")
-        if (cartLink.current && headerCart) {
-          const cart = headerCart.getBoundingClientRect()
-          const size = cartLink.current.offsetWidth || 51
-          const dx = cart.left + cart.width / 2 - (to.right - size / 2)
-          const dy = cart.top + cart.height / 2 - (to.top + to.height / 2)
-          cartLink.current.style.setProperty("--from-x", `${clamp(dx, 160)}px`)
-          cartLink.current.style.setProperty("--from-y", `${clamp(dy, 120)}px`)
-          cartLink.current.style.setProperty("--from-s", `${cart.width / size}`)
-        }
-      }
-      const hidden = entry.intersectionRatio < 0.99 && entry.boundingClientRect.top < 0
-      setSearch((current) => (hidden ? "in" : current ? "out" : null))
-    }, { threshold: [0, 0.99] })
-    observer.observe(headerSearch)
-    return () => observer.disconnect()
+    const update = () => setScrolled(window.scrollY > 8)
+    update()
+    window.addEventListener("scroll", update, { passive: true })
+    return () => window.removeEventListener("scroll", update)
   }, [])
-
-  useEffect(() => {
-    if (search !== "in" && !searchInput.current?.value) setOpen(false)
-  }, [search])
 
   useEffect(() => {
     if (!open) return
@@ -232,15 +205,19 @@ export function CollectionNav({
   return (
     <nav
       className="collection-nav"
-      aria-label="Collections"
-      data-search={search ?? undefined}
+      aria-label="Main"
       data-search-open={open ? "" : undefined}
-      data-cart={cartCount > 0 ? "" : undefined}
+      data-scrolled={scrolled ? "" : undefined}
     >
       <div className="nav-search-backdrop" aria-hidden="true" />
       <div ref={row} className="collection-nav-row">
-        <div className="collection-nav-glass glass" inert={open}>
-          <div ref={scroller} className="collection-nav-scroller">
+        <div className="nav-bar glass">
+          <Link href="/" className="nav-brand" aria-label={`${storeName} home`} inert={open}>
+            <span className="app-icon">
+              <img src={logoUrl} alt="" />
+            </span>
+          </Link>
+          <div ref={scroller} className="collection-nav-scroller" inert={open}>
             {items.map((item) => (
               item.kind === "link" ? (
                 <Link
@@ -290,6 +267,66 @@ export function CollectionNav({
               )
             ))}
           </div>
+          <div className="nav-search-slot" aria-hidden="true" />
+          <form
+            ref={searchForm}
+            action="/search"
+            role="search"
+            className="nav-search"
+            onSubmit={(event) => {
+              if (!query.trim()) {
+                event.preventDefault()
+                searchInput.current?.focus({ preventScroll: true })
+              }
+            }}
+          >
+            <button
+              className="nav-search-button"
+              type={open ? "submit" : "button"}
+              aria-label={open ? "Search" : "Open search"}
+              aria-expanded={open}
+              onClick={(event) => {
+                if (open) return
+                event.preventDefault()
+                setOpen(true)
+              }}
+            >
+              <SearchIcon />
+            </button>
+            <label className="sr-only" htmlFor="nav-search-input">Search parts</label>
+            <input
+              ref={searchInput}
+              id="nav-search-input"
+              className="nav-search-input"
+              name="q"
+              placeholder="Search parts"
+              enterKeyHint="search"
+              autoComplete="off"
+              tabIndex={open ? 0 : -1}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={showResults}
+              aria-controls="nav-search-results"
+              aria-activedescendant={showResults && live.active >= 0 ? searchOptionId("nav-search-results", live.active) : undefined}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={live.onKeyDown}
+            />
+            <button className="nav-search-close" type="button" aria-label="Close search" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" /></svg>
+            </button>
+          </form>
+          <Link
+            href="/cart"
+            className="nav-cart"
+            aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
+            inert={open}
+          >
+            <span className="header-cart-icon" aria-hidden="true">
+              <CartIcon />
+              {cartCount > 0 ? <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span> : null}
+            </span>
+          </Link>
         </div>
         {openGroup && openGroup.kind === "menu" ? (
           <div
@@ -315,56 +352,6 @@ export function CollectionNav({
             </div>
           </div>
         ) : null}
-        <div className="nav-search-slot" />
-        <form
-          ref={searchForm}
-          action="/search"
-          role="search"
-          className="nav-search glass"
-          inert={search !== "in"}
-          onSubmit={(event) => {
-            if (!query.trim()) {
-              event.preventDefault()
-              searchInput.current?.focus({ preventScroll: true })
-            }
-          }}
-        >
-          <button
-            className="nav-search-button"
-            type={open ? "submit" : "button"}
-            aria-label={open ? "Search" : "Open search"}
-            aria-expanded={open}
-            onClick={(event) => {
-              if (open) return
-              event.preventDefault()
-              setOpen(true)
-            }}
-          >
-            <SearchIcon />
-          </button>
-          <label className="sr-only" htmlFor="nav-search-input">Search parts</label>
-          <input
-            ref={searchInput}
-            id="nav-search-input"
-            className="nav-search-input"
-            name="q"
-            placeholder="Search parts"
-            enterKeyHint="search"
-            autoComplete="off"
-            tabIndex={open ? 0 : -1}
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={showResults}
-            aria-controls="nav-search-results"
-            aria-activedescendant={showResults && live.active >= 0 ? searchOptionId("nav-search-results", live.active) : undefined}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={live.onKeyDown}
-          />
-          <button className="nav-search-close" type="button" aria-label="Close search" tabIndex={open ? 0 : -1} onClick={() => setOpen(false)}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" /></svg>
-          </button>
-        </form>
         {showResults ? (
           <LiveSearchResults
             id="nav-search-results"
@@ -372,20 +359,6 @@ export function CollectionNav({
             search={live}
             onPick={() => setOpen(false)}
           />
-        ) : null}
-        {cartCount > 0 ? (
-          <Link
-            ref={cartLink}
-            href="/cart"
-            className="nav-cart glass"
-            aria-label={`Cart, ${cartCount} items`}
-            inert={search !== "in" || open}
-          >
-            <span className="header-cart-icon" aria-hidden="true">
-              <CartIcon />
-              <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span>
-            </span>
-          </Link>
         ) : null}
       </div>
     </nav>
