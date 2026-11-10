@@ -2525,6 +2525,101 @@ body:has(.collection-nav[data-search="in"][data-cart]) .site-header-tools .heade
   white-space: nowrap;
 }
 
+.home-section {
+  padding-top: var(--section);
+}
+
+.home-section-last {
+  padding-bottom: var(--section);
+}
+
+.material-guide {
+  display: grid;
+  gap: var(--gap);
+}
+
+@media (min-width: 768px) {
+  .material-guide { grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+}
+
+.material-card.glass,
+.value-card.glass,
+.custom-cta.glass {
+  --glass-tint: color-mix(in srgb, var(--fg) 4%, var(--bg));
+  border-radius: 1.5rem;
+}
+
+.material-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+}
+
+.material-card-name {
+  font-family: var(--font-hero), "Futura PT", Futura, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.material-card-uses {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+.material-card-uses li {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.material-card-uses li::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.material-card-colours {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  font-size: 0.8125rem;
+  opacity: 0.6;
+}
+
+.value-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 1024px) {
+  .value-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.value-card {
+  padding: 1.25rem;
+}
+
+.custom-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 2rem;
+}
+
 .cart-lines.glass,
 .cart-summary.glass,
 .cart-empty.glass,

@@ -1,8 +1,8 @@
 import { BrandCarousel } from "@/components/brand-carousel"
-import { ProductGrid } from "@/components/product-grid"
+import { CustomPartCta, MaterialGuide, WhyNicheParts } from "@/components/home-sections"
 import { SocialLinks } from "@/components/social-links"
 import { brandLogo, type BrandCount } from "@/lib/brands"
-import { brandOptions, groupHomeCollections, listFeaturedProducts, listHomeCollections, type HomeCollection } from "@/lib/catalog"
+import { brandOptions, groupHomeCollections, listHomeCollections, type HomeCollection } from "@/lib/catalog"
 import { getSettings } from "@/lib/settings"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -51,10 +51,9 @@ function BrandTile({ brand }: { brand: BrandCount }) {
 }
 
 export default async function HomePage() {
-  const [settings, collections, products, brandCounts] = await Promise.all([
+  const [settings, collections, brandCounts] = await Promise.all([
     getSettings(),
     listHomeCollections(),
-    listFeaturedProducts(),
     brandOptions(),
   ])
   const collectionGroups = groupHomeCollections(collections, brandCounts)
@@ -117,13 +116,9 @@ export default async function HomePage() {
           )}
         </section>
       ))}
-      <section className="wrap-wide py-[var(--section)]">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h2 className="collection-group-title">Parts</h2>
-          <Link href="/search" className="view-all glass no-underline">View all</Link>
-        </div>
-        <ProductGrid products={products} currency={settings.currency} />
-      </section>
+      <MaterialGuide materials={settings.materials} />
+      <WhyNicheParts currency={settings.currency} />
+      <CustomPartCta />
     </>
   )
 }
