@@ -21,9 +21,10 @@ export default async function EditCollectionPage({
     published: boolean
     showOnHome: boolean
     imageUrl: string | null
+    coverImageUrl: string | null
   }>>`
     select id, title, handle, description_html as "descriptionHtml", position, published,
-      show_on_home as "showOnHome", image_url as "imageUrl"
+      show_on_home as "showOnHome", image_url as "imageUrl", cover_image_url as "coverImageUrl"
     from collections where id = ${id}
   `
   const collection = rows[0]
@@ -35,6 +36,22 @@ export default async function EditCollectionPage({
     where cp.collection_id = ${id}
     order by cp.position asc, p.title asc
   `
+  const photos = await sql<Array<{ url: string, productTitle: string }>>`
+    select url, "productTitle" from (
+      select distinct on (i.url) i.url, p.title as "productTitle", cp.position as "memberPosition", i.position as "imagePosition"
+      from collection_products cp
+      join products p on p.id = cp.product_id and p.status = 'active'
+      join product_images i on i.product_id = p.id
+      where cp.collection_id = ${id}
+      order by i.url, cp.position asc, i.position asc
+    ) photo
+    order by "memberPosition" asc, "imagePosition" asc
+  `
+  const coverOptions = [
+    ...(collection.imageUrl ? [{ url: collection.imageUrl, label: "Uploaded image" }] : []),
+    ...photos.map((photo) => ({ url: photo.url, label: photo.productTitle })),
+  ]
+  const cover = collection.coverImageUrl ?? ""
   return (
     <div className="grid max-w-3xl gap-6">
       <h1 className="text-3xl font-semibold">Edit collection</h1>
@@ -67,6 +84,30 @@ export default async function EditCollectionPage({
             </label>
           ) : null}
         </div>
+        <fieldset className="grid gap-3">
+          <legend className="text-sm font-semibold">Homepage tile</legend>
+          <p className="text-sm">Choose the photo shown on the homepage tile. Automatic uses the first product&apos;s photo, or the uploaded image for brand collections. Uploading a new image also selects it.</p>
+          <div className="max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2 p-1">
+              <label className="cursor-pointer" title="Automatic">
+                <input className="peer sr-only" type="radio" name="cover" value="" defaultChecked={!cover} />
+                <span className="flex aspect-square items-center justify-center rounded-[var(--radius)] border border-[var(--border)] p-2 text-center text-xs peer-checked:ring-2 peer-checked:ring-[var(--fg)] peer-focus-visible:outline peer-focus-visible:outline-2">Automatic</span>
+              </label>
+              {cover && !coverOptions.some((option) => option.url === cover) ? (
+                <label className="cursor-pointer" title="Current choice">
+                  <input className="peer sr-only" type="radio" name="cover" value={cover} defaultChecked />
+                  <img src={cover} alt="Current choice" loading="lazy" className="aspect-square w-full rounded-[var(--radius)] object-cover peer-checked:ring-2 peer-checked:ring-[var(--fg)] peer-focus-visible:outline peer-focus-visible:outline-2" />
+                </label>
+              ) : null}
+              {coverOptions.map((option) => (
+                <label key={option.url} className="cursor-pointer" title={option.label}>
+                  <input className="peer sr-only" type="radio" name="cover" value={option.url} defaultChecked={option.url === cover} />
+                  <img src={option.url} alt={option.label} loading="lazy" className="aspect-square w-full rounded-[var(--radius)] object-cover peer-checked:ring-2 peer-checked:ring-[var(--fg)] peer-focus-visible:outline peer-focus-visible:outline-2" />
+                </label>
+              ))}
+            </div>
+          </div>
+        </fieldset>
         <button className="btn w-fit" type="submit">Save collection</button>
       </form>
       <form action={addToCollection} className="flex gap-2">

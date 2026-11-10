@@ -5,7 +5,7 @@ import { getSql } from "@/db/client"
 export default async function CollectionsPage() {
   const sql = getSql()
   const collections = await sql<Array<{ id: string, title: string, handle: string, published: boolean, imageUrl: string | null }>>`
-    select id, title, handle, published, image_url as "imageUrl"
+    select id, title, handle, published, coalesce(cover_image_url, image_url) as "imageUrl"
     from collections order by position asc, title asc
   `
   return (

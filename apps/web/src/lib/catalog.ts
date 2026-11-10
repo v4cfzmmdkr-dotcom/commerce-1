@@ -498,6 +498,7 @@ export async function listHomeCollections() {
         c.handle,
         c.title,
         case
+          when c.cover_image_url is not null then c.cover_image_url
           when lower(c.handle || ' ' || c.title) similar to '%(dewalt|makita|milwaukee|ryobi)%'
             then c.image_url
           else coalesce(img.url, c.image_url)

@@ -356,16 +356,36 @@ export async function createCollection(formData: FormData) {
   redirect(`/admin/collections/${id}`)
 }
 
+async function collectionCover(id: string, value: FormDataEntryValue | null, current: string | null) {
+  if (typeof value !== "string") return current
+  const url = value.trim()
+  if (!url) return null
+  if (url === current) return current
+  const sql = getSql()
+  const rows = await sql<{ url: string }[]>`
+    select image_url as url from collections where id = ${id} and image_url = ${url}
+    union all
+    select i.url
+    from collection_products cp
+    join product_images i on i.product_id = cp.product_id
+    where cp.collection_id = ${id} and i.url = ${url}
+    limit 1
+  `
+  return rows[0] ? url : current
+}
+
 export async function saveCollection(formData: FormData) {
   await requireAdmin()
   const id = text(formData, "id")
   const title = text(formData, "title")
   const sql = getSql()
-  const current = await sql<{ image_path: string | null }[]>`
-    select image_path from collections where id = ${id}
+  const current = await sql<{ image_path: string | null, image_url: string | null, cover_image_url: string | null }[]>`
+    select image_path, image_url, cover_image_url from collections where id = ${id}
   `
   const previousPath = current[0]?.image_path ?? null
+  const previousUrl = current[0]?.image_url ?? null
   const image = await readImage(formData.get("image"))
+  const cover = await collectionCover(id, formData.get("cover"), current[0]?.cover_image_url ?? null)
   await sql`
     update collections set
       title = ${title},
@@ -374,19 +394,24 @@ export async function saveCollection(formData: FormData) {
       position = ${Number(text(formData, "position") || 0)},
       published = ${formData.get("published") === "on"},
       show_on_home = ${formData.get("showOnHome") === "on"},
+      cover_image_url = ${cover},
       updated_at = now()
     where id = ${id}
   `
   if (image) {
     const saved = await saveObject(`collections/${id}-${Date.now()}.${extensionFor(image.type)}`, image.bytes, image.type)
     await sql`
-      update collections set image_url = ${saved.url}, image_path = ${saved.path}, updated_at = now()
+      update collections set image_url = ${saved.url}, image_path = ${saved.path}, cover_image_url = ${saved.url}, updated_at = now()
       where id = ${id}
     `
     if (previousPath && previousPath !== saved.path) await deleteObject(previousPath)
   } else if (formData.get("removeImage") === "on") {
     await sql`
-      update collections set image_url = null, image_path = null, updated_at = now()
+      update collections set
+        image_url = null,
+        image_path = null,
+        cover_image_url = case when cover_image_url = ${previousUrl} then null else cover_image_url end,
+        updated_at = now()
       where id = ${id}
     `
     await deleteObject(previousPath)
