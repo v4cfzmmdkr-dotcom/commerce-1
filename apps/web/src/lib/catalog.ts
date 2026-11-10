@@ -351,13 +351,13 @@ function isBrandCollection(collection: { handle: string, title: string }) {
 function isFitCollection(collection: HomeCollection) {
   const haystack = collectionKey(collection)
   if (haystack.includes("yamaha")) return false
-  return ["adapter", "jig", "insert", "wall-mount", "wall mount", "home-tool", "home tool"]
+  return ["adapter", "jig", "insert"]
     .some((term) => haystack.includes(term))
     || collection.handle === "gears"
     || collection.title.toLowerCase() === "gears"
 }
 
-const fitOrder = ["adapter", "jig", "insert", "wall", "home tool", "home-tool", "gear"]
+const fitOrder = ["adapter", "jig", "insert", "gear"]
 
 function fitRank(collection: HomeCollection) {
   const haystack = collectionKey(collection)
@@ -424,7 +424,7 @@ export function groupHomeCollections(collections: HomeCollection[], brandCounts:
     groups.push({
       id: "fit",
       heading: "Made to fit",
-      intro: "Adapters, jigs, inserts, and mounts we print to order.",
+      intro: "Adapters, jigs, inserts, and gears we print to order.",
       layout: "mosaic",
       collections: fit,
     })
