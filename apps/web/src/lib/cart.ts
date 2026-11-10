@@ -158,12 +158,35 @@ export async function getCart() {
   }
 }
 
-export async function cartCount() {
+export type CartPreviewLine = Pick<
+  CartLine,
+  "id" | "quantity" | "unitPriceCents" | "productTitle" | "productHandle" | "variantTitle" | "imageUrl"
+>
+
+export type CartSummary = {
+  count: number
+  subtotalCents: number
+  lines: CartPreviewLine[]
+}
+
+export async function cartSummary(): Promise<CartSummary> {
   try {
     const cart = await getCart()
-    return cart.lines.reduce((sum, line) => sum + line.quantity, 0)
+    return {
+      count: cart.lines.reduce((sum, line) => sum + line.quantity, 0),
+      subtotalCents: cart.lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0),
+      lines: cart.lines.map((line) => ({
+        id: line.id,
+        quantity: line.quantity,
+        unitPriceCents: line.unitPriceCents,
+        productTitle: line.productTitle,
+        productHandle: line.productHandle,
+        variantTitle: line.variantTitle,
+        imageUrl: line.imageUrl,
+      })),
+    }
   } catch {
-    return 0
+    return { count: 0, subtotalCents: 0, lines: [] }
   }
 }
 

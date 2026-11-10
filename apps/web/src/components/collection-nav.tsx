@@ -1,7 +1,9 @@
 "use client"
 
 import { CartIcon } from "@/components/cart-icon"
+import { CartPreview } from "@/components/cart-preview"
 import { LiveSearchResults, searchOptionId, useLiveSearch } from "@/components/live-search"
+import type { CartSummary } from "@/lib/cart"
 import type { NavItem } from "@/lib/nav-groups"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
@@ -9,15 +11,18 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 export function CollectionNav({
   items,
-  cartCount,
+  cart,
+  currency,
   storeName,
   logoUrl,
 }: {
   items: NavItem[]
-  cartCount: number
+  cart: CartSummary
+  currency: string
   storeName: string
   logoUrl: string
 }) {
+  const cartCount = cart.count
   const scroller = useRef<HTMLDivElement>(null)
   const row = useRef<HTMLDivElement>(null)
   const menu = useRef<HTMLDivElement>(null)
@@ -36,6 +41,14 @@ export function CollectionNav({
   const [query, setQuery] = useState("")
   const live = useLiveSearch(query)
   const showResults = open && live.term.length >= 2
+  const cartTimer = useRef<number | null>(null)
+  const cartLink = useRef<HTMLAnchorElement>(null)
+  const cartPanel = useRef<HTMLDivElement>(null)
+  const [cartMounted, setCartMounted] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const lastCount = useRef(cartCount)
+  const [bump, setBump] = useState(0)
+  const cartPreviewOff = pathname === "/cart" || pathname.startsWith("/checkout")
 
   useEffect(() => {
     const node = scroller.current
@@ -129,9 +142,66 @@ export function CollectionNav({
 
   function openMenu(id: string, pin: boolean) {
     clearCloseTimer()
+    hideCart(0)
     pinned.current = pin
     setMenuId(id)
   }
+
+  function clearCartTimer() {
+    if (cartTimer.current === null) return
+    window.clearTimeout(cartTimer.current)
+    cartTimer.current = null
+  }
+
+  function showCart() {
+    if (!hoverOk.current || open || cartPreviewOff) return
+    clearCartTimer()
+    setCartMounted(true)
+    cartTimer.current = window.setTimeout(() => {
+      cartTimer.current = null
+      closeMenu()
+      setCartOpen(true)
+    }, 90)
+  }
+
+  function hideCart(wait = 200) {
+    clearCartTimer()
+    if (wait <= 0) {
+      setCartOpen(false)
+      return
+    }
+    cartTimer.current = window.setTimeout(() => {
+      cartTimer.current = null
+      setCartOpen(false)
+    }, wait)
+  }
+
+  useEffect(() => {
+    hideCart(0)
+  }, [pathname, open])
+
+  useEffect(() => {
+    if (cartCount > lastCount.current) setBump((value) => value + 1)
+    lastCount.current = cartCount
+  }, [cartCount])
+
+  useEffect(() => {
+    if (!cartOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (cartPanel.current?.contains(target) || cartLink.current?.contains(target)) return
+      hideCart(0)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") hideCart(0)
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [cartOpen])
 
   function scheduleClose() {
     if (pinned.current) return
@@ -317,14 +387,22 @@ export function CollectionNav({
             </button>
           </form>
           <Link
+            ref={cartLink}
             href="/cart"
             className="nav-cart"
             aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
+            data-preview-open={cartOpen ? "" : undefined}
             inert={open}
+            onMouseEnter={showCart}
+            onMouseLeave={() => hideCart()}
           >
             <span className="header-cart-icon" aria-hidden="true">
               <CartIcon />
-              {cartCount > 0 ? <span className="header-cart-count">{cartCount > 99 ? "99+" : cartCount}</span> : null}
+              {cartCount > 0 ? (
+                <span key={bump} className="header-cart-count" data-bump={bump > 0 ? "" : undefined}>
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              ) : null}
             </span>
           </Link>
         </div>
@@ -350,6 +428,18 @@ export function CollectionNav({
                 </Link>
               ))}
             </div>
+          </div>
+        ) : null}
+        {cartMounted && !cartPreviewOff ? (
+          <div ref={cartPanel}>
+            <CartPreview
+              id="cart-preview"
+              cart={cart}
+              currency={currency}
+              open={cartOpen}
+              onMouseEnter={clearCartTimer}
+              onMouseLeave={() => hideCart()}
+            />
           </div>
         ) : null}
         {showResults ? (

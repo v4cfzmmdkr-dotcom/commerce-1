@@ -1,5 +1,6 @@
 import { CollectionNav } from "@/components/collection-nav"
 import { HomeOnly } from "@/components/home-only"
+import type { CartSummary } from "@/lib/cart"
 import { collectionNavItems } from "@/lib/nav-groups"
 import type { StoreSettings } from "@/lib/settings"
 
@@ -37,11 +38,11 @@ function Announcement({ text }: { text: string }) {
 export function Header({
   settings,
   collections,
-  cartCount,
+  cart,
 }: {
   settings: StoreSettings
   collections: Array<{ handle: string, title: string }>
-  cartCount: number
+  cart: CartSummary
 }) {
   return (
     <>
@@ -49,7 +50,8 @@ export function Header({
         {settings.announcement ? <HomeOnly><Announcement text={settings.announcement} /></HomeOnly> : null}
       </header>
       <CollectionNav
-        cartCount={cartCount}
+        cart={cart}
+        currency={settings.currency}
         items={collectionNavItems(collections)}
         storeName={settings.name}
         logoUrl={settings.logoUrl || "/brand/logo.png"}

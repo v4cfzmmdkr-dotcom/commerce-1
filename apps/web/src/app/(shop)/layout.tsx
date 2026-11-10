@@ -1,15 +1,15 @@
 import { CookieConsent } from "@/components/cookie-consent"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
-import { cartCount } from "@/lib/cart"
+import { cartSummary } from "@/lib/cart"
 import { listNavCollections } from "@/lib/catalog"
 import { databaseReady, getSettings } from "@/lib/settings"
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
-  const [settings, collections, count, ready] = await Promise.all([
+  const [settings, collections, cart, ready] = await Promise.all([
     getSettings(),
     listNavCollections(),
-    cartCount(),
+    cartSummary(),
     databaseReady(),
   ])
   return (
@@ -19,7 +19,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
           The shop database is not ready. Add DATABASE_URL and run pnpm web:setup.
         </p>
       ) : null}
-      <Header settings={settings} collections={collections} cartCount={count} />
+      <Header settings={settings} collections={collections} cart={cart} />
       <main id="content">{children}</main>
       <Footer settings={settings} />
       <CookieConsent />
