@@ -74,11 +74,21 @@ export function PurchaseBox({
           }
           values.sort((left, right) => rank(left) - rank(right))
         }
+        if (kind === "colour") {
+          const first = ["black", "white"]
+          const rank = (value: string) => {
+            const lower = value.toLowerCase()
+            if (first.includes(lower)) return first.indexOf(lower)
+            const index = colours.findIndex((colour) => colour.name.toLowerCase() === lower)
+            return first.length + (index === -1 ? colours.length : index)
+          }
+          values.sort((left, right) => rank(left) - rank(right))
+        }
         return { slot, label, kind, values }
       })
       .filter((group) => group.values.length > 0)
       .sort((left, right) => order[left.kind] - order[right.kind])
-  }, [variants])
+  }, [variants, colours])
   const active = groups.map((group) => group.slot)
   const matches = (variant: PublicVariant, values: Values, skip?: Slot) =>
     active.every((slot) => slot === skip || variant[valueKeys[slot]] === values[slot])
