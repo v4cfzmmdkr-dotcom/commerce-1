@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
-import { getSql } from "@/db/client"
+import type { Sql } from "postgres"
 
 function statements(text: string) {
   return text
@@ -9,8 +9,7 @@ function statements(text: string) {
     .filter((part) => part.length > 0)
 }
 
-export async function migrate() {
-  const sql = getSql()
+export async function migrate(sql: Sql) {
   await sql`
     create table if not exists schema_migrations (
       id text primary key,

@@ -59,7 +59,7 @@ export async function saveTheme(formData: FormData) {
   const logo = await readImage(formData.get("logo"))
   let logoUrl: string | null = null
   if (logo) {
-    const saved = await saveObject(`brand/logo.${extensionFor(logo.type)}`, logo.bytes, logo.type)
+    const saved = await saveObject(`brand/logo-${Date.now()}.${extensionFor(logo.type)}`, logo.bytes, logo.type)
     logoUrl = saved.url
   }
   if (logoUrl) {

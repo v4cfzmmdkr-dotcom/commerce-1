@@ -1,7 +1,11 @@
-import { databaseConfigured } from "@/db/client"
+import { databaseConfigured, isSupabaseDatabase } from "@/db/client"
 
+// The Supabase keys can stay set for file storage, so only use the REST data path
+// when the database itself is Supabase (or no direct database URL is set).
 export function dataApiEnabled() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY && (process.env.VERCEL || !databaseConfigured()))
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return false
+  if (!databaseConfigured()) return true
+  return Boolean(process.env.VERCEL) && isSupabaseDatabase()
 }
 
 type RestResult<T> = { data: T, total: number, status: number }

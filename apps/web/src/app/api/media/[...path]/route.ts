@@ -1,4 +1,6 @@
-import { readLocalObject } from "@/lib/storage"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
+import { objectStorage, objectStorageConfigured } from "@/lib/object-storage"
+import { readLocalObject, sanitizeObjectPath } from "@/lib/storage"
 
 export const runtime = "nodejs"
 
@@ -12,18 +14,43 @@ const types: Record<string, string> = {
   webm: "video/webm",
 }
 
+// Object paths are unique per upload, so the CDN and browsers can keep them forever.
+const cacheHeaders = {
+  "Cache-Control": "public, max-age=31536000, immutable",
+  "CDN-Cache-Control": "public, max-age=31536000, immutable",
+}
+
+async function fromBucket(objectPath: string, range: string | null) {
+  const object = await objectStorage().send(new GetObjectCommand({
+    Bucket: process.env.STORAGE_BUCKET,
+    Key: objectPath,
+    Range: range ?? undefined,
+  }))
+  if (!object.Body) return new Response("Not found", { status: 404 })
+  const headers: Record<string, string> = {
+    ...cacheHeaders,
+    "Content-Type": object.ContentType || "application/octet-stream",
+    "Accept-Ranges": "bytes",
+  }
+  if (object.ContentLength !== undefined) headers["Content-Length"] = String(object.ContentLength)
+  if (object.ETag) headers.ETag = object.ETag
+  if (object.ContentRange) headers["Content-Range"] = object.ContentRange
+  return new Response(object.Body.transformToWebStream(), { status: object.ContentRange ? 206 : 200, headers })
+}
+
 export async function GET(request: Request, context: { params: Promise<{ path: string[] }> }) {
   const { path: parts } = await context.params
   try {
-    const objectPath = parts.map(decodeURIComponent).join("/")
+    const objectPath = sanitizeObjectPath(parts.map(decodeURIComponent).join("/"))
+    if (objectStorageConfigured()) return await fromBucket(objectPath, request.headers.get("range"))
     const bytes = await readLocalObject(objectPath)
     const extension = objectPath.split(".").pop()?.toLowerCase() || "jpg"
     const type = types[extension] || "application/octet-stream"
     const body = new Uint8Array(bytes)
     const headers = {
+      ...cacheHeaders,
       "Content-Type": type,
       "Accept-Ranges": "bytes",
-      "Cache-Control": "public, max-age=31536000, immutable",
     }
     const range = request.headers.get("range")
     const match = range && type.startsWith("video/") ? /bytes=(\d+)-(\d*)/.exec(range) : null

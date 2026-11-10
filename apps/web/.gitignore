@@ -3,3 +3,5 @@ storage
 .env
 .env.local
 *.tsbuildinfo
+.neon
+node_modules/

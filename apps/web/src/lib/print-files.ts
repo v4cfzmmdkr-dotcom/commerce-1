@@ -1,6 +1,9 @@
 import { mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
 import { maxPrintFileBytes, printFileExtension } from "@/lib/print-file-rules"
+import { objectStorage, printFilesBucket } from "@/lib/object-storage"
 import { slugify } from "@/lib/slug"
 import { sanitizeObjectPath, storageMode } from "@/lib/storage"
 
@@ -55,6 +58,9 @@ async function ensureBucket() {
 
 export async function signPrintFileUpload(objectPath: string) {
   const safe = sanitizeObjectPath(objectPath)
+  if (storageMode() === "bucket") {
+    return getSignedUrl(objectStorage(), new PutObjectCommand({ Bucket: printFilesBucket(), Key: safe }), { expiresIn: 3600 })
+  }
   await ensureBucket()
   const { base, headers } = supabase()
   const response = await fetch(`${base}/storage/v1/object/upload/sign/${printFileBucket}/${safe}`, { method: "POST", headers })
@@ -65,9 +71,14 @@ export async function signPrintFileUpload(objectPath: string) {
 
 export async function printFileSize(objectPath: string) {
   const safe = sanitizeObjectPath(objectPath)
-  if (storageMode() === "local") {
+  const mode = storageMode()
+  if (mode === "local") {
     const info = await stat(path.join(localRoot, safe)).catch(() => null)
     return info?.size ?? null
+  }
+  if (mode === "bucket") {
+    const head = await objectStorage().send(new HeadObjectCommand({ Bucket: printFilesBucket(), Key: safe })).catch(() => null)
+    return head?.ContentLength ?? null
   }
   const { base, headers } = supabase()
   const response = await fetch(`${base}/storage/v1/object/authenticated/${printFileBucket}/${safe}`, { method: "HEAD", headers })
@@ -77,6 +88,13 @@ export async function printFileSize(objectPath: string) {
 
 export async function signPrintFileDownload(objectPath: string, fileName: string, expiresIn = 300) {
   const safe = sanitizeObjectPath(objectPath)
+  if (storageMode() === "bucket") {
+    return getSignedUrl(objectStorage(), new GetObjectCommand({
+      Bucket: printFilesBucket(),
+      Key: safe,
+      ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    }), { expiresIn })
+  }
   const { base, headers } = supabase()
   const response = await fetch(`${base}/storage/v1/object/sign/${printFileBucket}/${safe}`, {
     method: "POST",
@@ -104,9 +122,14 @@ export async function readLocalPrintFile(objectPath: string) {
 
 export async function deletePrintFileObject(objectPath: string) {
   const safe = sanitizeObjectPath(objectPath)
-  if (storageMode() === "local") {
+  const mode = storageMode()
+  if (mode === "local") {
     const full = path.resolve(localRoot, safe)
     if (full.startsWith(`${localRoot}${path.sep}`)) await unlink(full).catch(() => undefined)
+    return
+  }
+  if (mode === "bucket") {
+    await objectStorage().send(new DeleteObjectCommand({ Bucket: printFilesBucket(), Key: safe }))
     return
   }
   const { base, headers } = supabase()

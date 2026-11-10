@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   `
   const file = rows[0]
   if (!file) return new Response("Not found", { status: 404 })
-  if (storageMode() === "supabase") {
+  if (storageMode() !== "local") {
     return NextResponse.redirect(await signPrintFileDownload(file.storagePath, file.fileName), { headers: { "Cache-Control": "no-store" } })
   }
   const bytes = await readLocalPrintFile(file.storagePath)

@@ -1,10 +1,13 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
+import { objectStorage, objectStorageConfigured, publicObjectUrl } from "@/lib/object-storage"
 
 const root = path.join(process.cwd(), "storage")
 let bucketReady: Promise<void> | null = null
 
 export function storageMode() {
+  if (objectStorageConfigured()) return "bucket" as const
   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) return "supabase" as const
   return "local" as const
 }
@@ -52,7 +55,19 @@ async function ensureBucket() {
 
 export async function saveObject(objectPath: string, bytes: Buffer, contentType: string) {
   const safe = sanitizeObjectPath(objectPath)
-  if (storageMode() === "supabase") {
+  const mode = storageMode()
+  if (mode === "bucket") {
+    // Every object path is unique per upload, so browsers and the CDN can cache forever.
+    await objectStorage().send(new PutObjectCommand({
+      Bucket: process.env.STORAGE_BUCKET,
+      Key: safe,
+      Body: bytes,
+      ContentType: contentType,
+      CacheControl: "public, max-age=31536000, immutable",
+    }))
+    return { path: safe, url: publicObjectUrl(safe) }
+  }
+  if (mode === "supabase") {
     await ensureBucket()
     const base = process.env.SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -93,7 +108,12 @@ export async function readLocalObject(objectPath: string) {
 export async function deleteObject(objectPath: string | null) {
   if (!objectPath) return
   const safe = sanitizeObjectPath(objectPath)
-  if (storageMode() === "supabase") {
+  const mode = storageMode()
+  if (mode === "bucket") {
+    await objectStorage().send(new DeleteObjectCommand({ Bucket: process.env.STORAGE_BUCKET, Key: safe }))
+    return
+  }
+  if (mode === "supabase") {
     const base = process.env.SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     await fetch(`${base}/storage/v1/object/product-images/${safe}`, {

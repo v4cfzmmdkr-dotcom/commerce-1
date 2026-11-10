@@ -104,36 +104,51 @@ export function vercelSafeTarget(raw: string): PgTarget {
   }
 }
 
-export function getSql() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is not set")
+export function isSupabaseDatabase(raw = process.env.DATABASE_URL) {
+  if (!raw) return false
+  try {
+    return /\.supabase\.(co|com)$/i.test(parseDatabaseUrl(raw).host)
+  } catch {
+    return false
   }
-  if (!globalForDb.sql) {
-    const options = {
-      ssl: "require" as const,
+}
+
+function connect(raw: string) {
+  try {
+    const target = vercelSafeTarget(raw)
+    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(target.host.toLowerCase())
+    console.info(`[db] ${target.host}:${target.port} user=${target.username} db=${target.database}`)
+    return postgres({
+      host: target.host,
+      port: target.port,
+      database: target.database,
+      username: target.username,
+      password: target.password,
+      ssl: local ? false : "require",
       max: 1,
       prepare: false,
       fetch_types: false,
       connect_timeout: 8,
       idle_timeout: 20,
-    }
-    try {
-      const target = vercelSafeTarget(process.env.DATABASE_URL)
-      const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(target.host.toLowerCase())
-      console.info(`[db] ${target.host}:${target.port} user=${target.username} db=${target.database}`)
-      globalForDb.sql = postgres({
-        host: target.host,
-        port: target.port,
-        database: target.database,
-        username: target.username,
-        password: target.password,
-        ...options,
-        ssl: local ? false : options.ssl,
-      })
-    } catch (error) {
-      console.error("[db] could not parse DATABASE_URL")
-      throw error
-    }
+    })
+  } catch (error) {
+    console.error("[db] could not parse the database URL")
+    throw error
   }
+}
+
+export function getSql() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set")
+  }
+  if (!globalForDb.sql) globalForDb.sql = connect(process.env.DATABASE_URL)
   return globalForDb.sql
+}
+
+// Neon's pooled URL goes through PgBouncer in transaction mode, which cannot hold the
+// session state migrations rely on, so scripts use the unpooled URL when it is set.
+export function getDirectSql() {
+  const raw = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL
+  if (!raw) throw new Error("DATABASE_URL is not set")
+  return connect(raw)
 }

@@ -459,6 +459,10 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 .nav-brand .app-icon {
   width: var(--nav-control);
   height: var(--nav-control);
+  -webkit-mask: none;
+  mask: none;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .nav-brand:active {

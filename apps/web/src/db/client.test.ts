@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest"
-import { textArray, textArrayLiteral, vercelSafeTarget } from "@/db/client"
+import { isSupabaseDatabase, textArray, textArrayLiteral, vercelSafeTarget } from "@/db/client"
+
+describe("isSupabaseDatabase", () => {
+  it("recognises Supabase direct and pooler hosts", () => {
+    expect(isSupabaseDatabase("postgresql://postgres:pw@db.abc.supabase.co:5432/postgres")).toBe(true)
+    expect(isSupabaseDatabase("postgresql://web.abc:pw@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres")).toBe(true)
+  })
+
+  it("treats Neon and local hosts as direct Postgres", () => {
+    expect(isSupabaseDatabase("postgresql://u:pw@ep-x-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require")).toBe(false)
+    expect(isSupabaseDatabase("postgres://seth@localhost:5432/nicheparts")).toBe(false)
+    expect(isSupabaseDatabase("")).toBe(false)
+  })
+})
 
 describe("vercelSafeTarget", () => {
   it("moves the Supabase transaction pooler to the session pooler", () => {

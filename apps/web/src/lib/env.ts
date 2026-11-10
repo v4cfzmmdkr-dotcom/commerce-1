@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 
+// Same precedence as Next.js: values in .env.local win over .env.
 export function loadEnvFile() {
-  const file = path.resolve(process.cwd(), ".env")
+  for (const name of [".env.local", ".env"]) loadFile(path.resolve(process.cwd(), name))
+}
+
+function loadFile(file: string) {
   if (!existsSync(file)) return
   for (const line of readFileSync(file, "utf8").split("\n")) {
     const trimmed = line.trim()

@@ -282,7 +282,11 @@ export async function migrateRemoteImages(options: { limit: number, budgetMs?: n
 }
 
 function remoteCollectionImage(sql: ReturnType<typeof getSql>) {
-  return sql`image_path is null and image_url ~ '^https?://' and image_url not like '%/storage/v1/object/public/%'`
+  const storageBase = process.env.STORAGE_PUBLIC_URL?.replace(/\/+$/, "")
+  return sql`
+    image_path is null and image_url ~ '^https?://' and image_url not like '%/storage/v1/object/public/%'
+    ${storageBase ? sql`and image_url not like ${`${storageBase}/%`}` : sql``}
+  `
 }
 
 export async function remoteImageCount() {

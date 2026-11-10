@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { migrate } from "@/db/migrate"
-import { getSql } from "@/db/client"
+import { getDirectSql } from "@/db/client"
 import { loadEnvFile } from "@/lib/env"
 import { FREE_SHIPPING_MIN_CENTS, STANDARD_SHIPPING_CENTS, STANDARD_SHIPPING_MAX_CENTS } from "@/lib/shipping"
 import { defaultTheme } from "@/lib/theme"
@@ -8,10 +8,10 @@ import { defaultTheme } from "@/lib/theme"
 async function setup() {
   loadEnvFile()
   if (!process.env.DATABASE_URL) {
-    throw new Error("Set DATABASE_URL in apps/web/.env before running setup")
+    throw new Error("Set DATABASE_URL in apps/web/.env.local before running setup")
   }
-  await migrate()
-  const sql = getSql()
+  const sql = getDirectSql()
+  await migrate(sql)
   const settings = await sql`select id from store_settings where id = 'default'`
   if (!settings.length) {
     await sql`

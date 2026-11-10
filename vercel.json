@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "regions": ["syd1"],
   "installCommand": "pnpm install --filter @dtc/web...",
   "buildCommand": "pnpm --filter @dtc/web build"
 }
