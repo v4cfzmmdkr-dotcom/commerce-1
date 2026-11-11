@@ -53,6 +53,13 @@ async function load(productIds?: string[]) {
   }
 }
 
+export async function shopEnabledMaterials() {
+  const [settings] = await getSql()<Array<{ materials: unknown }>>`
+    select materials from store_settings where id = 'default'
+  `
+  return parseMaterialSettings(settings?.materials).filter((setting) => setting.enabled).map((setting) => setting.name)
+}
+
 export async function syncProductOptions(productIds?: string[]) {
   const sql = getSql()
   const { colours, materialSettings, products, byProduct } = await load(productIds)

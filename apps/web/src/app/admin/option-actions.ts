@@ -10,6 +10,7 @@ import {
   defaultMaterial,
   materialOptions,
   parseColours,
+  parseMaterialSettings,
   parseMaterials,
   type ColourOption,
   type MaterialSetting,
@@ -61,8 +62,9 @@ export async function saveMaterialSettings(formData: FormData) {
   const enabled = new Set(formData.getAll("materials").map(String))
   if (!enabled.size) redirect(back({ materialError: "Keep at least one material switched on" }))
   const sql = getSql()
-  const [row] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
+  const [row] = await sql<Array<{ colours: unknown, materials: unknown }>>`select colours, materials from store_settings where id = 'default'`
   const palette = parseColours(row?.colours)
+  const wasOn = new Set(parseMaterialSettings(row?.materials).filter((setting) => setting.enabled).map((setting) => setting.name))
   const settings: MaterialSetting[] = []
   for (const material of materialOptions) {
     let markupCents = 0
@@ -79,7 +81,16 @@ export async function saveMaterialSettings(formData: FormData) {
     }
     settings.push({ name: material.name, enabled: enabled.has(material.name), markupCents, colours })
   }
-  await sql`update store_settings set materials = ${sql.json(settings)}, updated_at = now() where id = 'default'`
+  await sql.begin(async (tx) => {
+    await tx`update store_settings set materials = ${sql.json(settings)}, updated_at = now() where id = 'default'`
+    for (const setting of settings) {
+      if (!setting.enabled || wasOn.has(setting.name)) continue
+      await tx`
+        update products set materials = array_append(materials, ${setting.name}), updated_at = now()
+        where not (${setting.name} = any(materials))
+      `
+    }
+  })
   const { added } = await syncProductOptions()
   const repriced = await repriceMaterials()
   revalidatePath("/", "layout")

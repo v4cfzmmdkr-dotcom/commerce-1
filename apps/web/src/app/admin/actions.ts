@@ -14,7 +14,7 @@ import { ListingError, importListing } from "@/lib/listing-import"
 import { importShopifyCsv, migrateCollectionImages, migrateRemoteImages, syncCollections } from "@/lib/shopify/import"
 import { parseTheme } from "@/lib/theme"
 import { receiptSeller } from "@/lib/orders"
-import { repriceMaterials, syncProductOptions } from "@/lib/product-options-sync"
+import { repriceMaterials, shopEnabledMaterials, syncProductOptions } from "@/lib/product-options-sync"
 import { slugify } from "@/lib/slug"
 import { normaliseAbn } from "@/lib/tax-invoice"
 import type { Address } from "@/lib/types"
@@ -149,7 +149,8 @@ export async function createProduct(formData: FormData) {
   const clash = await sql`select id from products where handle = ${handle}`
   if (clash.length) handle = `${handle}-${id.slice(0, 4)}`
   await sql`
-    insert into products (id, handle, title, status) values (${id}, ${handle}, ${title}, 'draft')
+    insert into products (id, handle, title, status, materials)
+    values (${id}, ${handle}, ${title}, 'draft', ${textArrayLiteral(await shopEnabledMaterials())}::text[])
   `
   await sql`
     insert into variants (id, product_id, title, option1_name, option1_value, option2_name, option2_value, price_cents, inventory_qty, inventory_policy, position)

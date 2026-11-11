@@ -5,7 +5,7 @@ import { extensionFor, saveObject } from "@/lib/storage"
 import { fetchShopifyCollections, type RemoteCollection } from "@/lib/shopify/collections"
 import { limitVariantsToBlackWhite } from "@/lib/product-colours"
 import { withDefaultMaterial } from "@/lib/product-options"
-import { syncProductOptions } from "@/lib/product-options-sync"
+import { shopEnabledMaterials, syncProductOptions } from "@/lib/product-options-sync"
 import { decodeCsvBuffer, parseShopifyCsv, variantLabel, type ParsedProduct } from "@/lib/shopify/parse"
 import type { ImportReport, ParseIssue } from "@/lib/types"
 
@@ -87,11 +87,11 @@ export async function upsertProduct(product: ParsedProduct, report: ImportReport
     await sql`
       insert into products (
         id, handle, title, description_html, vendor, product_type, tags, status,
-        seo_title, seo_description, metadata
+        seo_title, seo_description, metadata, materials
       ) values (
         ${id}, ${product.handle}, ${product.title}, ${description}, ${product.vendor},
         ${product.productType}, ${textArrayLiteral(product.tags)}::text[], ${product.status}, ${product.seoTitle},
-        ${product.seoDescription}, ${sql.json(product.metadata)}
+        ${product.seoDescription}, ${sql.json(product.metadata)}, ${textArrayLiteral(await shopEnabledMaterials())}::text[]
       )
     `
     report.productsCreated += 1

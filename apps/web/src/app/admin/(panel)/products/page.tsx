@@ -104,7 +104,7 @@ export default async function ProductsPage({
         <div>
           <h2>Materials</h2>
           <p className="admin-note mt-1 text-sm">
-            Switch a material off to hide it on every product. Tick the colours each material comes in. Each product also chooses its own materials on its edit page.
+            Switching a material on offers it on every product. Switch it off to hide it everywhere. Tick the colours each material comes in. To leave a material off one product, untick it on that product&apos;s edit page.
           </p>
         </div>
         <div className="grid gap-5">

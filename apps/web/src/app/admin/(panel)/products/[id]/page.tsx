@@ -168,7 +168,7 @@ export default async function EditProductPage({
         <div>
           <h2 className="text-lg font-medium">Material</h2>
           <p className="admin-note mt-1 text-sm">
-            Customers choose from the materials ticked here before adding to cart. Colours are chosen for every product on the Products page.
+            Customers choose from the materials ticked here before adding to cart. Materials switched on for the whole shop are ticked on every product; untick one to leave it off this product. Colours are chosen on the Products page.
           </p>
         </div>
         <div className="colour-chips">
