@@ -1,5 +1,6 @@
 import { getSql, databaseConfigured } from "@/db/client"
 import { parseColours, parseMaterialSettings, type ColourOption, type MaterialSetting } from "@/lib/product-options"
+import { dataApiEnabled } from "@/lib/supabase-rest"
 import { defaultTheme, parseTheme } from "@/lib/theme"
 import type { ThemeSettings } from "@/lib/types"
 
@@ -75,7 +76,7 @@ function mapSettings(row: Record<string, unknown>): StoreSettings {
 export async function databaseReady() {
   const base = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (base && key && process.env.VERCEL) {
+  if (base && key && dataApiEnabled()) {
     try {
       const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/products?select=id&limit=1`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
@@ -108,7 +109,7 @@ export async function databaseReady() {
 export async function getSettings() {
   const base = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (base && key && (process.env.VERCEL || !databaseConfigured())) {
+  if (base && key && dataApiEnabled()) {
     try {
       const response = await fetch(`${base.replace(/\/$/, "")}/rest/v1/store_settings?id=eq.default&select=*&limit=1`, {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
