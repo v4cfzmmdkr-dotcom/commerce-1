@@ -4,7 +4,7 @@ import { CartIcon } from "@/components/cart-icon"
 import { CartPreview } from "@/components/cart-preview"
 import { LiveSearchResults, searchOptionId, useLiveSearch } from "@/components/live-search"
 import type { CartSummary } from "@/lib/cart"
-import type { NavItem } from "@/lib/nav-groups"
+import type { NavIcon, NavItem } from "@/lib/nav-groups"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
@@ -296,6 +296,7 @@ export function CollectionNav({
                   className="collection-nav-link"
                   aria-current={pathname === item.href ? "page" : undefined}
                 >
+                  {item.icon ? <NavIconSvg name={item.icon} /> : null}
                   {item.label}
                 </Link>
               ) : (
@@ -331,6 +332,7 @@ export function CollectionNav({
                     openMenu(item.id, true)
                   }}
                 >
+                  {item.icon ? <NavIconSvg name={item.icon} /> : null}
                   {item.label}
                   <Chevron />
                 </button>
@@ -462,6 +464,49 @@ function linkIsCurrent(href: string, pathname: string, brand: string | null) {
   if (wanted) return brand === wanted
   if (url.pathname.startsWith("/collections/")) return !brand
   return true
+}
+
+const navIconPaths: Record<NavIcon, string[]> = {
+  brands: [
+    "M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z",
+    "M7.5 7.5h.01",
+  ],
+  tools: [
+    "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",
+  ],
+  home: [
+    "M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+    "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",
+  ],
+  gaming: [
+    "M6 11h4",
+    "M8 9v4",
+    "M15 12h.01",
+    "M18 10h.01",
+    "M17.32 5H6.68a4 4 0 0 0-3.98 3.59C2.6 9.42 2 14.46 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.41-1.41A2 2 0 0 1 9.83 16h4.34a2 2 0 0 1 1.41.59L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.55-.6-6.58-.69-7.26A4 4 0 0 0 17.32 5z",
+  ],
+  electronics: [
+    "M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+    "M9 9h6v6H9z",
+    "M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3",
+  ],
+  hobby: [
+    "M19.44 7.85c-.05.32.06.65.29.88l1.57 1.57a2.4 2.4 0 0 1 0 3.4l-1.61 1.62a.98.98 0 0 1-.84.27c-.47-.07-.8-.48-.97-.92a2.5 2.5 0 1 0-3.21 3.21c.44.17.85.5.92.97a.98.98 0 0 1-.27.84l-1.61 1.61a2.4 2.4 0 0 1-3.41 0l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.47-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88l-1.57-1.57a2.4 2.4 0 0 1 0-3.4L4.23 8.77c.24-.24.58-.35.92-.3.51.08.88.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92l1.53-1.53a2.4 2.4 0 0 1 3.4 0l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.47.18-.9.53-.97 1.02z",
+  ],
+  car: [
+    "M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2",
+    "M9 17h6",
+    "M5 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0",
+    "M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0",
+  ],
+}
+
+function NavIconSvg({ name }: { name: NavIcon }) {
+  return (
+    <svg className="collection-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {navIconPaths[name].map((d) => <path key={d} d={d} />)}
+    </svg>
+  )
 }
 
 function Chevron() {

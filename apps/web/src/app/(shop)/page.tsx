@@ -11,18 +11,14 @@ export const metadata: Metadata = { alternates: { canonical: "/" } }
 
 // How many leading tiles span two columns so every row of the mosaic is full.
 function mosaicWideCount(count: number, columns: number) {
-  const fill = (columns - (count % columns)) % columns
-  for (let wide = fill; wide <= count; wide += columns) {
-    if (wide >= 2) return wide
-  }
-  return fill <= count ? fill : 0
+  return Math.min((columns - (count % columns)) % columns, count)
 }
 
 function mosaicTileClass(index: number, count: number) {
   return [
-    index < count % 2 ? "collection-tile-wide-sm" : "",
-    index < mosaicWideCount(count, 4) ? "collection-tile-wide-md" : "",
-    index < mosaicWideCount(count, 6) ? "collection-tile-wide-xl" : "",
+    index < mosaicWideCount(count, 2) ? "collection-tile-wide-sm" : "",
+    index < mosaicWideCount(count, 3) ? "collection-tile-wide-md" : "",
+    index < mosaicWideCount(count, 4) ? "collection-tile-wide-xl" : "",
   ].filter(Boolean).join(" ")
 }
 
@@ -121,12 +117,12 @@ export default async function HomePage() {
               {group.brands?.map((brand) => <BrandTile key={brand.slug} brand={brand} />)}
             </BrandCarousel>
           ) : (
-            <div className={group.layout === "mosaic" ? "collection-mosaic" : "grid grid-cols-2 gap-[var(--gap)] md:grid-cols-4 xl:grid-cols-6"}>
+            <div className="collection-mosaic">
               {group.collections.map((collection, index) => (
                 <CollectionTile
                   key={collection.handle}
                   collection={collection}
-                  className={group.layout === "mosaic" ? mosaicTileClass(index, group.collections.length) : ""}
+                  className={mosaicTileClass(index, group.collections.length)}
                 />
               ))}
             </div>

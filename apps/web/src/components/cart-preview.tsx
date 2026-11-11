@@ -1,5 +1,8 @@
-import type { CSSProperties } from "react"
+"use client"
+
+import { useEffect, useState, useTransition, type CSSProperties } from "react"
 import Link from "next/link"
+import { updateCart } from "@/app/(shop)/cart/actions"
 import type { CartSummary } from "@/lib/cart"
 import { formatMoney } from "@/lib/money"
 
@@ -20,8 +23,32 @@ export function CartPreview({
   onMouseEnter: () => void
   onMouseLeave: () => void
 }) {
+  const [removing, setRemoving] = useState<string[]>([])
+  const [, startTransition] = useTransition()
   const lines = cart.lines.slice(0, shownLines)
   const hidden = cart.lines.length - lines.length
+
+  useEffect(() => {
+    setRemoving((ids) => {
+      const kept = ids.filter((id) => cart.lines.some((line) => line.id === id))
+      return kept.length === ids.length ? ids : kept
+    })
+  }, [cart.lines])
+
+  const remove = (itemId: string) => {
+    setRemoving((ids) => [...ids, itemId])
+    const data = new FormData()
+    data.set("itemId", itemId)
+    data.set("quantity", "0")
+    startTransition(async () => {
+      try {
+        await updateCart(data)
+      } catch (error) {
+        console.error("Could not remove cart item", error)
+        setRemoving((ids) => ids.filter((id) => id !== itemId))
+      }
+    })
+  }
   return (
     <div
       id={id}
@@ -46,18 +73,37 @@ export function CartPreview({
           <>
             <ul className="cart-preview-lines">
               {lines.map((line, index) => (
-                <li key={line.id} className="cart-preview-line" style={{ "--i": index } as CSSProperties}>
-                  <Link href={`/products/${line.productHandle}`} className="cart-preview-item">
-                    <span className="cart-preview-thumb">
-                      {line.imageUrl ? <img src={line.imageUrl} alt="" /> : null}
-                      {line.quantity > 1 ? <span className="cart-preview-qty">{line.quantity}</span> : null}
-                    </span>
-                    <span className="cart-preview-text">
-                      <span className="cart-preview-title">{line.productTitle}</span>
-                      {line.variantTitle ? <span className="cart-preview-variant">{line.variantTitle}</span> : null}
-                    </span>
-                    <span className="cart-preview-price">{formatMoney(line.unitPriceCents * line.quantity, currency)}</span>
-                  </Link>
+                <li
+                  key={line.id}
+                  className="cart-preview-line"
+                  data-removing={removing.includes(line.id) ? "" : undefined}
+                  style={{ "--i": index } as CSSProperties}
+                >
+                  <div className="cart-preview-row">
+                    <Link href={`/products/${line.productHandle}`} className="cart-preview-item">
+                      <span className="cart-preview-thumb">
+                        {line.imageUrl ? <img src={line.imageUrl} alt="" /> : null}
+                        {line.quantity > 1 ? <span className="cart-preview-qty">{line.quantity}</span> : null}
+                      </span>
+                      <span className="cart-preview-text">
+                        <span className="cart-preview-title">{line.productTitle}</span>
+                        {line.variantTitle ? <span className="cart-preview-variant">{line.variantTitle}</span> : null}
+                      </span>
+                      <span className="cart-preview-price">{formatMoney(line.unitPriceCents * line.quantity, currency)}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="cart-preview-remove"
+                      aria-label={`Remove ${line.productTitle} from cart`}
+                      title="Remove"
+                      disabled={removing.includes(line.id)}
+                      onClick={() => remove(line.id)}
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

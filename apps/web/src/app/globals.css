@@ -678,6 +678,23 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   color: var(--fg);
 }
 
+.collection-nav-link:has(.collection-nav-icon) {
+  gap: 0.28rem;
+  padding-left: 0.8rem;
+}
+
+.collection-nav-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 0.12rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .collection-nav-parent {
   gap: 0.28rem;
   margin: 0;
@@ -850,8 +867,81 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   to { opacity: 1; filter: none; transform: none; }
 }
 
+.cart-preview-line {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cart-preview-line[data-removing] {
+  grid-template-rows: 0fr;
+}
+
+.cart-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 0;
+  transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cart-preview-line[data-removing] .cart-preview-row {
+  opacity: 0;
+  transform: translateX(12px) scale(0.97);
+}
+
+.cart-preview-remove {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-right: 0.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform var(--press-out);
+}
+
+.cart-preview-remove svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
+.cart-preview-remove:hover {
+  opacity: 1;
+  background: color-mix(in srgb, #ff3b30 16%, transparent);
+  color: #ff3b30;
+}
+
+.cart-preview-remove:active {
+  transform: scale(0.9);
+  transition: opacity 0.1s ease, background-color 0.1s ease, color 0.1s ease, transform var(--press-in);
+}
+
+.cart-preview-remove:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+
+.cart-preview-remove:disabled {
+  cursor: default;
+}
+
 .cart-preview-item {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 0.75rem;
   padding: 0.45rem;
@@ -1510,9 +1600,18 @@ label:has(> input[type="radio"]) {
 }
 
 .collection-mosaic {
+  --mosaic-columns: 2;
+  --mosaic-column-gap: 0.75rem;
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--gap);
+  grid-template-columns: repeat(var(--mosaic-columns), minmax(0, 1fr));
+  grid-auto-flow: dense;
+  gap: 1.5rem var(--mosaic-column-gap);
+}
+
+/* Wide tiles stay one column tall so every row lines up. */
+.collection-mosaic .collection-tile[class*="collection-tile-wide"] .product-media {
+  height: calc((100cqw - (var(--mosaic-columns) - 1) * var(--mosaic-column-gap)) / var(--mosaic-columns));
 }
 
 @media (max-width: 767px) {
@@ -1521,13 +1620,15 @@ label:has(> input[type="radio"]) {
   }
 
   .collection-tile-wide-sm .product-media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: auto;
   }
 }
 
 @media (min-width: 768px) {
   .collection-mosaic {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    --mosaic-columns: 3;
+    --mosaic-column-gap: 1.25rem;
+    row-gap: 2rem;
   }
 }
 
@@ -1537,13 +1638,15 @@ label:has(> input[type="radio"]) {
   }
 
   .collection-tile-wide-md .product-media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: auto;
   }
 }
 
 @media (min-width: 1280px) {
   .collection-mosaic {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    --mosaic-columns: 4;
+    --mosaic-column-gap: 1.5rem;
+    row-gap: 2.5rem;
   }
 
   .collection-tile-wide-xl {
@@ -1551,7 +1654,7 @@ label:has(> input[type="radio"]) {
   }
 
   .collection-tile-wide-xl .product-media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: auto;
   }
 }
 
@@ -2545,6 +2648,16 @@ a:hover .product-media img {
   font-size: 0.9375rem;
   text-decoration: none;
   white-space: nowrap;
+  background: var(--glass-tint);
+  box-shadow: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .view-all.glass {
+    border-color: transparent;
+    background: #ffffff;
+    color: #000000;
+  }
 }
 
 .home-section {

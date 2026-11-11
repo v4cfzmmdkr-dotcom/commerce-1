@@ -1,13 +1,15 @@
 export type NavLink = { href: string, label: string }
 
+export type NavIcon = "brands" | "tools" | "home" | "gaming" | "electronics" | "hobby" | "car"
+
 export type NavItem =
-  | ({ kind: "link" } & NavLink)
-  | { kind: "menu", id: string, label: string, links: NavLink[] }
+  | ({ kind: "link", icon?: NavIcon } & NavLink)
+  | { kind: "menu", id: string, label: string, icon?: NavIcon, links: NavLink[] }
 
 type Collection = { handle: string, title: string }
 
 type Group = {
-  id: string
+  id: NavIcon
   label: string
   handles: string[]
   hideCollection?: boolean
@@ -56,7 +58,7 @@ const groups: Group[] = [
 export function collectionNavItems(collections: Collection[]): NavItem[] {
   const byHandle = new Map(collections.map((collection) => [collection.handle, collection]))
   const used = new Set<string>()
-  const items: NavItem[] = [{ kind: "link", href: "/brands", label: "All Brands" }]
+  const items: NavItem[] = [{ kind: "link", href: "/brands", label: "All Brands", icon: "brands" }]
 
   for (const group of groups) {
     const links: NavLink[] = []
@@ -68,8 +70,8 @@ export function collectionNavItems(collections: Collection[]): NavItem[] {
       if (group.extras) links.push(...group.extras(collection))
     }
     if (links.length === 0) continue
-    if (links.length === 1) items.push({ kind: "link", href: links[0].href, label: links[0].label })
-    else items.push({ kind: "menu", id: group.id, label: group.label, links })
+    if (links.length === 1) items.push({ kind: "link", href: links[0].href, label: links[0].label, icon: group.id })
+    else items.push({ kind: "menu", id: group.id, label: group.label, icon: group.id, links })
   }
 
   for (const collection of collections) {

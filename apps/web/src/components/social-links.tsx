@@ -34,7 +34,12 @@ export async function SocialLinks({ placement = "hero" }: { placement?: "hero" |
         rel="noreferrer"
         aria-label={ebayLabel}
       >
-        <span className="hero-social-mark">eBay</span>
+        <span className="hero-social-mark">
+          <span className="text-[#e53238]">e</span>
+          <span className="text-[#0064d2]">b</span>
+          <span className="text-[#f5af02]">a</span>
+          <span className="text-[#86b817]">y</span>
+        </span>
         <span className="hero-social-stat-copy">
           <span>{social.ebay.sales.toLocaleString("en-AU")} sold</span>
           <span>{social.ebay.positive} positive</span>
@@ -47,7 +52,7 @@ export async function SocialLinks({ placement = "hero" }: { placement?: "hero" |
         rel="noreferrer"
         aria-label={googleLabel}
       >
-        <GoogleIcon />
+        <GoogleIcon colored />
         <span className="hero-social-stat-copy">
           <Stars value={google.reviews > 0 ? google.rating : null} />
           <span>
@@ -116,10 +121,13 @@ function Stars({ value }: { value: number | null }) {
   )
 }
 
-function GoogleIcon() {
+function GoogleIcon({ colored = false }: { colored?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.32 2.98-7.35zM12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.76-5.59-4.12H3.07v2.6A10 10 0 0 0 12 22zM6.41 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.31.31-1.91v-2.6H3.07a10 10 0 0 0 0 9.02l3.34-2.6zM12 5.97c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.6C7.2 7.73 9.4 5.97 12 5.97z" />
+      <path fill={colored ? "#4285f4" : undefined} d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.24c1.9-1.75 2.98-4.32 2.98-7.35z" />
+      <path fill={colored ? "#34a853" : undefined} d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.76-5.59-4.12H3.07v2.6A10 10 0 0 0 12 22z" />
+      <path fill={colored ? "#fbbc05" : undefined} d="M6.41 13.91A6 6 0 0 1 6.1 12c0-.66.11-1.31.31-1.91v-2.6H3.07a10 10 0 0 0 0 9.02l3.34-2.6z" />
+      <path fill={colored ? "#ea4335" : undefined} d="M12 5.97c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.6C7.2 7.73 9.4 5.97 12 5.97z" />
     </svg>
   )
 }
