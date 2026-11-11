@@ -1445,6 +1445,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
   height: 100%;
   opacity: 0.55;
   pointer-events: none;
+  transform: translateZ(0);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 60%);
   mask-image: linear-gradient(90deg, transparent, #000 60%);
 }
