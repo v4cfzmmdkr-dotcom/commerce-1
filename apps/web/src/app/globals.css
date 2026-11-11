@@ -1398,7 +1398,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 }
 
 .announcement-accent {
-  color: #ff3b30;
+  color: #dc1928;
 }
 
 @keyframes announcement-marquee {
