@@ -95,6 +95,10 @@ export default async function HomePage() {
         <div className="wrap-wide relative py-[var(--section)]">
           <h1 className="hero-kicker">{settings.invoiceName || settings.name}</h1>
           <p className="hero-title">{heroLine(settings.tagline, settings.announcement)}</p>
+          <div className="hero-cta">
+            <Link href="/search" className="btn no-underline">Shop all parts</Link>
+            <Link href="/contact" className="hero-cta-secondary glass no-underline">Request a custom part</Link>
+          </div>
         </div>
       </section>
       <section className="hero-actions wrap-wide">

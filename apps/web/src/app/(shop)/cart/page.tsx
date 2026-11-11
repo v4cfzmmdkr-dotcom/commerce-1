@@ -1,20 +1,24 @@
 import Link from "next/link"
 import { updateCart } from "@/app/(shop)/cart/actions"
 import { CartQuantity } from "@/components/cart-quantity"
+import { PaymentIcons } from "@/components/payment-icons"
 import { ProductGrid } from "@/components/product-grid"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getCart } from "@/lib/cart"
 import { listFeaturedProducts } from "@/lib/catalog"
+import { freeShippingThreshold } from "@/lib/free-shipping"
 import { formatMoney } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
+import { freeShippingProgress } from "@/lib/shipping"
 
 export const metadata = { title: "Cart" }
 
 export default async function CartPage() {
-  const [cart, settings, featured] = await Promise.all([getCart(), getSettings(), listFeaturedProducts()])
+  const [cart, settings, featured, freeFrom] = await Promise.all([getCart(), getSettings(), listFeaturedProducts(), freeShippingThreshold()])
   const inCart = new Set(cart.lines.map((line) => line.productHandle))
   const suggestions = featured.filter((product) => !inCart.has(product.handle)).slice(0, 8)
   const subtotal = cart.lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0)
+  const progress = freeShippingProgress(subtotal, freeFrom)
   return (
     <div className="wrap py-[var(--section)]">
       <h1 className="text-3xl font-semibold tracking-tight">Cart</h1>
@@ -48,9 +52,29 @@ export default async function CartPage() {
             ))}
           </ul>
           <aside className="cart-summary glass">
+            {progress ? (
+              <div className="free-ship" data-done={progress.remaining === 0 ? "" : undefined}>
+                <p className="text-sm font-semibold">
+                  {progress.remaining === 0
+                    ? "Your order ships free"
+                    : `Add ${formatMoney(progress.remaining, settings.currency)} for free shipping`}
+                </p>
+                <div className="free-ship-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent} aria-label="Progress to free shipping">
+                  <span style={{ width: `${progress.percent}%` }} />
+                </div>
+              </div>
+            ) : null}
             <p className="flex justify-between text-sm"><span>Subtotal</span><span>{formatMoney(subtotal, settings.currency)}</span></p>
-            <p className="mt-2 text-xs opacity-70">Shipping and GST are confirmed at checkout.</p>
+            <p className="mt-1 flex justify-between text-sm">
+              <span>Shipping</span>
+              <span>{progress?.remaining === 0 ? "Free standard" : "Calculated at checkout"}</span>
+            </p>
             <Link href="/checkout" className="btn mt-4 w-full">Checkout</Link>
+            <p className="cart-secure">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z" /></svg>
+              Secure checkout. Pay with Apple Pay, Afterpay or Zip.
+            </p>
+            <PaymentIcons />
           </aside>
         </div>
       )}

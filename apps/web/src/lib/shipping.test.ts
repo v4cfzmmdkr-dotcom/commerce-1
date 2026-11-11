@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
+  dispatchByLabel,
+  freeShippingProgress,
   FREE_SHIPPING_MIN_CENTS,
   STANDARD_SHIPPING_CENTS,
   STANDARD_SHIPPING_MAX_CENTS,
@@ -82,5 +84,21 @@ describe("selectShippingRate", () => {
     const chosen = selectShippingRate([{ ...free, active: false }, open], 3000, "AU", "free")
     expect(chosen.rate?.id).toBe("standard")
     expect(chosen.rate?.priceCents).toBe(995)
+  })
+})
+
+describe("freeShippingProgress", () => {
+  it("reports how much is left and the progress", () => {
+    expect(freeShippingProgress(1900, 2500)).toEqual({ remaining: 600, percent: 76 })
+    expect(freeShippingProgress(2500, 2500)).toEqual({ remaining: 0, percent: 100 })
+    expect(freeShippingProgress(1000, null)).toBeNull()
+  })
+})
+
+describe("dispatchByLabel", () => {
+  it("counts two business days in Sydney time", () => {
+    expect(dispatchByLabel(new Date("2026-11-11T01:00:00Z"))).toBe("Fri, 13 Nov")
+    expect(dispatchByLabel(new Date("2026-11-13T01:00:00Z"))).toBe("Tue, 17 Nov")
+    expect(dispatchByLabel(new Date("2026-11-14T01:00:00Z"))).toBe("Tue, 17 Nov")
   })
 })

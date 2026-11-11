@@ -1,12 +1,15 @@
 "use client"
 
-import { useMemo, useState, type CSSProperties } from "react"
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
+import Link from "next/link"
 import { addToCart } from "@/app/(shop)/cart/actions"
 import { formatMoney, isPurchasable } from "@/lib/money"
 import { defaultMaterial, materialOptions, variantMaterial } from "@/lib/product-options"
 import type { PublicVariant } from "@/lib/catalog"
+
+const payLaterMaxCents = 200000
 
 type Slot = 0 | 1 | 2
 type Values = [string, string, string]
@@ -39,16 +42,28 @@ function kindOf(name: string) {
 }
 
 export function PurchaseBox({
+  title,
   variants,
   currency,
   colours,
   initialVariantId,
+  freeShippingFromCents,
+  dispatchBy,
+  returnDays,
 }: {
+  title: string
   variants: PublicVariant[]
   currency: string
   colours: Array<{ name: string, hex: string }>
   initialVariantId?: string
+  freeShippingFromCents: number | null
+  dispatchBy: string
+  returnDays: number
 }) {
+  const formId = useId()
+  const submitRef = useRef<HTMLDivElement>(null)
+  const [barVisible, setBarVisible] = useState(false)
+  const [quantity, setQuantity] = useState(1)
   const requested = variants.find((variant) => variant.id === initialVariantId)
   const isDefaultMaterial = (variant: PublicVariant) => {
     const material = variantMaterial(variant)
@@ -95,6 +110,20 @@ export function PurchaseBox({
   const selected = variants.find((variant) => matches(variant, chosen)) ?? null
   const purchasable = selected ? isPurchasable(selected) : false
 
+  useEffect(() => {
+    const button = submitRef.current
+    const footer = document.querySelector(".site-footer")
+    if (!button) return
+    const seen = new Map<Element, boolean>()
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) seen.set(entry.target, entry.isIntersecting)
+      setBarVisible(!seen.get(button) && !(footer && seen.get(footer)))
+    })
+    observer.observe(button)
+    if (footer) observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
   function choose(slot: Slot, value: string) {
     const next: Values = [...chosen]
     next[slot] = value
@@ -124,8 +153,13 @@ export function PurchaseBox({
     return !variants.some((variant) => variant[valueKeys[slot]] === colour && variant[valueKeys[materialGroup.slot]] === material)
   }
 
+  const priceCents = selected?.priceCents ?? 0
+  const lineCents = priceCents * quantity
+  const shipsFree = freeShippingFromCents != null && lineCents >= freeShippingFromCents
+  const buttonLabel = purchasable ? "Add to cart" : selected ? "Sold out" : "Unavailable"
+
   return (
-    <form action={action} className="grid gap-8">
+    <form id={formId} action={action} className="grid gap-8">
       {selected ? <input type="hidden" name="variantId" value={selected.id} /> : null}
       {groups.map((group) => {
         const value = chosen[group.slot]
@@ -157,17 +191,92 @@ export function PurchaseBox({
           />
         )
       })}
-      <p className="text-2xl leading-none">{selected ? formatMoney(selected.priceCents, currency) : "Unavailable"}</p>
+      <div>
+        <p className="text-2xl leading-none">{selected ? formatMoney(priceCents, currency) : "Unavailable"}</p>
+        {selected && priceCents > 0 && priceCents <= payLaterMaxCents ? (
+          <p className="pay-later">
+            or 4 interest-free payments of {formatMoney(Math.round(priceCents / 4), currency)} with Afterpay
+          </p>
+        ) : null}
+      </div>
       <div className="grid gap-4">
         <label className="label max-w-28">
           Qty
-          <input className="field normal-case" name="quantity" type="number" min={1} max={99} defaultValue={1} />
+          <input
+            className="field normal-case"
+            name="quantity"
+            type="number"
+            min={1}
+            max={99}
+            value={quantity}
+            onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))}
+          />
         </label>
-        <SubmitButton disabled={!purchasable} label={purchasable ? "Add to cart" : selected ? "Sold out" : "Unavailable"} />
+        <div ref={submitRef}>
+          <SubmitButton disabled={!purchasable} label={buttonLabel} />
+        </div>
         {state?.error ? <p className="text-sm" role="alert">{state.error}</p> : null}
-        {state?.ok ? <p className="text-sm" role="status">Added to cart.</p> : null}
+        {state?.ok ? (
+          <div className="added-to-cart glass" role="status">
+            <span className="added-to-cart-tick" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </span>
+            <span className="flex-1">Added to cart</span>
+            <Link href="/cart" className="added-to-cart-link no-underline">View cart</Link>
+            <Link href="/checkout" className="btn added-to-cart-checkout no-underline">Checkout</Link>
+          </div>
+        ) : null}
+      </div>
+      <ul className="buy-assurance glass">
+        <li>
+          <AssuranceIcon d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+          <span>
+            <strong>Dispatched by {dispatchBy}</strong>
+            <span>Printed to order and sent with Australia Post.</span>
+          </span>
+        </li>
+        {freeShippingFromCents != null ? (
+          <li>
+            <AssuranceIcon d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" />
+            <span>
+              <strong>{shipsFree ? "Free shipping on this order" : `Free shipping over ${formatMoney(freeShippingFromCents, currency)}`}</strong>
+              <span>{shipsFree ? "Your order qualifies for free standard delivery." : `Add ${formatMoney(freeShippingFromCents - lineCents, currency)} more to ship free.`}</span>
+            </span>
+          </li>
+        ) : null}
+        <li>
+          <AssuranceIcon d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
+          <span>
+            <strong>{returnDays}-day returns</strong>
+            <span>Not the right fit? <Link href="/returns">Send it back</Link> for a refund.</span>
+          </span>
+        </li>
+        <li>
+          <AssuranceIcon d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zM9 12l2 2 4-4" />
+          <span>
+            <strong>Secure checkout</strong>
+            <span>Apple Pay, Google Pay, cards, Afterpay and Zip.</span>
+          </span>
+        </li>
+      </ul>
+      <div className="buy-bar glass" data-visible={barVisible && purchasable ? "" : undefined} aria-hidden={!barVisible}>
+        <span className="buy-bar-copy">
+          <span className="buy-bar-title">{title}</span>
+          <span className="buy-bar-price">{selected ? formatMoney(priceCents, currency) : ""}</span>
+        </span>
+        <button className="btn" type="submit" form={formId} disabled={!purchasable} tabIndex={barVisible ? 0 : -1}>
+          {buttonLabel}
+        </button>
       </div>
     </form>
+  )
+}
+
+function AssuranceIcon({ d }: { d: string }) {
+  return (
+    <svg className="buy-assurance-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={d} />
+    </svg>
   )
 }
 

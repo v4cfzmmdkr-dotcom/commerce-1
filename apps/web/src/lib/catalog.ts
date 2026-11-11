@@ -786,6 +786,52 @@ export async function listFeaturedProducts() {
   }
 }
 
+export async function listRelatedProducts(productId: string, limit = 8) {
+  const fallback = async () => (await listFeaturedProducts()).filter((product) => product.id !== productId).slice(0, limit)
+  if (catalogViaHttps() || !databaseConfigured()) return fallback()
+  try {
+    const sql = getSql()
+    const rows = await sql<ProductCard[]>`
+      select
+        p.id, p.handle, p.title,
+        pr.min_price as "priceCents",
+        pr.compare_at as "compareAtCents",
+        img.url as "imageUrl",
+        coalesce(img.alt, '') as "imageAlt",
+        pr.purchasable as "purchasable"
+      from products p
+      join (
+        select cp.product_id, min(cp.position) as position
+        from collection_products cp
+        where cp.collection_id in (select collection_id from collection_products where product_id = ${productId})
+        group by cp.product_id
+      ) shared on shared.product_id = p.id
+      join (
+        select product_id, min(price_cents) as min_price, min(compare_at_cents) as compare_at,
+          bool_or(available) as purchasable
+        from variants group by product_id
+      ) pr on pr.product_id = p.id
+      left join lateral (
+        select url, alt from product_images i where i.product_id = p.id order by position asc limit 1
+      ) img on true
+      where p.status = 'active' and p.id <> ${productId}
+      order by pr.purchasable desc, shared.position asc, p.title asc
+      limit ${limit}
+    `
+    const related = rows.map((row) => ({
+      ...row,
+      priceCents: Number(row.priceCents),
+      compareAtCents: row.compareAtCents == null ? null : Number(row.compareAtCents),
+      purchasable: Boolean(row.purchasable),
+    }))
+    if (related.length >= 4) return related
+    const seen = new Set(related.map((product) => product.id))
+    return [...related, ...(await fallback()).filter((product) => !seen.has(product.id))].slice(0, limit)
+  } catch {
+    return fallback()
+  }
+}
+
 export function productPurchasable(product: PublicProduct) {
   return product.variants.some((variant) => isPurchasable(variant))
 }

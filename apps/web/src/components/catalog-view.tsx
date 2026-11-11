@@ -9,7 +9,6 @@ export function CatalogView({
   total,
   page,
   pageCount,
-  tags,
   brands,
   currency,
   basePath,
@@ -21,7 +20,6 @@ export function CatalogView({
   total: number
   page: number
   pageCount: number
-  tags: Array<{ tag: string, count: number }>
   brands: Array<{ slug: string, name: string, count: number }>
   currency: string
   basePath: string
@@ -79,17 +77,6 @@ export function CatalogView({
                   <option value="title">Name</option>
                 </select>
               </label>
-              {tags.length > 0 ? (
-                <label className="label">
-                  Tag
-                  <select className="select normal-case" name="tag" defaultValue={query.tag || ""}>
-                    <option value="">Any</option>
-                    {tags.map((tag) => (
-                      <option key={tag.tag} value={tag.tag}>{tag.tag}</option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
               <div className="grid grid-cols-2 gap-2">
                 <label className="label">
                   Min $

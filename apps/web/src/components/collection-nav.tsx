@@ -7,7 +7,7 @@ import type { CartSummary } from "@/lib/cart"
 import type { NavIcon, NavItem } from "@/lib/nav-groups"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react"
 
 export function CollectionNav({
   items,
@@ -48,7 +48,48 @@ export function CollectionNav({
   const [cartOpen, setCartOpen] = useState(false)
   const lastCount = useRef(cartCount)
   const [bump, setBump] = useState(0)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [sheetGroup, setSheetGroup] = useState<string | null>(null)
+  const sheet = useRef<HTMLDivElement>(null)
+  const sheetButton = useRef<HTMLButtonElement>(null)
   const cartPreviewOff = pathname === "/cart" || pathname.startsWith("/checkout")
+
+  useEffect(() => {
+    setSheetOpen(false)
+  }, [pathname, brand])
+
+  useEffect(() => {
+    if (open) setSheetOpen(false)
+  }, [open])
+
+  useEffect(() => {
+    if (!sheetOpen) {
+      setSheetGroup(null)
+      return
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node
+      if (sheet.current?.contains(target) || sheetButton.current?.contains(target)) return
+      setSheetOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      setSheetOpen(false)
+      sheetButton.current?.focus()
+    }
+    const desktop = window.matchMedia("(min-width: 768px)")
+    const onResize = () => {
+      if (desktop.matches) setSheetOpen(false)
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    desktop.addEventListener("change", onResize)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+      desktop.removeEventListener("change", onResize)
+    }
+  }, [sheetOpen])
 
   useEffect(() => {
     const node = scroller.current
@@ -278,6 +319,7 @@ export function CollectionNav({
       aria-label="Main"
       data-search-open={open ? "" : undefined}
       data-scrolled={scrolled ? "" : undefined}
+      data-sheet-open={sheetOpen ? "" : undefined}
     >
       <div className="nav-search-backdrop" aria-hidden="true" />
       <div ref={row} className="collection-nav-row">
@@ -287,6 +329,19 @@ export function CollectionNav({
               <img src={logoUrl} alt="" />
             </span>
           </Link>
+          <button
+            ref={sheetButton}
+            type="button"
+            className="nav-menu-button"
+            aria-label={sheetOpen ? "Close categories" : "Open categories"}
+            aria-expanded={sheetOpen}
+            aria-controls="nav-sheet"
+            inert={open}
+            onClick={() => setSheetOpen((value) => !value)}
+          >
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+          </button>
           <div ref={scroller} className="collection-nav-scroller" inert={open}>
             {items.map((item) => (
               item.kind === "link" ? (
@@ -339,6 +394,7 @@ export function CollectionNav({
               )
             ))}
           </div>
+          <div className="nav-menu-spacer" aria-hidden="true" />
           <div className="nav-search-slot" aria-hidden="true" />
           <form
             ref={searchForm}
@@ -407,6 +463,65 @@ export function CollectionNav({
               ) : null}
             </span>
           </Link>
+        </div>
+        <div
+          ref={sheet}
+          id="nav-sheet"
+          className="nav-sheet glass"
+          data-open={sheetOpen ? "" : undefined}
+          inert={!sheetOpen}
+        >
+          <ul className="nav-sheet-list">
+            {items.map((item, index) => {
+              const style = { "--i": index } as CSSProperties
+              if (item.kind === "link") {
+                return (
+                  <li key={item.href} className="nav-sheet-item" style={style}>
+                    <Link
+                      href={item.href}
+                      className="nav-sheet-link"
+                      aria-current={pathname === item.href ? "page" : undefined}
+                      onClick={() => setSheetOpen(false)}
+                    >
+                      {item.icon ? <NavIconSvg name={item.icon} /> : null}
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              }
+              const expanded = sheetGroup === item.id
+              return (
+                <li key={item.id} className="nav-sheet-item" style={style} data-expanded={expanded ? "" : undefined}>
+                  <button
+                    type="button"
+                    className="nav-sheet-link"
+                    aria-expanded={expanded}
+                    aria-controls={`nav-sheet-${item.id}`}
+                    onClick={() => setSheetGroup(expanded ? null : item.id)}
+                  >
+                    {item.icon ? <NavIconSvg name={item.icon} /> : null}
+                    {item.label}
+                    <Chevron />
+                  </button>
+                  <div id={`nav-sheet-${item.id}`} className="nav-sheet-sub" inert={!expanded}>
+                    <div>
+                      {item.links.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className="nav-sheet-sublink"
+                          aria-current={linkIsCurrent(link.href, pathname, brand) ? "page" : undefined}
+                          onClick={() => setSheetOpen(false)}
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         </div>
         {openGroup && openGroup.kind === "menu" ? (
           <div

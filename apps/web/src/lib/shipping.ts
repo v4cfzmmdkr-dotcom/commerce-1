@@ -22,6 +22,26 @@ export type ShippingSelection<T> = {
   reason: "selected" | "none" | "choose"
 }
 
+export function freeShippingProgress(subtotalCents: number, thresholdCents: number | null) {
+  if (thresholdCents == null) return null
+  const remaining = Math.max(0, thresholdCents - subtotalCents)
+  const percent = thresholdCents <= 0 ? 100 : Math.min(100, Math.round((subtotalCents / thresholdCents) * 100))
+  return { remaining, percent }
+}
+
+// Dispatch promise is two business days, counted in Sydney time.
+export function dispatchByLabel(now: Date, businessDays = 2) {
+  const parts = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(now)
+  const part = (type: string) => Number(parts.find((item) => item.type === type)?.value)
+  const day = new Date(Date.UTC(part("year"), part("month") - 1, part("day"), 12))
+  let left = businessDays
+  while (left > 0) {
+    day.setUTCDate(day.getUTCDate() + 1)
+    if (day.getUTCDay() !== 0 && day.getUTCDay() !== 6) left -= 1
+  }
+  return new Intl.DateTimeFormat("en-AU", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(day)
+}
+
 export function nullableCents(value: number | string | null | undefined) {
   if (value == null || value === "") return null
   const cents = Number(value)

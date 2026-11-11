@@ -1,15 +1,16 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ProductGallery } from "@/components/product-gallery"
+import { ProductGrid } from "@/components/product-grid"
 import { PurchaseBox } from "@/components/purchase-box"
-import { getPublicProduct, type PublicProduct } from "@/lib/catalog"
+import { getPublicProduct, listRelatedProducts, type PublicProduct } from "@/lib/catalog"
 import { formatDescription } from "@/lib/html"
 import { isPurchasable } from "@/lib/money"
 import { listActiveShippingRates } from "@/lib/orders"
 import { freeShippingFrom, pageTitle, searchDescription, shippingCentsFor } from "@/lib/product-seo"
 import { RETURN_DAYS } from "@/lib/returns"
 import { getSettings } from "@/lib/settings"
-import { SHIPPING_COUNTRY, type ShippingRate } from "@/lib/shipping"
+import { dispatchByLabel, SHIPPING_COUNTRY, type ShippingRate } from "@/lib/shipping"
 import { siteUrl } from "@/lib/site"
 
 async function shippingRates(): Promise<ShippingRate[]> {
@@ -106,14 +107,25 @@ export default async function ProductPage({
     brand: { "@type": "Brand", name: settings.name },
     offers,
   }
+  const related = await listRelatedProducts(product.id)
   return (
+    <>
     <article className="wrap grid gap-10 py-[var(--section)] lg:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <ProductGallery title={product.title} images={product.images} />
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
         <div className="mt-6">
-          <PurchaseBox variants={product.variants} currency={settings.currency} colours={settings.colours} initialVariantId={variant} />
+          <PurchaseBox
+            title={product.title}
+            variants={product.variants}
+            currency={settings.currency}
+            colours={settings.colours}
+            initialVariantId={variant}
+            freeShippingFromCents={freeShippingFrom(rates)}
+            dispatchBy={dispatchByLabel(new Date())}
+            returnDays={RETURN_DAYS}
+          />
         </div>
         <div
           className="prose mt-8 text-sm"
@@ -121,5 +133,12 @@ export default async function ProductPage({
         />
       </div>
     </article>
+    {related.length > 0 ? (
+      <section className="wrap pb-[var(--section)]">
+        <h2 className="collection-group-title mb-6">You might also need</h2>
+        <ProductGrid products={related} currency={settings.currency} />
+      </section>
+    ) : null}
+    </>
   )
 }
