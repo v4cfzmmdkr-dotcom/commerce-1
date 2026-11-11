@@ -54,10 +54,6 @@ export function ThemeEditor({ theme }: { theme: ThemeSettings }) {
             <option value="large">Large</option>
           </select>
         </label>
-        <label className="label">
-          Logo
-          <input className="normal-case" name="logo" type="file" accept="image/*" />
-        </label>
         <button className="btn" type="submit">Save theme</button>
       </div>
       <aside

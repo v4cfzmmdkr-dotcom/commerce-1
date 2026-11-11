@@ -56,19 +56,28 @@ export async function saveTheme(formData: FormData) {
     radius: text(formData, "radius"),
   })
   const sql = getSql()
-  const logo = await readImage(formData.get("logo"))
-  let logoUrl: string | null = null
-  if (logo) {
-    const saved = await saveObject(`brand/logo-${Date.now()}.${extensionFor(logo.type)}`, logo.bytes, logo.type)
-    logoUrl = saved.url
-  }
-  if (logoUrl) {
-    await sql`update store_settings set theme = ${sql.json(theme)}, logo_url = ${logoUrl}, updated_at = now() where id = 'default'`
-  } else {
-    await sql`update store_settings set theme = ${sql.json(theme)}, updated_at = now() where id = 'default'`
-  }
+  await sql`update store_settings set theme = ${sql.json(theme)}, updated_at = now() where id = 'default'`
   revalidatePath("/", "layout")
   redirect("/admin/theme?saved=1")
+}
+
+export async function saveLogo(formData: FormData) {
+  await requireAdmin()
+  const sql = getSql()
+  const upload = formData.get("logo")
+  if (upload instanceof File && upload.size > 0) {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(upload.type)) redirect("/admin/theme?logoError=type")
+    if (upload.size > 5_000_000) redirect("/admin/theme?logoError=size")
+    const bytes = Buffer.from(await upload.arrayBuffer())
+    const saved = await saveObject(`brand/logo-${Date.now()}.${extensionFor(upload.type)}`, bytes, upload.type)
+    await sql`update store_settings set logo_url = ${saved.url}, updated_at = now() where id = 'default'`
+  } else if (formData.get("removeLogo") === "on") {
+    await sql`update store_settings set logo_url = null, updated_at = now() where id = 'default'`
+  } else {
+    redirect("/admin/theme?logoError=missing")
+  }
+  revalidatePath("/", "layout")
+  redirect("/admin/theme?saved=logo")
 }
 
 export async function saveBanner(formData: FormData) {
