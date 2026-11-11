@@ -4,6 +4,7 @@ import {
   materialColours,
   materialSlot,
   offeredVariants,
+  orderColours,
   parseColours,
   parseMaterialSettings,
   parseMaterials,
@@ -55,6 +56,13 @@ describe("parseColours", () => {
     expect(colours.find((colour) => colour.name === "Black")?.enabled).toBe(false)
     expect(colours.some((colour) => colour.name === "White")).toBe(false)
     expect(colours.some((colour) => colour.name === "Broken")).toBe(false)
+  })
+
+  it("rearranges colours, keeping ones missing from the new order at the end", () => {
+    const colours = parseColours(null).slice(0, 4)
+    expect(orderColours(colours, JSON.stringify(["red", "Black", "Nope"])).map((colour) => colour.name))
+      .toEqual(["Red", "Black", "White", "Orange"])
+    expect(orderColours(colours, "not json").map((colour) => colour.name)).toEqual(["Black", "White", "Orange", "Red"])
   })
 })
 

@@ -1,13 +1,13 @@
 import Link from "next/link"
 import type { CSSProperties } from "react"
 import { copyListing, createProduct, deleteProduct, runImport, setListed } from "@/app/admin/actions"
-import { saveColours, saveMaterialSettings } from "@/app/admin/option-actions"
+import { saveMaterialsAndColours } from "@/app/admin/option-actions"
 import { ImageDownload } from "@/components/image-download"
 import { PendingButton } from "@/components/pending-button"
-import { RemoveColourButton } from "@/components/remove-colour-button"
+import { ColourPaletteChips } from "@/components/colour-palette-chips"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
-import { defaultMaterial, materialColourLabel, materialColourRules, materialOptions } from "@/lib/product-options"
+import { defaultMaterial, materialColourRules, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 import { remoteImageCount } from "@/lib/shopify/import"
 import type { ImportReport } from "@/lib/types"
@@ -17,7 +17,7 @@ export const maxDuration = 60
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, colourError?: string, materials?: string, repriced?: string, materialError?: string, run?: string, collections?: string, collectionError?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, colours?: string, added?: string, materials?: string, repriced?: string, materialError?: string, run?: string, collections?: string, collectionError?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -65,63 +65,27 @@ export default async function ProductsPage({
         {show ? <input type="hidden" name="show" value={show} /> : null}
         <button className="btn" type="submit">Search</button>
       </form>
-      <form action={saveColours} className="admin-card grid gap-4">
+      <form action={saveMaterialsAndColours} className="admin-card grid gap-4">
         <div>
-          <h2>Colours</h2>
+          <h2>Materials and colours</h2>
           <p className="admin-note mt-1 text-sm">
-            Choose the PETG colours customers can pick. This applies to every product. Switching a colour on adds it to every product at the same price as Black. Colours added here can also be offered in other materials below.
-          </p>
-        </div>
-        <div className="colour-chips">
-          {settings.colours.map((colour) => (
-            <label key={colour.name} className="colour-chip">
-              <input type="checkbox" name="colours" value={colour.name} defaultChecked={colour.enabled} />
-              <span className="colour-chip-dot" style={{ "--swatch": colour.hex } as CSSProperties} aria-hidden />
-              {colour.name}
-              <RemoveColourButton name={colour.name} />
-            </label>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="label max-w-xs flex-1">
-            Add a colour
-            <input className="field normal-case" name="newName" maxLength={30} placeholder="Olive" />
-          </label>
-          <input className="colour-picker" type="color" name="newHex" defaultValue="#6b8e23" aria-label="Swatch for the new colour" />
-        </div>
-        {params.colours === "removed" ? <p className="text-sm" role="status">Colour removed.</p> : null}
-        {params.colours === "saved" ? (
-          <p className="text-sm" role="status">
-            Colours saved{added ? `, and ${added} new ${added === 1 ? "variant was" : "variants were"} added` : ""}.
-          </p>
-        ) : null}
-        {params.colourError ? <p className="text-sm" role="alert">{params.colourError}</p> : null}
-        <div>
-          <PendingButton pendingText="Saving colours…">Save colours</PendingButton>
-        </div>
-      </form>
-      <form action={saveMaterialSettings} className="admin-card grid gap-4">
-        <div>
-          <h2>Materials</h2>
-          <p className="admin-note mt-1 text-sm">
-            Switching a material on offers it on every product. Switch it off to hide it everywhere. Tick the colours each material comes in. To leave a material off one product, untick it on that product&apos;s edit page.
+            Switching a material on offers it on every product. Switch it off to hide it everywhere. Tick the colours each material comes in; new colours are added to every product at the same price as Black. To leave a material off one product, untick it on that product&apos;s edit page.
           </p>
         </div>
         <div className="grid gap-5">
           {materialOptions.map((material) => {
             const setting = settings.materials.find((item) => item.name === material.name)
             const isBase = material.name === defaultMaterial
-            const chosen = isBase ? null : colourRules[material.name]
+            const chosen = colourRules[material.name] ?? []
             return (
-              <div key={material.name} className="grid gap-3">
+              <div key={material.name} className="material-block grid gap-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="colour-chip material-chip">
                     <input type="checkbox" name="materials" value={material.name} defaultChecked={setting?.enabled !== false} />
                     <span className="font-medium">{material.name}</span>
-                    <span className="admin-note text-xs">{materialColourLabel(chosen)}</span>
                   </label>
                   {isBase ? (
-                    <span className="admin-note text-sm">Base price. Uses the colours above.</span>
+                    <span className="admin-note text-sm">Base price</span>
                   ) : (
                     <label className="flex items-center gap-2 whitespace-nowrap text-sm normal-case">
                       Markup over PETG ($)
@@ -136,11 +100,26 @@ export default async function ProductsPage({
                     </label>
                   )}
                 </div>
-                {chosen ? (
+                {isBase ? (
+                  <>
+                    <ColourPaletteChips
+                      key={settings.colours.map((colour) => colour.name).join("|")}
+                      colours={settings.colours}
+                      name={`colours_${material.name}`}
+                    />
+                    <div className="flex flex-wrap items-end gap-3">
+                      <label className="label max-w-xs flex-1">
+                        Add a colour
+                        <input className="field normal-case" name="newName" maxLength={30} placeholder="Olive" />
+                      </label>
+                      <input className="colour-picker" type="color" name="newHex" defaultValue="#6b8e23" aria-label="Swatch for the new colour" />
+                    </div>
+                  </>
+                ) : (
                   <fieldset className="colour-chips">
                     <legend className="sr-only">{material.name} colours</legend>
                     {settings.colours.map((colour) => (
-                      <label key={colour.name} className="colour-chip">
+                      <label key={colour.name} className="colour-chip" data-colour={colour.name}>
                         <input
                           type="checkbox"
                           name={`colours_${material.name}`}
@@ -152,20 +131,23 @@ export default async function ProductsPage({
                       </label>
                     ))}
                   </fieldset>
-                ) : null}
+                )}
               </div>
             )
           })}
         </div>
-        <p className="admin-note text-sm">Saving updates the price of every non-PETG option to its PETG price plus the markup.</p>
+        <p className="admin-note text-sm">
+          Drag a PETG colour by its handle to rearrange the colours everywhere, including on product pages. A new colour is switched on for PETG and can then be ticked for other materials. Removing a colour with × takes it off every material. Saving updates the price of every non-PETG option to its PETG price plus the markup.
+        </p>
+        {params.colours === "removed" ? <p className="text-sm" role="status">Colour removed.</p> : null}
         {params.materials === "saved" ? (
           <p className="text-sm" role="status">
-            Materials saved{repriced ? `, ${repriced} ${repriced === 1 ? "price" : "prices"} updated` : ""}{added ? `, ${added} new ${added === 1 ? "variant" : "variants"} added` : ""}.
+            Saved{repriced ? `, ${repriced} ${repriced === 1 ? "price" : "prices"} updated` : ""}{added ? `, ${added} new ${added === 1 ? "variant" : "variants"} added` : ""}.
           </p>
         ) : null}
         {params.materialError ? <p className="text-sm" role="alert">{params.materialError}</p> : null}
         <div>
-          <PendingButton pendingText="Saving materials…">Save materials</PendingButton>
+          <PendingButton pendingText="Saving…">Save materials and colours</PendingButton>
         </div>
       </form>
       <form action={copyListing} className="admin-card grid gap-3">

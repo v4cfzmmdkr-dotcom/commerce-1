@@ -65,6 +65,19 @@ export function parseColours(value: unknown): ColourOption[] {
   return presetColours.map((preset) => ({ ...preset, enabled: defaultColours.includes(preset.name) }))
 }
 
+export function orderColours(colours: ColourOption[], value: unknown) {
+  const parsed = fromJson(value)
+  const names = Array.isArray(parsed) ? parsed.map(String) : []
+  const rank = (colour: ColourOption) => {
+    const index = names.findIndex((name) => same(name, colour.name))
+    return index === -1 ? names.length : index
+  }
+  return colours
+    .map((colour, index) => ({ colour, index }))
+    .sort((left, right) => rank(left.colour) - rank(right.colour) || left.index - right.index)
+    .map((item) => item.colour)
+}
+
 export function enabledColourNames(colours: ColourOption[]) {
   return colours.filter((colour) => colour.enabled).map((colour) => colour.name)
 }

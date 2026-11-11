@@ -90,12 +90,9 @@ export function PurchaseBox({
           values.sort((left, right) => rank(left) - rank(right))
         }
         if (kind === "colour") {
-          const first = ["black", "white"]
           const rank = (value: string) => {
-            const lower = value.toLowerCase()
-            if (first.includes(lower)) return first.indexOf(lower)
-            const index = colours.findIndex((colour) => colour.name.toLowerCase() === lower)
-            return first.length + (index === -1 ? colours.length : index)
+            const index = colours.findIndex((colour) => colour.name.toLowerCase() === value.toLowerCase())
+            return index === -1 ? colours.length : index
           }
           values.sort((left, right) => rank(left) - rank(right))
         }

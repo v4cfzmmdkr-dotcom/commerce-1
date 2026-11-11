@@ -9,6 +9,7 @@ import {
   cleanName,
   defaultMaterial,
   materialOptions,
+  orderColours,
   parseColours,
   parseMaterialSettings,
   parseMaterials,
@@ -21,49 +22,38 @@ function back(params: Record<string, string>) {
   return `/admin/products?${new URLSearchParams(params)}`
 }
 
-export async function saveColours(formData: FormData) {
-  await requireAdmin()
-  const sql = getSql()
-  const [row] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
-  const enabled = new Set(formData.getAll("colours").map((value) => String(value).toLowerCase()))
-  const colours: ColourOption[] = parseColours(row?.colours).map((colour) => ({
-    ...colour,
-    enabled: enabled.has(colour.name.toLowerCase()),
-  }))
-  const name = cleanName(String(formData.get("newName") || ""))
-  const hex = String(formData.get("newHex") || "").toLowerCase()
-  if (name) {
-    if (!/^#[0-9a-f]{6}$/.test(hex)) redirect(back({ colourError: "Pick a colour for the new swatch" }))
-    const existing = colours.find((colour) => colour.name.toLowerCase() === name.toLowerCase())
-    if (existing) Object.assign(existing, { hex, enabled: true })
-    else colours.push({ name, hex, enabled: true })
-  }
-  if (!colours.some((colour) => colour.enabled)) redirect(back({ colourError: "Keep at least one colour switched on" }))
-  await sql`update store_settings set colours = ${sql.json(colours)}, updated_at = now() where id = 'default'`
-  const result = await syncProductOptions()
-  revalidatePath("/", "layout")
-  redirect(back({ colours: "saved", added: String(result.added) }))
-}
-
 export async function removeColour(formData: FormData) {
   await requireAdmin()
   const name = String(formData.get("name") || "").toLowerCase()
   const sql = getSql()
   const [row] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
   const colours = parseColours(row?.colours).filter((colour) => colour.name.toLowerCase() !== name)
-  if (!colours.some((colour) => colour.enabled)) redirect(back({ colourError: "Keep at least one colour switched on" }))
+  if (!colours.some((colour) => colour.enabled)) redirect(back({ materialError: "Keep at least one PETG colour switched on" }))
   await sql`update store_settings set colours = ${sql.json(colours)}, updated_at = now() where id = 'default'`
   revalidatePath("/", "layout")
   redirect(back({ colours: "removed" }))
 }
 
-export async function saveMaterialSettings(formData: FormData) {
+export async function saveMaterialsAndColours(formData: FormData) {
   await requireAdmin()
   const enabled = new Set(formData.getAll("materials").map(String))
   if (!enabled.size) redirect(back({ materialError: "Keep at least one material switched on" }))
   const sql = getSql()
   const [row] = await sql<Array<{ colours: unknown, materials: unknown }>>`select colours, materials from store_settings where id = 'default'`
-  const palette = parseColours(row?.colours)
+  const petgColours = new Set(formData.getAll(`colours_${defaultMaterial}`).map((value) => String(value).toLowerCase()))
+  const palette: ColourOption[] = orderColours(parseColours(row?.colours), formData.get("colourOrder")).map((colour) => ({
+    ...colour,
+    enabled: petgColours.has(colour.name.toLowerCase()),
+  }))
+  const newName = cleanName(String(formData.get("newName") || ""))
+  const newHex = String(formData.get("newHex") || "").toLowerCase()
+  if (newName) {
+    if (!/^#[0-9a-f]{6}$/.test(newHex)) redirect(back({ materialError: "Pick a colour for the new swatch" }))
+    const existing = palette.find((colour) => colour.name.toLowerCase() === newName.toLowerCase())
+    if (existing) Object.assign(existing, { hex: newHex, enabled: true })
+    else palette.push({ name: newName, hex: newHex, enabled: true })
+  }
+  if (!palette.some((colour) => colour.enabled)) redirect(back({ materialError: "Keep at least one PETG colour switched on" }))
   const wasOn = new Set(parseMaterialSettings(row?.materials).filter((setting) => setting.enabled).map((setting) => setting.name))
   const settings: MaterialSetting[] = []
   for (const material of materialOptions) {
@@ -82,7 +72,10 @@ export async function saveMaterialSettings(formData: FormData) {
     settings.push({ name: material.name, enabled: enabled.has(material.name), markupCents, colours })
   }
   await sql.begin(async (tx) => {
-    await tx`update store_settings set materials = ${sql.json(settings)}, updated_at = now() where id = 'default'`
+    await tx`
+      update store_settings set colours = ${sql.json(palette)}, materials = ${sql.json(settings)}, updated_at = now()
+      where id = 'default'
+    `
     for (const setting of settings) {
       if (!setting.enabled || wasOn.has(setting.name)) continue
       await tx`
