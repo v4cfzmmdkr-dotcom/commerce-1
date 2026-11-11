@@ -2766,6 +2766,13 @@ a:hover .product-media img {
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
+  visibility: hidden;
+  /* Stay visible until the content has slid back over it. */
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.3s;
+}
+.swipe-row.is-open .swipe-delete,
+.swipe-row.is-dragging .swipe-delete {
+  visibility: visible;
   transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .swipe-row.is-dragging .swipe-content,

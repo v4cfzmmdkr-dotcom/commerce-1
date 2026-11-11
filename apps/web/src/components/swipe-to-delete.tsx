@@ -122,7 +122,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <li ref={rowRef} id={id} className={`swipe-row${dragging ? " is-dragging" : ""}${removing ? " is-removing" : ""}`}>
+    <li ref={rowRef} id={id} className={`swipe-row${offset !== 0 ? " is-open" : ""}${dragging ? " is-dragging" : ""}${removing ? " is-removing" : ""}`}>
       <button
         type="button"
         className="swipe-delete"
