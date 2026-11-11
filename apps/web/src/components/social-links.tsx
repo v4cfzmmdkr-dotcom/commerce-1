@@ -11,16 +11,16 @@ export async function SocialLinks({ placement = "hero" }: { placement?: "hero" |
     return (
       <div className="hero-social">
         <a className="no-underline" href={social.instagram.href} target="_blank" rel="noreferrer" aria-label={`${social.instagram.label} ${social.instagram.detail}`}>
-          <InstagramIcon />
+          <InstagramIcon colored />
         </a>
         <a className="no-underline" href={social.facebook.href} target="_blank" rel="noreferrer" aria-label={social.facebook.label}>
-          <FacebookIcon />
+          <FacebookIcon colored />
         </a>
         <a className="no-underline" href={social.ebay.href} target="_blank" rel="noreferrer" aria-label={ebayLabel} title={ebayLabel}>
-          <span className="hero-social-mark">eBay</span>
+          <EbayMark />
         </a>
         <a className="no-underline" href={social.google.href} target="_blank" rel="noreferrer" aria-label={googleLabel} title={googleLabel}>
-          <GoogleIcon />
+          <GoogleIcon colored />
         </a>
       </div>
     )
@@ -34,12 +34,7 @@ export async function SocialLinks({ placement = "hero" }: { placement?: "hero" |
         rel="noreferrer"
         aria-label={ebayLabel}
       >
-        <span className="hero-social-mark">
-          <span className="text-[#e53238]">e</span>
-          <span className="text-[#0064d2]">b</span>
-          <span className="text-[#f5af02]">a</span>
-          <span className="text-[#86b817]">y</span>
-        </span>
+        <EbayMark />
         <span className="hero-social-stat-copy">
           <span>{social.ebay.sales.toLocaleString("en-AU")} sold</span>
           <span>{social.ebay.positive} positive</span>
@@ -87,18 +82,40 @@ export function ContactChannels() {
   )
 }
 
-function InstagramIcon() {
+function EbayMark() {
+  return (
+    <span className="hero-social-mark">
+      <span className="text-[#e53238]">e</span>
+      <span className="text-[#0064d2]">b</span>
+      <span className="text-[#f5af02]">a</span>
+      <span className="text-[#86b817]">y</span>
+    </span>
+  )
+}
+
+function InstagramIcon({ colored = false }: { colored?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 3h8a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5zm8 1.7H8A3.3 3.3 0 0 0 4.7 8v8A3.3 3.3 0 0 0 8 19.3h8A3.3 3.3 0 0 0 19.3 16V8A3.3 3.3 0 0 0 16 4.7zM12 7.4A4.6 4.6 0 1 1 7.4 12 4.6 4.6 0 0 1 12 7.4zm0 1.7A2.9 2.9 0 1 0 14.9 12 2.9 2.9 0 0 0 12 9.1zm5.15-3.35a1.15 1.15 0 1 1-1.15 1.15 1.15 1.15 0 0 1 1.15-1.15z" />
+      {colored ? (
+        <defs>
+          <linearGradient id="instagram-gradient" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#feda75" />
+            <stop offset="0.3" stopColor="#fa7e1e" />
+            <stop offset="0.55" stopColor="#d62976" />
+            <stop offset="0.8" stopColor="#962fbf" />
+            <stop offset="1" stopColor="#4f5bd5" />
+          </linearGradient>
+        </defs>
+      ) : null}
+      <path fill={colored ? "url(#instagram-gradient)" : undefined} d="M8 3h8a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5zm8 1.7H8A3.3 3.3 0 0 0 4.7 8v8A3.3 3.3 0 0 0 8 19.3h8A3.3 3.3 0 0 0 19.3 16V8A3.3 3.3 0 0 0 16 4.7zM12 7.4A4.6 4.6 0 1 1 7.4 12 4.6 4.6 0 0 1 12 7.4zm0 1.7A2.9 2.9 0 1 0 14.9 12 2.9 2.9 0 0 0 12 9.1zm5.15-3.35a1.15 1.15 0 1 1-1.15 1.15 1.15 1.15 0 0 1 1.15-1.15z" />
     </svg>
   )
 }
 
-function FacebookIcon() {
+function FacebookIcon({ colored = false }: { colored?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M14.2 8.5H16.5V5.2h-2.3c-2.6 0-4.4 1.7-4.4 4.3V12H7.5v3.2h2.3V21h3.2v-5.8h2.5l.6-3.2h-3.1v-2.2c0-.9.5-1.3 1.2-1.3z" />
+      <path fill={colored ? "#1877f2" : undefined} d="M14.2 8.5H16.5V5.2h-2.3c-2.6 0-4.4 1.7-4.4 4.3V12H7.5v3.2h2.3V21h3.2v-5.8h2.5l.6-3.2h-3.1v-2.2c0-.9.5-1.3 1.2-1.3z" />
     </svg>
   )
 }

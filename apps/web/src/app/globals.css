@@ -1404,6 +1404,7 @@ main a:not(.btn):not(.btn-ghost):not(.no-underline) {
 
 .announcement-accent {
   color: #dc1928;
+  -webkit-text-stroke: 0.035em currentColor;
 }
 
 @keyframes announcement-marquee {
