@@ -19,7 +19,7 @@ import {
 import { repriceMaterials, syncProductOptions } from "@/lib/product-options-sync"
 
 function back(params: Record<string, string>) {
-  return `/admin/products?${new URLSearchParams(params)}`
+  return `/admin/materials?${new URLSearchParams(params)}`
 }
 
 export async function removeColour(formData: FormData) {

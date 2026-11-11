@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { deleteImage, deleteProduct, saveProduct, uploadImages } from "@/app/admin/actions"
 import { saveMaterials } from "@/app/admin/option-actions"
@@ -134,7 +135,7 @@ export default async function EditProductPage({
               <p className="admin-note text-sm">Hidden from customers: its colour or material is switched off.</p>
             )}
             {followsMarkup(variant) ? (
-              <p className="admin-note text-sm">Price is the PETG price plus the {variantMaterial(variant)} markup set on the Products page.</p>
+              <p className="admin-note text-sm">Price is the PETG price plus the {variantMaterial(variant)} markup set on the <Link href="/admin/materials">Materials</Link> page.</p>
             ) : null}
             <div className="grid gap-2 sm:grid-cols-2">
               <input className="field" name={`sku_${variant.id}`} defaultValue={variant.sku} placeholder="SKU" />
@@ -168,7 +169,7 @@ export default async function EditProductPage({
         <div>
           <h2 className="text-lg font-medium">Material</h2>
           <p className="admin-note mt-1 text-sm">
-            Customers choose from the materials ticked here before adding to cart. Materials switched on for the whole shop are ticked on every product; untick one to leave it off this product. Colours are chosen on the Products page.
+            Customers choose from the materials ticked here before adding to cart. Materials switched on for the whole shop are ticked on every product; untick one to leave it off this product. Colours are chosen on the <Link href="/admin/materials">Materials</Link> page.
           </p>
         </div>
         <div className="colour-chips">
@@ -185,7 +186,7 @@ export default async function EditProductPage({
           ))}
         </div>
         <p className="admin-note text-sm">
-          {materialOptions.filter((material) => material.name !== defaultMaterial).map((material) => `${material.name} costs the PETG price plus $${dollars(markupFor(material.name)?.markupCents ?? 0)}.`).join(" ")} Change the markup or switch a material off for every product on the Products page.
+          {materialOptions.filter((material) => material.name !== defaultMaterial).map((material) => `${material.name} costs the PETG price plus $${dollars(markupFor(material.name)?.markupCents ?? 0)}.`).join(" ")} Change the markup or switch a material off for every product on the <Link href="/admin/materials">Materials</Link> page.
         </p>
         {query.materialError ? <p className="text-sm" role="alert">Tick at least one material.</p> : null}
         {canChooseMaterial ? (
