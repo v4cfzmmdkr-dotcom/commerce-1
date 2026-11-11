@@ -2,7 +2,7 @@ import { getSql, databaseConfigured, textArray } from "@/db/client"
 import { brandPattern, countBrands, findBrand, type BrandCount } from "@/lib/brands"
 import { isPurchasable } from "@/lib/money"
 import { getSettings } from "@/lib/settings"
-import { enabledColourNames, offeredVariants, shopMaterials } from "@/lib/product-options"
+import { materialColourRules, offeredVariants, shopMaterials } from "@/lib/product-options"
 import { dataApiEnabled, supabaseRest } from "@/lib/supabase-rest"
 import type { ProductMetadata } from "@/lib/types"
 
@@ -627,7 +627,7 @@ export async function popularTags(collectionId?: string) {
 
 export async function getPublicProduct(handle: string): Promise<PublicProduct | null> {
   const settings = await getSettings()
-  const colours = enabledColourNames(settings.colours)
+  const colours = materialColourRules(settings.colours, settings.materials)
   if (catalogViaHttps()) {
     const rest = await supabaseRest<Array<{
       id: string

@@ -8,8 +8,8 @@ import { getSql, textArray } from "@/db/client"
 import { formatFileSize } from "@/lib/print-file-rules"
 import {
   defaultMaterial,
-  enabledColourNames,
   materialColourLabel,
+  materialColourRules,
   materialOptions,
   materialSlot,
   parseMaterials,
@@ -83,7 +83,7 @@ export default async function EditProductPage({
   const materials = parseMaterials(product.materials)
   const canChooseMaterial = materialSlot(variants) !== 0
   const settings = await getSettings()
-  const colours = enabledColourNames(settings.colours)
+  const colours = materialColourRules(settings.colours, settings.materials)
   const offeredMaterials = shopMaterials(product.materials, settings.materials)
   const markupFor = (name: string) => settings.materials.find((material) => material.name === name)
   const followsMarkup = (variant: (typeof variants)[number]) => {
@@ -179,7 +179,7 @@ export default async function EditProductPage({
               <span className="admin-note text-xs">
                 {markupFor(material.name)?.enabled === false
                   ? "Switched off for the whole shop"
-                  : materialColourLabel(material.colours)}
+                  : materialColourLabel(material.name === defaultMaterial ? null : colours[material.name])}
               </span>
             </label>
           ))}
@@ -191,7 +191,7 @@ export default async function EditProductPage({
         {canChooseMaterial ? (
           <PendingButton pendingText="Saving…">Save materials</PendingButton>
         ) : (
-          <p className="text-sm">This product already uses three options, so a material choice can&apos;t be added. Remove an option to offer ASA or PPS CF.</p>
+          <p className="text-sm">This product already uses three options, so a material choice can&apos;t be added. Remove an option to offer materials other than PETG.</p>
         )}
       </form>
       <section className="admin-card grid max-w-3xl gap-3">

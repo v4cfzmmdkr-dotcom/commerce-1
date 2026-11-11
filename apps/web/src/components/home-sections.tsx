@@ -1,6 +1,13 @@
 import Link from "next/link"
 import { formatMoney } from "@/lib/money"
-import { materialColourLabel, materialOptions, type MaterialSetting } from "@/lib/product-options"
+import {
+  defaultMaterial,
+  materialColourLabel,
+  materialColourRules,
+  materialOptions,
+  type ColourOption,
+  type MaterialSetting,
+} from "@/lib/product-options"
 import { RETURN_DAYS } from "@/lib/returns"
 import { FREE_SHIPPING_MIN_CENTS, STANDARD_SHIPPING_CENTS } from "@/lib/shipping"
 
@@ -13,14 +20,24 @@ const materialGuide: Record<string, { headline: string, bestFor: string[] }> = {
     headline: "Built for sun, heat, and the outdoors.",
     bestFor: ["Car interior parts that sit in the sun", "Outdoor, garden, and patio fittings", "Parts near windows or heat", "Gears", "Anything that has to keep its colour"],
   },
+  "PET CF": {
+    headline: "Carbon fibre reinforced for stiff, precise parts.",
+    bestFor: ["Rigid brackets and mounts", "Parts that must hold their shape", "Matte black fittings"],
+  },
+  "PA6 CF": {
+    headline: "Carbon fibre nylon for strength and toughness.",
+    bestFor: ["Load-bearing brackets", "Gears and wear parts", "Parts under the bonnet"],
+  },
   "PPS CF": {
     headline: "Carbon fibre reinforced for high heat and stiffness.",
     bestFor: ["Parts near engines or motors", "Stiff, load-bearing brackets", "High-temperature fittings"],
   },
 }
 
-export function MaterialGuide({ materials }: { materials: MaterialSetting[] }) {
-  const offered = materialOptions.filter((material) => materials.find((setting) => setting.name === material.name)?.enabled !== false)
+export function MaterialGuide({ materials, colours }: { materials: MaterialSetting[], colours: ColourOption[] }) {
+  const rules = materialColourRules(colours, materials)
+  const offered = materialOptions.filter((material) => materials.find((setting) => setting.name === material.name)?.enabled !== false
+    && rules[material.name]?.length)
   if (offered.length < 2) return null
   return (
     <section className="wrap-wide home-section" aria-labelledby="material-guide-title">
@@ -42,7 +59,7 @@ export function MaterialGuide({ materials }: { materials: MaterialSetting[] }) {
                   {guide.bestFor.map((use) => <li key={use}>{use}</li>)}
                 </ul>
               ) : null}
-              <p className="material-card-colours">{materialColourLabel(material.colours)}</p>
+              <p className="material-card-colours">{materialColourLabel(material.name === defaultMaterial ? null : rules[material.name])}</p>
             </article>
           )
         })}

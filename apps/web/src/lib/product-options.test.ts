@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  materialColourRules,
   materialColours,
   materialSlot,
   offeredVariants,
@@ -11,8 +12,13 @@ import {
   shopMaterials,
   variantOffered,
   withDefaultMaterial,
+  type ColourRules,
   type PlanVariant,
 } from "@/lib/product-options"
+
+function rules(petg: string[], overrides: ColourRules = {}): ColourRules {
+  return { PETG: petg, ASA: ["Black", "White"], "PET CF": ["Black"], "PA6 CF": ["Black"], "PPS CF": ["Black"], ...overrides }
+}
 
 function variant(id: string, colour: string, material = "", extra: Partial<PlanVariant> = {}): PlanVariant {
   return {
@@ -59,12 +65,35 @@ describe("materials", () => {
     expect(parseMaterials("{PETG,\"PPS CF\"}")).toEqual(["PETG", "PPS CF"])
   })
 
-  it("limits PPS CF to black and ASA to black or white", () => {
-    expect(materialColours("PPS CF", ["Black", "White", "Red"])).toEqual(["Black"])
-    expect(materialColours("PPS CF", ["White"])).toEqual([])
-    expect(materialColours("ASA", ["Black", "White", "Red"])).toEqual(["Black", "White"])
-    expect(materialColours("ASA", ["Red"])).toEqual([])
-    expect(materialColours("PETG", ["Black", "White"])).toEqual(["Black", "White"])
+  it("knows PA6 CF and PET CF", () => {
+    expect(parseMaterials(["pa6 cf", "PET CF"])).toEqual(["PET CF", "PA6 CF"])
+  })
+
+  it("starts ASA as black or white and the carbon fibres as black only", () => {
+    const palette = parseColours(null).map((colour) => ({ ...colour, enabled: ["Black", "White", "Red"].includes(colour.name) }))
+    const colours = materialColourRules(palette, parseMaterialSettings(null))
+    expect(colours).toEqual({
+      PETG: ["Black", "White", "Red"],
+      ASA: ["Black", "White"],
+      "PET CF": ["Black"],
+      "PA6 CF": ["Black"],
+      "PPS CF": ["Black"],
+    })
+    expect(materialColours("pps cf", colours)).toEqual(["Black"])
+    expect(materialColours("Nylon", colours)).toEqual([])
+  })
+
+  it("uses each material's saved colours from the palette, even ones PETG doesn't offer", () => {
+    const palette = parseColours(null)
+    const settings = parseMaterialSettings([
+      { name: "ASA", colours: ["red", "Black", "Removed"] },
+      { name: "PA6 CF", colours: [] },
+    ])
+    const colours = materialColourRules(palette, settings)
+    expect(colours.PETG).toEqual(["Black", "White"])
+    expect(colours.ASA).toEqual(["Black", "Red"])
+    expect(colours["PA6 CF"]).toEqual([])
+    expect(colours["PET CF"]).toEqual(["Black"])
   })
 
   it("puts the material in the first free slot", () => {
@@ -87,31 +116,40 @@ describe("offered variants", () => {
   ]
 
   it("hides switched-off colours, unticked materials, and non-black PPS CF", () => {
-    expect(offeredVariants(variants, ["Black", "White"], ["PETG"]).map((item) => item.id)).toEqual(["1", "2"])
-    expect(offeredVariants(variants, ["Black", "White"], ["PETG", "PPS CF"]).map((item) => item.id)).toEqual(["1", "2", "4"])
-    expect(offeredVariants(variants, ["White"], ["PPS CF"])).toEqual([])
+    expect(offeredVariants(variants, rules(["Black", "White"]), ["PETG"]).map((item) => item.id)).toEqual(["1", "2"])
+    expect(offeredVariants(variants, rules(["Black", "White"]), ["PETG", "PPS CF"]).map((item) => item.id)).toEqual(["1", "2", "4"])
+    expect(offeredVariants(variants, rules(["White"], { "PPS CF": [] }), ["PPS CF"])).toEqual([])
     expect(offeredVariants([
       ...variants,
       variant("6", "White", "ASA"),
       variant("7", "Red", "ASA"),
-    ], ["Black", "White", "Red"], ["ASA"]).map((item) => item.id)).toEqual(["6"])
+    ], rules(["Black", "White", "Red"]), ["ASA"]).map((item) => item.id)).toEqual(["6"])
+  })
+
+  it("offers a material in its own colours", () => {
+    expect(offeredVariants([
+      variant("1", "Red", "PETG"),
+      variant("2", "Red", "ASA"),
+      variant("3", "White", "ASA"),
+    ], rules(["Black"], { ASA: ["Black", "Red"] }), ["PETG", "ASA"]).map((item) => item.id)).toEqual(["2"])
   })
 
   it("tidies names and titles", () => {
-    const [white] = offeredVariants([variant("2", "white", "petg", { option1Name: "Primary colour" })], ["White"], ["PETG"])
+    const [white] = offeredVariants([variant("2", "white", "petg", { option1Name: "Primary colour" })], rules(["White"]), ["PETG"])
     expect(white).toMatchObject({ option1Name: "Colour", option1Value: "White", option2Value: "PETG", title: "White / PETG" })
   })
 
   it("checks a single variant for the cart", () => {
-    expect(variantOffered(variants[3], ["Black"], ["PETG", "PPS CF"])).toBe(true)
-    expect(variantOffered(variants[4], ["Black", "White"], ["PETG", "PPS CF"])).toBe(false)
-    expect(variantOffered(variants[2], ["Black", "White"], ["PETG"])).toBe(false)
+    expect(variantOffered(variants[3], rules(["Black"]), ["PETG", "PPS CF"])).toBe(true)
+    expect(variantOffered(variants[4], rules(["Black", "White"]), ["PETG", "PPS CF"])).toBe(false)
+    expect(variantOffered(variants[2], rules(["Black", "White"]), ["PETG"])).toBe(false)
+    expect(variantOffered(variant("8", "Red"), rules(["Red"]), ["PETG"])).toBe(true)
   })
 })
 
 describe("planVariants", () => {
   it("adds the material to old variants and creates missing colours", () => {
-    const plan = planVariants([variant("b", "Black"), variant("w", "White", "", { sku: "BH-W", position: 1 })], ["Black", "White", "Red"], ["PETG"])
+    const plan = planVariants([variant("b", "Black"), variant("w", "White", "", { sku: "BH-W", position: 1 })], rules(["Black", "White", "Red"]), ["PETG"])
     expect(plan.updates.map((item) => [item.id, item.title])).toEqual([["b", "Black / PETG"], ["w", "White / PETG"]])
     expect(plan.inserts).toHaveLength(1)
     expect(plan.inserts[0]).toMatchObject({
@@ -132,7 +170,7 @@ describe("planVariants", () => {
       variant("ws", "White", "PETG", { option3Name: "Size", option3Value: "Small" }),
       variant("bl", "Black", "PETG", { option3Name: "Size", option3Value: "Large" }),
       variant("wl", "White", "PETG", { option3Name: "Size", option3Value: "Large" }),
-    ], ["Black", "White"], ["PETG", "PPS CF"], { "PPS CF": 500 })
+    ], rules(["Black", "White"]), ["PETG", "PPS CF"], { "PPS CF": 500 })
     expect(plan.updates).toEqual([])
     expect(plan.inserts.map((item) => [item.copiedFrom, item.title, item.priceCents, item.compareAtCents, item.sku])).toEqual([
       ["bs", "Black / PPS CF / Small", 2300, 2900, "BH-PPSCF"],
@@ -141,7 +179,7 @@ describe("planVariants", () => {
   })
 
   it("does nothing when everything already exists", () => {
-    const plan = planVariants([variant("b", "Black", "PETG"), variant("c", "Black", "PPS CF")], ["Black"], ["PETG", "PPS CF"])
+    const plan = planVariants([variant("b", "Black", "PETG"), variant("c", "Black", "PPS CF")], rules(["Black"]), ["PETG", "PPS CF"])
     expect(plan).toEqual({ updates: [], inserts: [] })
   })
 
@@ -150,25 +188,52 @@ describe("planVariants", () => {
       variant("b", "Black", "PETG"),
       variant("w", "White", "PETG"),
       variant("r", "Red", "PETG"),
-    ], ["Black", "White", "Red"], ["PETG", "ASA"], { ASA: 200 })
+    ], rules(["Black", "White", "Red"]), ["PETG", "ASA"], { ASA: 200 })
     expect(plan.inserts.map((item) => [item.option1Value, item.option2Value, item.priceCents, item.sku])).toEqual([
       ["Black", "ASA", 2000, "BH-ASA"],
       ["White", "ASA", 2000, "BH-WHITE-ASA"],
     ])
   })
+
+  it("creates only black PA6 CF and PET CF variants", () => {
+    const plan = planVariants([
+      variant("b", "Black", "PETG"),
+      variant("w", "White", "PETG"),
+    ], rules(["Black", "White"]), ["PETG", "PA6 CF", "PET CF"], { "PA6 CF": 700, "PET CF": 500 })
+    expect(plan.inserts.map((item) => [item.option1Value, item.option2Value, item.priceCents, item.sku])).toEqual([
+      ["Black", "PA6 CF", 2500, "BH-PA6CF"],
+      ["Black", "PET CF", 2300, "BH-PETCF"],
+    ])
+  })
+
+  it("creates variants for a material's own colours, copied from black PETG", () => {
+    const plan = planVariants([variant("b", "Black", "PETG")], rules(["Black"], { "PA6 CF": ["Black", "Red"] }), ["PETG", "PA6 CF"], { "PA6 CF": 700 })
+    expect(plan.inserts.map((item) => [item.copiedFrom, item.option1Value, item.option2Value, item.priceCents, item.sku])).toEqual([
+      ["b", "Black", "PA6 CF", 2500, "BH-PA6CF"],
+      ["b", "Red", "PA6 CF", 2500, "BH-RED-PA6CF"],
+    ])
+  })
 })
 
 describe("shop-wide material settings", () => {
-  it("defaults to every material on with no markup", () => {
+  it("defaults to the original materials on, the new carbon fibres off, and no markup", () => {
     expect(parseMaterialSettings(null)).toEqual([
-      { name: "PETG", enabled: true, markupCents: 0 },
-      { name: "ASA", enabled: true, markupCents: 0 },
-      { name: "PPS CF", enabled: true, markupCents: 0 },
+      { name: "PETG", enabled: true, markupCents: 0, colours: null },
+      { name: "ASA", enabled: true, markupCents: 0, colours: ["Black", "White"] },
+      { name: "PET CF", enabled: false, markupCents: 0, colours: ["Black"] },
+      { name: "PA6 CF", enabled: false, markupCents: 0, colours: ["Black"] },
+      { name: "PPS CF", enabled: true, markupCents: 0, colours: ["Black"] },
     ])
-    expect(parseMaterialSettings([{ name: "PETG", markupCents: 300 }, { name: "pps cf", enabled: false, markupCents: 450 }])).toEqual([
-      { name: "PETG", enabled: true, markupCents: 0 },
-      { name: "ASA", enabled: true, markupCents: 0 },
-      { name: "PPS CF", enabled: false, markupCents: 450 },
+    expect(parseMaterialSettings([
+      { name: "PETG", markupCents: 300, colours: ["Red"] },
+      { name: "pps cf", enabled: false, markupCents: 450 },
+      { name: "PA6 CF", enabled: true, markupCents: 600, colours: ["Black", " red ", "black", ""] },
+    ])).toEqual([
+      { name: "PETG", enabled: true, markupCents: 0, colours: null },
+      { name: "ASA", enabled: true, markupCents: 0, colours: ["Black", "White"] },
+      { name: "PET CF", enabled: false, markupCents: 0, colours: ["Black"] },
+      { name: "PA6 CF", enabled: true, markupCents: 600, colours: ["Black", "red"] },
+      { name: "PPS CF", enabled: false, markupCents: 450, colours: ["Black"] },
     ])
   })
 

@@ -133,7 +133,7 @@ export default async function HomePage() {
           )}
         </section>
       ))}
-      <MaterialGuide materials={settings.materials} />
+      <MaterialGuide materials={settings.materials} colours={settings.colours} />
       <WhyNicheParts currency={settings.currency} />
       <CustomPartCta />
     </>

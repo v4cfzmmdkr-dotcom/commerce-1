@@ -2,7 +2,7 @@ import { cookies } from "next/headers"
 import { randomUUID } from "node:crypto"
 import { getSql } from "@/db/client"
 import { isPurchasable, maxPurchasable } from "@/lib/money"
-import { enabledColourNames, shopMaterials, variantOffered } from "@/lib/product-options"
+import { materialColourRules, shopMaterials, variantOffered } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 import { dataApiEnabled, supabaseMutate, supabaseRest } from "@/lib/supabase-rest"
 
@@ -202,7 +202,7 @@ type OfferedCheck = {
 
 async function stillOffered(variant: OfferedCheck) {
   const settings = await getSettings()
-  return variantOffered(variant, enabledColourNames(settings.colours), shopMaterials(variant.materials, settings.materials))
+  return variantOffered(variant, materialColourRules(settings.colours, settings.materials), shopMaterials(variant.materials, settings.materials))
 }
 
 export async function addVariantToCart(variantId: string, quantity: number) {

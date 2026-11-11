@@ -2,7 +2,7 @@ import { getSql, databaseConfigured, textArray } from "@/db/client"
 import { summaryText } from "@/lib/html"
 import { isPurchasable } from "@/lib/money"
 import { listActiveShippingRates } from "@/lib/orders"
-import { enabledColourNames, offeredVariants, shopMaterials, type MaterialSetting } from "@/lib/product-options"
+import { materialColourRules, offeredVariants, shopMaterials, type ColourRules, type MaterialSetting } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 import { SHIPPING_COUNTRY, shippingRateApplies, type ShippingRate } from "@/lib/shipping"
 import { siteUrl } from "@/lib/site"
@@ -296,7 +296,7 @@ function publishableProducts(
     images: RawImage[]
     variants: RawVariant[]
   }>,
-  colours: string[],
+  colours: ColourRules,
   materials: MaterialSetting[],
 ) {
   return rows.flatMap((row) => {
@@ -317,7 +317,7 @@ function publishableProducts(
   })
 }
 
-async function loadFromSql(colours: string[], materials: MaterialSetting[]) {
+async function loadFromSql(colours: ColourRules, materials: MaterialSetting[]) {
   const sql = getSql()
   const rows = await sql<Array<{
     id: string
@@ -399,7 +399,7 @@ type RestProduct = {
   }>
 }
 
-async function loadFromRest(colours: string[], materials: MaterialSetting[]) {
+async function loadFromRest(colours: ColourRules, materials: MaterialSetting[]) {
   const pageSize = 500
   const rows: RestProduct[] = []
   const seen = new Set<string>()
@@ -448,7 +448,7 @@ async function loadFromRest(colours: string[], materials: MaterialSetting[]) {
 export async function loadMerchantFeed() {
   try {
     const settings = await getSettings()
-    const colours = enabledColourNames(settings.colours)
+    const colours = materialColourRules(settings.colours, settings.materials)
     const products = dataApiEnabled()
       ? await loadFromRest(colours, settings.materials)
       : databaseConfigured()

@@ -7,7 +7,7 @@ import { PendingButton } from "@/components/pending-button"
 import { RemoveColourButton } from "@/components/remove-colour-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
 import { getSql } from "@/db/client"
-import { defaultMaterial, materialColourLabel, materialOptions } from "@/lib/product-options"
+import { defaultMaterial, materialColourLabel, materialColourRules, materialOptions } from "@/lib/product-options"
 import { getSettings } from "@/lib/settings"
 import { remoteImageCount } from "@/lib/shopify/import"
 import type { ImportReport } from "@/lib/types"
@@ -43,6 +43,7 @@ export default async function ProductsPage({
     params.run ? sql<Array<{ report: ImportReport }>>`select report from import_runs where id = ${params.run}` : [],
   ])
   const pendingImages = remoteImages
+  const colourRules = materialColourRules(settings.colours, settings.materials)
   const report = runs[0]?.report
   const query = new URLSearchParams()
   if (params.q?.trim()) query.set("q", params.q.trim())
@@ -68,7 +69,7 @@ export default async function ProductsPage({
         <div>
           <h2>Colours</h2>
           <p className="admin-note mt-1 text-sm">
-            Choose the colours customers can pick. This applies to every product. Switching a colour on adds it to every product at the same price as Black.
+            Choose the PETG colours customers can pick. This applies to every product. Switching a colour on adds it to every product at the same price as Black. Colours added here can also be offered in other materials below.
           </p>
         </div>
         <div className="colour-chips">
@@ -103,39 +104,60 @@ export default async function ProductsPage({
         <div>
           <h2>Materials</h2>
           <p className="admin-note mt-1 text-sm">
-            Switch a material off to hide it on every product. Each product also chooses its own materials on its edit page.
+            Switch a material off to hide it on every product. Tick the colours each material comes in. Each product also chooses its own materials on its edit page.
           </p>
         </div>
-        <div className="grid gap-3">
+        <div className="grid gap-5">
           {materialOptions.map((material) => {
             const setting = settings.materials.find((item) => item.name === material.name)
+            const isBase = material.name === defaultMaterial
+            const chosen = isBase ? null : colourRules[material.name]
             return (
-              <div key={material.name} className="flex flex-wrap items-center gap-3">
-                <label className="colour-chip material-chip">
-                  <input type="checkbox" name="materials" value={material.name} defaultChecked={setting?.enabled !== false} />
-                  <span className="font-medium">{material.name}</span>
-                  <span className="admin-note text-xs">{materialColourLabel(material.colours)}</span>
-                </label>
-                {material.name === defaultMaterial ? (
-                  <span className="admin-note text-sm">Base price</span>
-                ) : (
-                  <label className="flex items-center gap-2 whitespace-nowrap text-sm normal-case">
-                    Markup over PETG ($)
-                    <input
-                      className="field w-28 normal-case"
-                      name={`markup_${material.name}`}
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      defaultValue={((setting?.markupCents ?? 0) / 100).toFixed(2)}
-                      aria-label={`${material.name} markup over PETG`}
-                    />
+              <div key={material.name} className="grid gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="colour-chip material-chip">
+                    <input type="checkbox" name="materials" value={material.name} defaultChecked={setting?.enabled !== false} />
+                    <span className="font-medium">{material.name}</span>
+                    <span className="admin-note text-xs">{materialColourLabel(chosen)}</span>
                   </label>
-                )}
+                  {isBase ? (
+                    <span className="admin-note text-sm">Base price. Uses the colours above.</span>
+                  ) : (
+                    <label className="flex items-center gap-2 whitespace-nowrap text-sm normal-case">
+                      Markup over PETG ($)
+                      <input
+                        className="field w-28 normal-case"
+                        name={`markup_${material.name}`}
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        defaultValue={((setting?.markupCents ?? 0) / 100).toFixed(2)}
+                        aria-label={`${material.name} markup over PETG`}
+                      />
+                    </label>
+                  )}
+                </div>
+                {chosen ? (
+                  <fieldset className="colour-chips">
+                    <legend className="sr-only">{material.name} colours</legend>
+                    {settings.colours.map((colour) => (
+                      <label key={colour.name} className="colour-chip">
+                        <input
+                          type="checkbox"
+                          name={`colours_${material.name}`}
+                          value={colour.name}
+                          defaultChecked={chosen.includes(colour.name)}
+                        />
+                        <span className="colour-chip-dot" style={{ "--swatch": colour.hex } as CSSProperties} aria-hidden />
+                        {colour.name}
+                      </label>
+                    ))}
+                  </fieldset>
+                ) : null}
               </div>
             )
           })}
         </div>
-        <p className="admin-note text-sm">Saving updates the price of every ASA and PPS CF option to its PETG price plus the markup.</p>
+        <p className="admin-note text-sm">Saving updates the price of every non-PETG option to its PETG price plus the markup.</p>
         {params.materials === "saved" ? (
           <p className="text-sm" role="status">
             Materials saved{repriced ? `, ${repriced} ${repriced === 1 ? "price" : "prices"} updated` : ""}{added ? `, ${added} new ${added === 1 ? "variant" : "variants"} added` : ""}.

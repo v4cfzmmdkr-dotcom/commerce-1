@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { getSql } from "@/db/client"
 import {
-  enabledColourNames,
+  materialColourRules,
   materialMarkups,
   parseColours,
   parseMaterialSettings,
@@ -44,9 +44,10 @@ async function load(productIds?: string[]) {
   ` : []
   const byProduct = new Map<string, VariantRow[]>()
   for (const row of rows) byProduct.set(row.productId, [...(byProduct.get(row.productId) ?? []), row])
+  const materialSettings = parseMaterialSettings(settings?.materials)
   return {
-    colours: enabledColourNames(parseColours(settings?.colours)),
-    materialSettings: parseMaterialSettings(settings?.materials),
+    colours: materialColourRules(parseColours(settings?.colours), materialSettings),
+    materialSettings,
     products,
     byProduct,
   }

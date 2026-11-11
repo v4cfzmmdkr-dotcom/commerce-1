@@ -60,17 +60,25 @@ export async function saveMaterialSettings(formData: FormData) {
   await requireAdmin()
   const enabled = new Set(formData.getAll("materials").map(String))
   if (!enabled.size) redirect(back({ materialError: "Keep at least one material switched on" }))
+  const sql = getSql()
+  const [row] = await sql<Array<{ colours: unknown }>>`select colours from store_settings where id = 'default'`
+  const palette = parseColours(row?.colours)
   const settings: MaterialSetting[] = []
   for (const material of materialOptions) {
     let markupCents = 0
+    let colours: string[] | null = null
     if (material.name !== defaultMaterial) {
       const markup = parseMoneyToCents(String(formData.get(`markup_${material.name}`) || ""))
       if (markup === "invalid") redirect(back({ materialError: `Enter the ${material.name} markup like 4.00` }))
       markupCents = markup ?? 0
+      const ticked = new Set(formData.getAll(`colours_${material.name}`).map((value) => String(value).toLowerCase()))
+      colours = palette.filter((colour) => ticked.has(colour.name.toLowerCase())).map((colour) => colour.name)
+      if (enabled.has(material.name) && !colours.length) {
+        redirect(back({ materialError: `Pick at least one colour for ${material.name}, or switch it off` }))
+      }
     }
-    settings.push({ name: material.name, enabled: enabled.has(material.name), markupCents })
+    settings.push({ name: material.name, enabled: enabled.has(material.name), markupCents, colours })
   }
-  const sql = getSql()
   await sql`update store_settings set materials = ${sql.json(settings)}, updated_at = now() where id = 'default'`
   const { added } = await syncProductOptions()
   const repriced = await repriceMaterials()

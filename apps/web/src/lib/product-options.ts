@@ -19,10 +19,12 @@ export const presetColours: Array<{ name: string, hex: string }> = [
 export const defaultColours = ["Black", "White"]
 
 export const materialOptions = [
-  { name: "PETG", note: "Tough, everyday plastic", colours: null },
-  { name: "ASA", note: "UV stable outdoor plastic. Black or white.", colours: ["Black", "White"] },
-  { name: "PPS CF", note: "Carbon fibre reinforced, heat resistant. Black only.", colours: ["Black"] },
-] as const satisfies ReadonlyArray<{ name: string, note: string, colours: readonly string[] | null }>
+  { name: "PETG", note: "Tough, everyday plastic", defaultColours: null, onByDefault: true },
+  { name: "ASA", note: "UV stable outdoor plastic.", defaultColours: ["Black", "White"], onByDefault: true },
+  { name: "PET CF", note: "Carbon fibre reinforced PET, stiff and dimensionally stable.", defaultColours: ["Black"], onByDefault: false },
+  { name: "PA6 CF", note: "Carbon fibre reinforced nylon, strong and heat resistant.", defaultColours: ["Black"], onByDefault: false },
+  { name: "PPS CF", note: "Carbon fibre reinforced, heat resistant.", defaultColours: ["Black"], onByDefault: true },
+] as const satisfies ReadonlyArray<{ name: string, note: string, defaultColours: readonly string[] | null, onByDefault: boolean }>
 
 export const defaultMaterial = "PETG"
 
@@ -75,20 +77,46 @@ export function parseMaterials(value: unknown) {
   return known.length ? known : [defaultMaterial]
 }
 
-export type MaterialSetting = { name: string, enabled: boolean, markupCents: number }
+export type MaterialSetting = { name: string, enabled: boolean, markupCents: number, colours: string[] | null }
+
+function savedColourList(value: unknown, fallback: readonly string[] | null) {
+  if (!fallback) return null
+  if (!Array.isArray(value)) return [...fallback]
+  const names: string[] = []
+  for (const item of value) {
+    const name = cleanName(String(item ?? ""))
+    if (name && !names.some((existing) => same(existing, name))) names.push(name)
+  }
+  return names
+}
 
 export function parseMaterialSettings(value: unknown): MaterialSetting[] {
   const parsed = fromJson(value)
-  const saved = (Array.isArray(parsed) ? parsed : []) as Array<{ name?: unknown, enabled?: unknown, markupCents?: unknown } | null>
+  const saved = (Array.isArray(parsed) ? parsed : []) as Array<{ name?: unknown, enabled?: unknown, markupCents?: unknown, colours?: unknown } | null>
   return materialOptions.map((material) => {
     const item = saved.find((entry) => entry && typeof entry === "object" && same(String(entry.name ?? ""), material.name))
     const markup = Number(item?.markupCents)
     return {
       name: material.name,
-      enabled: item?.enabled !== false,
+      enabled: item ? item.enabled !== false : material.onByDefault,
       markupCents: material.name !== defaultMaterial && Number.isInteger(markup) && markup > 0 ? markup : 0,
+      colours: savedColourList(item?.colours, material.defaultColours),
     }
   })
+}
+
+export type ColourRules = Record<string, string[]>
+
+export function materialColourRules(palette: ColourOption[], settings: MaterialSetting[]): ColourRules {
+  const shop = enabledColourNames(palette)
+  return Object.fromEntries(materialOptions.map((material) => {
+    const chosen = settings.find((setting) => same(setting.name, material.name))?.colours
+      ?? (material.defaultColours ? [...material.defaultColours] : null)
+    const colours = chosen
+      ? palette.filter((colour) => chosen.some((name) => same(name, colour.name))).map((colour) => colour.name)
+      : shop
+    return [material.name, colours]
+  }))
 }
 
 export function shopMaterials(productMaterials: unknown, settings: MaterialSetting[]) {
@@ -100,15 +128,14 @@ export function materialMarkups(settings: MaterialSetting[]) {
   return Object.fromEntries(settings.filter((setting) => setting.name !== defaultMaterial).map((setting) => [setting.name, setting.markupCents]))
 }
 
-export function materialColours(material: string, enabled: string[]) {
-  const rule = materialOptions.find((option) => same(option.name, material))
-  if (!rule) return []
-  if (!rule.colours) return enabled
-  return enabled.filter((colour) => rule.colours.some((allowed) => same(allowed, colour)))
+export function materialColours(material: string, rules: ColourRules) {
+  const option = materialOptions.find((item) => same(item.name, material))
+  return option ? rules[option.name] ?? [] : []
 }
 
 export function materialColourLabel(colours: readonly string[] | null) {
-  if (!colours?.length) return "Every colour"
+  if (!colours) return "Every colour"
+  if (!colours.length) return "No colours"
   if (colours.length === 1) return `${colours[0]} only`
   if (colours.length === 2) return `${colours[0]} or ${colours[1]}`
   return `${colours.join(", ")} only`
@@ -181,23 +208,24 @@ export function variantMaterial(variant: Options) {
   return slot ? valueOf(variant, slot) : ""
 }
 
-export function variantOffered(variant: Options, colours: string[], materials: string[]) {
-  const colourAt = namedSlot(variant, isColourName)
+function coloursFor(variant: Options, rules: ColourRules) {
   const materialAt = namedSlot(variant, (name) => same(name, "material"))
-  const colour = colourAt ? valueOf(variant, colourAt) : ""
-  if (colourAt && !colours.some((name) => same(name, colour))) return false
-  if (!materialAt) return true
-  const material = valueOf(variant, materialAt)
-  if (!materials.some((name) => same(name, material))) return false
-  return !colourAt || materialColours(material, colours).some((name) => same(name, colour))
+  return materialColours(materialAt ? valueOf(variant, materialAt) : defaultMaterial, rules)
 }
 
-export function offeredVariants<T extends Options & { title?: string }>(variants: T[], colours: string[], materials: string[]) {
-  return variants.filter((variant) => variantOffered(variant, colours, materials)).map((variant) => {
+export function variantOffered(variant: Options, rules: ColourRules, materials: string[]) {
+  const materialAt = namedSlot(variant, (name) => same(name, "material"))
+  if (materialAt && !materials.some((name) => same(name, valueOf(variant, materialAt)))) return false
+  const colourAt = namedSlot(variant, isColourName)
+  return !colourAt || coloursFor(variant, rules).some((name) => same(name, valueOf(variant, colourAt)))
+}
+
+export function offeredVariants<T extends Options & { title?: string }>(variants: T[], rules: ColourRules, materials: string[]) {
+  return variants.filter((variant) => variantOffered(variant, rules, materials)).map((variant) => {
     const next = { ...variant }
     const colourAt = namedSlot(next, isColourName)
     if (colourAt) {
-      const colour = colours.find((name) => same(name, valueOf(next, colourAt)))!
+      const colour = coloursFor(next, rules).find((name) => same(name, valueOf(next, colourAt)))!
       setOption(next, colourAt, "Colour", colour)
     }
     const materialAt = namedSlot(next, (name) => same(name, "material"))
@@ -226,7 +254,7 @@ function skuCode(value: string) {
 
 export function planVariants<T extends PlanVariant>(
   variants: T[],
-  colours: string[],
+  rules: ColourRules,
   materials: string[],
   extraCents: Record<string, number> = {},
 ) {
@@ -261,7 +289,7 @@ export function planVariants<T extends PlanVariant>(
       ?? group[0]
     const baseSku = base.sku.trim().replace(/-(W|BLK|B)$/i, "")
     for (const material of wanted) {
-      for (const colour of material ? materialColours(material, colours) : colours) {
+      for (const colour of materialColours(material || defaultMaterial, rules)) {
         const exists = group.some((variant) => same(valueOf(variant, colourAt), colour)
           && (!materialAt || same(valueOf(variant, materialAt), material)))
         if (exists) continue
