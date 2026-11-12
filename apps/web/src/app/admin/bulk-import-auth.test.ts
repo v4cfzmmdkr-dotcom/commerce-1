@@ -53,8 +53,31 @@ describe("bulk import access control", () => {
       () => actions.removeImportPackage(fields),
       () => actions.deleteImport(fields),
       () => actions.importStep("batch"),
+      () => actions.createConnectedAppKey(null, form({ name: "App" })),
+      () => actions.revokeConnectedAppKey(form({ keyId: "key" })),
+      () => actions.archivePreviousListingsAction(form({ confirm: "on" })),
+      () => actions.restorePreviousListingsAction(),
     ]
     for (const call of calls) await expect(call()).rejects.toThrow(/NEXT_REDIRECT/)
+    expect(database).not.toHaveBeenCalled()
+  })
+
+  it("refuses the sourcing app API without a well-formed key", async () => {
+    const params = Promise.resolve({ id: "batch" })
+    const routes = await Promise.all([
+      import("@/app/api/sourcing/v1/route").then((route) => route.GET(new Request("http://shop.test/api/sourcing/v1"))),
+      import("@/app/api/sourcing/v1/batches/route").then((route) => route.POST(new Request("http://shop.test/api/sourcing/v1/batches", {
+        method: "POST",
+        headers: { authorization: "Bearer not-a-key" },
+        body: "{}",
+      }))),
+      import("@/app/api/sourcing/v1/batches/[id]/route").then((route) => route.GET(new Request("http://shop.test/x"), { params })),
+      import("@/app/api/sourcing/v1/batches/[id]/package/route").then((route) => route.PUT(new Request("http://shop.test/x", { method: "PUT", body: "zip" }), { params })),
+      import("@/app/api/sourcing/v1/batches/[id]/validate/route").then((route) => route.POST(new Request("http://shop.test/x", { method: "POST" }), { params })),
+      import("@/app/api/sourcing/v1/batches/[id]/import/route").then((route) => route.POST(new Request("http://shop.test/x", { method: "POST" }), { params })),
+      import("@/app/api/sourcing/v1/batches/[id]/step/route").then((route) => route.POST(new Request("http://shop.test/x", { method: "POST" }), { params })),
+    ])
+    expect(routes.map((response) => response.status)).toEqual([401, 401, 401, 401, 401, 401, 401])
     expect(database).not.toHaveBeenCalled()
   })
 

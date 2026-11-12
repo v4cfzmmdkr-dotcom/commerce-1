@@ -218,7 +218,7 @@ uploading a second package never duplicates products from the first.
 | `handle` | no | Lowercase words joined by dashes. Defaults to a slug of the title, and a number is added if taken. Only used when the product is created. | `products.handle` |
 | `description_html` | yes (may be empty) | HTML. Only common formatting tags, links and images are kept; scripts, styles, iframes and event attributes are removed. | `products.description_html` |
 | `seo.title` / `seo.description` | yes (may be empty) | Up to 200 / 500 chars. Warnings over about 70 / 160. An empty title falls back to the product title. | `products.seo_title`, `seo_description` |
-| `category` | yes | Matched to an existing collection by handle or title, and the product is added to it. Otherwise a warning is shown and it is only stored as the product type. | `products.product_type`, `collection_products` |
+| `category` | yes | Matched to an existing collection by handle or title, and the product is added to it. Otherwise the product is placed in the best matching collection automatically (see section 5), or left out of collections with a warning when nothing matches well. Always stored as the product type. | `products.product_type`, `collection_products` |
 | `tags` | no | Up to 50 strings of 60 chars. | `products.tags` |
 | `sku` | yes | Up to 64 chars, letters, digits, `. _ -`. Unique within the package. | Base variant SKU |
 | `price_cents` | yes | Integer cents in AUD, incl. GST, for the PETG option. For example `1295` = $12.95. | Base variant price. Other materials get the shop's material markups. |
@@ -287,7 +287,49 @@ Imported files are tracked by content hash:
 Concurrent runners cannot import the same product twice. Each write takes a lock on the
 source ID.
 
-## 5. Reference generator (Python 3.9+)
+## 5. Connected apps, automatic categories and previous listings
+
+### Connected apps
+
+The sourcing app can upload and import packages by itself. Create a key under
+**Admin → Bulk Importer → Connected apps**. The key is shown once; only its hash is stored, and
+it can be revoked at any time. Paste it, with the shop address, into the app under
+**Settings → Shop connection**.
+
+The app calls these routes with `Authorization: Bearer <key>`. Every response is JSON with `ok`.
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/sourcing/v1` | Check the key; returns the package schema, limits and the shop's collections. |
+| `POST /api/sourcing/v1/batches` | Start an upload with `{ "fileName", "size" }`; returns the batch ID and where to `PUT` the ZIP. |
+| `PUT` the returned upload URL | Send the ZIP with `Content-Type: application/zip`. Add the Bearer key only when `upload.authorization` is true (local storage); signed storage URLs must not get it. |
+| `POST /api/sourcing/v1/batches/{id}/validate` | Check the package, as the admin upload does. |
+| `POST /api/sourcing/v1/batches/{id}/import` | Approve every valid product and queue them, with `{ "publish": true }` to make new products live. |
+| `POST /api/sourcing/v1/batches/{id}/step` | Run one import step (up to about 40 seconds); repeat until `remaining` is 0. |
+| `GET /api/sourcing/v1/batches/{id}` | The batch report, with each product's result, errors, shop handle and collections. |
+
+A key only sees batches it created. Batches started by an app show in the import history like
+any other, so the admin can open, pause or retry them.
+
+### Automatic categories
+
+When a product's `category` is not the name or handle of a collection, the importer compares
+the product's title, category, tags and description with each collection's name and the
+products already in it, and adds the product to the best match. A brand collection, such as
+Yamaha or DeWalt, is only chosen when the product mentions that brand. A product can also be
+put in one brand collection and one type collection, for example DeWalt and Gears. When no
+collection is a good match, the product is left out of collections and a warning says so.
+Validation shows which collection each product will go to, and products that already belong
+to collections keep them.
+
+### Previous listings
+
+**Bulk Importer → Previous listings** archives every live or draft product that the sourcing app
+did not create or update (products with no source record). Archived products are hidden from
+the shop but stay in the admin with their orders. **Restore archived listings** puts each one
+back to the status it had, live or draft.
+
+## 6. Reference generator (Python 3.9+)
 
 This produces a valid package from a list of product dicts. It uses only the standard library.
 

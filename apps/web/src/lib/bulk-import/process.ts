@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto"
 import type { TransactionSql } from "postgres"
 import { getSql, textArrayLiteral } from "@/db/client"
 import { getBatch, refreshBatchStatus, type Batch, type BatchFile } from "@/lib/bulk-import/batches"
+import { categorise, loadCategoriser, type Categorisation } from "@/lib/bulk-import/categorise"
 import { check3mf, checkStl, contentTypeForModel, extensionOf, safeFileName, sniffImage } from "@/lib/bulk-import/files"
 import { PackageError, openPackage, readPackageEntry, savePrivateFile } from "@/lib/bulk-import/package-store"
 import { limits, type PackageProduct } from "@/lib/bulk-import/schema"
@@ -195,12 +196,21 @@ function metadataPatch(data: PackageProduct) {
 type WriteResult = {
   productId: string
   action: "created" | "updated"
+  filed: string[]
   staleImages: string[]
   staleModels: string[]
   warnings: string[]
 }
 
-async function writeProduct(item: ClaimedItem, batch: Batch, plannedId: string, data: PackageProduct, images: StoredImage[], models: StoredModel[]) {
+async function writeProduct(
+  item: ClaimedItem,
+  batch: Batch,
+  plannedId: string,
+  data: PackageProduct,
+  images: StoredImage[],
+  models: StoredModel[],
+  placement: Categorisation,
+) {
   const sql = getSql()
   const materials = await shopEnabledMaterials()
   const dataHash = sha256(Buffer.from(JSON.stringify(data)))
@@ -348,16 +358,22 @@ async function writeProduct(item: ClaimedItem, batch: Batch, plannedId: string, 
         updated_at = now()
     `
 
-    const [collection] = await tx<Array<{ id: string }>>`
-      select id from collections where handle = ${slugify(data.category)} or lower(title) = ${data.category.toLowerCase()}
-      order by (handle = ${slugify(data.category)}) desc limit 1
-    `
-    if (collection) {
-      await tx`
-        insert into collection_products (collection_id, product_id, position)
-        values (${collection.id}, ${productId}, coalesce((select max(position) + 1 from collection_products where collection_id = ${collection.id}), 0))
-        on conflict do nothing
-      `
+    const filed: string[] = []
+    const [{ linked }] = await tx<Array<{ linked: number }>>`select count(*)::int as linked from collection_products where product_id = ${productId}`
+    if (placement.method === "category" || (placement.method === "auto" && !linked)) {
+      for (const collection of placement.collections) {
+        const added = await tx`
+          insert into collection_products (collection_id, product_id, position)
+          select id, ${productId}, coalesce((select max(position) + 1 from collection_products where collection_id = ${collection.id}), 0)
+          from collections where id = ${collection.id}
+          on conflict do nothing
+          returning collection_id
+        `
+        if (added.length) filed.push(collection.title)
+      }
+    }
+    if (placement.method === "none" && !linked) {
+      warnings.push(`No collection matched "${data.title}", so it is not in any collection yet. Add it to one in the product editor`)
     }
 
     await tx`
@@ -368,12 +384,15 @@ async function writeProduct(item: ClaimedItem, batch: Batch, plannedId: string, 
         priceCents: data.price_cents,
         images: images.length,
         models: models.length,
+        collections: filed,
+        categorised: placement.method,
         dataHash,
       })})
     `
     return {
       productId,
       action,
+      filed,
       staleImages: dropImages.map((row) => row.path).filter((path): path is string => Boolean(path)),
       staleModels: dropModels.map((row) => row.path),
       warnings,
@@ -398,12 +417,21 @@ export async function importItem(item: ClaimedItem, batch: Batch) {
   const productId = await targetProductId(item)
   const images = await storeImages(batch, productId, data)
   const models = await storeModels(batch, productId, data)
-  const result = await writeProduct(item, batch, productId, data, images.stored, models.stored)
+  const placement = categorise(await loadCategoriser(), {
+    title: data.title,
+    category: data.category,
+    tags: data.tags,
+    description: data.description_html,
+  })
+  const result = await writeProduct(item, batch, productId, data, images.stored, models.stored, placement)
   await syncProductOptions([result.productId])
   await repriceMaterials([result.productId])
   await removeUnused(result.staleImages, result.staleModels)
   const sql = getSql()
-  const note = `${result.action === "created" ? "Created" : "Updated"} the product. Uploaded ${images.uploaded} of ${images.stored.length} images and ${models.uploaded} of ${models.stored.length} print files; the rest were already stored`
+  const filedNote = result.filed.length
+    ? ` Added to ${result.filed.join(" and ")}${placement.method === "auto" ? " (matched automatically)" : ""}.`
+    : ""
+  const note = `${result.action === "created" ? "Created" : "Updated"} the product. Uploaded ${images.uploaded} of ${images.stored.length} images and ${models.uploaded} of ${models.stored.length} print files; the rest were already stored.${filedNote}`
   await sql`
     update import_batch_items set
       status = 'imported',

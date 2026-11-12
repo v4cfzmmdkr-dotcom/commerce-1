@@ -2,29 +2,21 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { createApiKey, revokeApiKey } from "@/lib/api-keys"
 import { requireAdmin } from "@/lib/auth/current"
+import { archivePreviousListings, restorePreviousListings } from "@/lib/bulk-import/archive"
 import {
   approveAllValid,
-  batchCounts,
-  createBatch,
   deleteBatch,
-  getBatch,
   pauseBatch,
   queueApproved,
   rejectAllPending,
   removeBatchPackage,
   retryFailed,
   setDecision,
-  validateBatch,
 } from "@/lib/bulk-import/batches"
-import { packageSize, packageStorageSupported, signPackageUpload } from "@/lib/bulk-import/package-store"
-import { queueRemaining, runImportStep } from "@/lib/bulk-import/process"
 import { limits } from "@/lib/bulk-import/schema"
-import { storageMode } from "@/lib/storage"
-
-type StartResult =
-  | { ok: true, batchId: string, uploadUrl: string, mode: "signed" | "local" }
-  | { ok: false, error: string }
+import { beginUpload, finishUpload, runStep, type StartResult } from "@/lib/bulk-import/service"
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) || "").trim()
@@ -40,30 +32,13 @@ function back(formData: FormData, batchId: string, notice?: string) {
 
 export async function startBulkImport(fileName: string, size: number): Promise<StartResult> {
   const admin = await requireAdmin()
-  if (!packageStorageSupported()) return { ok: false, error: "Bulk import needs Neon object storage (the STORAGE_* settings) or local storage" }
-  if (!/\.zip$/i.test(fileName)) return { ok: false, error: "Choose a .zip product package" }
-  if (!Number.isFinite(size) || size <= 0) return { ok: false, error: "That file is empty" }
-  if (size > limits.packageBytes) return { ok: false, error: `Packages must be under ${limits.packageBytes / 1024 / 1024 / 1024}GB. Split it into smaller packages` }
-  const batch = await createBatch(fileName, size, admin.email)
-  if (storageMode() === "local") {
-    return { ok: true, batchId: batch.id, mode: "local", uploadUrl: `/api/admin/bulk-import/${batch.id}/package` }
-  }
-  return { ok: true, batchId: batch.id, mode: "signed", uploadUrl: await signPackageUpload(batch.objectPath) }
+  return beginUpload(fileName, size, admin.email, (batchId) => `/api/admin/bulk-import/${batchId}/package`)
 }
 
 export async function finishBulkImport(batchId: string) {
   await requireAdmin()
-  const batch = await getBatch(batchId)
-  if (!batch?.packagePath || batch.status !== "uploading") return { ok: false, error: "This upload has already been checked" }
-  const size = await packageSize(batch.packagePath)
-  if (!size) return { ok: false, error: "The package did not reach storage. Try again" }
-  if (size > limits.packageBytes) {
-    await deleteBatch(batchId)
-    return { ok: false, error: "The package is larger than the upload limit" }
-  }
-  const result = await validateBatch(batchId)
-  revalidatePath("/admin/bulk-import")
-  return result.ok ? { ok: true as const, batchId } : { ok: true as const, batchId, invalid: true }
+  const result = await finishUpload(batchId)
+  return result.ok ? { ok: true as const, batchId, invalid: result.invalid } : result
 }
 
 export async function decideItems(formData: FormData) {
@@ -125,10 +100,35 @@ export async function deleteImport(formData: FormData) {
   redirect(deleted ? "/admin/bulk-import?notice=deleted" : back(formData, batchId, "delete-blocked"))
 }
 
+export async function createConnectedAppKey(_previous: unknown, formData: FormData) {
+  const admin = await requireAdmin()
+  const name = text(formData, "name") || "Niche Parts Sourcing"
+  const { key } = await createApiKey(name, admin.email)
+  return { key, name }
+}
+
+export async function revokeConnectedAppKey(formData: FormData) {
+  await requireAdmin()
+  await revokeApiKey(text(formData, "keyId"))
+  redirect("/admin/bulk-import?notice=key-revoked")
+}
+
+export async function archivePreviousListingsAction(formData: FormData) {
+  await requireAdmin()
+  if (formData.get("confirm") !== "on") redirect("/admin/bulk-import?notice=archive-unconfirmed")
+  const archived = await archivePreviousListings()
+  revalidatePath("/", "layout")
+  redirect(`/admin/bulk-import?notice=archived-${archived}`)
+}
+
+export async function restorePreviousListingsAction() {
+  await requireAdmin()
+  const restored = await restorePreviousListings()
+  revalidatePath("/", "layout")
+  redirect(`/admin/bulk-import?notice=restored-${restored}`)
+}
+
 export async function importStep(batchId: string) {
   await requireAdmin()
-  const step = await runImportStep({ batchId, budgetMs: 40_000, concurrency: 2 })
-  if (step.imported) revalidatePath("/", "layout")
-  const [counts, remaining, batch] = await Promise.all([batchCounts(batchId), queueRemaining(batchId), getBatch(batchId)])
-  return { imported: step.imported, failed: step.failed, remaining, counts, status: batch?.status ?? "completed" }
+  return runStep(batchId)
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { getSql, textArrayLiteral } from "@/db/client"
 import { analysePackage, type ItemPlan } from "@/lib/bulk-import/analyse"
+import { categorise, loadCategoriser } from "@/lib/bulk-import/categorise"
 import { checkEntries, type PackageFile } from "@/lib/bulk-import/files"
 import {
   PackageError,
@@ -12,7 +13,6 @@ import {
 } from "@/lib/bulk-import/package-store"
 import { limits, type PackageProduct } from "@/lib/bulk-import/schema"
 import { shopEnabledMaterials } from "@/lib/product-options-sync"
-import { slugify } from "@/lib/slug"
 
 export type BatchStatus = "uploading" | "validating" | "invalid" | "review" | "importing" | "completed"
 export type ItemStatus = "invalid" | "ready" | "queued" | "processing" | "imported" | "failed"
@@ -206,14 +206,15 @@ export async function matchExisting(items: ItemPlan[]) {
   return matches
 }
 
-async function collectionWarnings() {
-  const sql = getSql()
-  const collections = await sql<Array<{ handle: string, title: string }>>`select handle, lower(title) as title from collections`
-  const handles = new Set(collections.map((row) => row.handle))
-  const titles = new Set(collections.map((row) => row.title))
-  return (data: PackageProduct) => (handles.has(slugify(data.category)) || titles.has(data.category.toLowerCase())
-    ? null
-    : `No collection matches the category "${data.category}"; it is saved as the product type only`)
+async function collectionNotes() {
+  const model = await loadCategoriser()
+  return (data: PackageProduct) => {
+    const placement = categorise(model, { title: data.title, category: data.category, tags: data.tags, description: data.description_html })
+    const names = placement.collections.map((collection) => collection.title).join(" and ")
+    if (placement.method === "category") return null
+    if (placement.method === "auto") return `Category "${data.category}" is not a collection; it will be added to ${names}, matched automatically`
+    return `No collection matches "${data.category}" or the product details; it will not be in a collection until you add it to one`
+  }
 }
 
 export async function validateBatch(batchId: string) {
@@ -247,12 +248,12 @@ export async function validateBatch(batchId: string) {
     }
 
     const matches = await matchExisting(analysis.items)
-    const categoryWarning = await collectionWarnings()
+    const categoryNote = await collectionNotes()
     const rows = analysis.items.map((item) => {
       const match = matches.get(item.position)
       const errors = [...item.errors, ...(match?.errors ?? [])]
       const itemWarnings = [...item.warnings, ...(match?.warnings ?? [])]
-      const category = item.data ? categoryWarning(item.data) : null
+      const category = item.data ? categoryNote(item.data) : null
       if (category) itemWarnings.push(category)
       const invalid = errors.length > 0 || !item.data
       return {

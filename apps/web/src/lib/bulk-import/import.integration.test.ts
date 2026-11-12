@@ -2,8 +2,10 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { rename } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { buildPackage, sampleFiles, sampleProduct, solidPng, zipBuffer } from "@/lib/bulk-import/test-package"
+
+vi.mock("next/cache", () => ({ revalidatePath: () => undefined }))
 
 // Runs against a throwaway Postgres database, for example:
 // BULK_IMPORT_TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/bulktest pnpm test
@@ -69,6 +71,7 @@ describe.skipIf(!url)("bulk import end to end", () => {
     await migrate(sql)
     await sql`insert into store_settings (id, name, theme) values ('default', 'Test shop', '{}'::jsonb)`
     await sql`insert into collections (id, handle, title) values ('col-cable', 'cable-management', 'Cable Management')`
+    await sql`insert into collections (id, handle, title) values ('col-wall', 'wall-mounts', 'Wall Mounts')`
     process.chdir(work)
     libs = {
       batches: await import("@/lib/bulk-import/batches"),
@@ -357,6 +360,118 @@ describe.skipIf(!url)("bulk import end to end", () => {
     const { id, batch } = await upload(await zipBuffer(entries))
     expect(batch.packageRoot).toBe("export-2026/")
     expect(await importAll(id)).toMatchObject({ imported: 1 })
+  })
+
+  it("lets the sourcing app upload, import and categorise a package with an API key", async () => {
+    const { createApiKey, revokeApiKey } = await import("@/lib/api-keys")
+    const ping = await import("@/app/api/sourcing/v1/route")
+    const batches = await import("@/app/api/sourcing/v1/batches/route")
+    const report = await import("@/app/api/sourcing/v1/batches/[id]/route")
+    const upload = await import("@/app/api/sourcing/v1/batches/[id]/package/route")
+    const validate = await import("@/app/api/sourcing/v1/batches/[id]/validate/route")
+    const start = await import("@/app/api/sourcing/v1/batches/[id]/import/route")
+    const step = await import("@/app/api/sourcing/v1/batches/[id]/step/route")
+    const base = "http://shop.test/api/sourcing/v1"
+    const { id: keyId, key } = await createApiKey("Sourcing app", "owner@example.com")
+    const { key: otherKey } = await createApiKey("Another app", "owner@example.com")
+    const auth = (value = key) => ({ authorization: `Bearer ${value}` })
+    const call = async (response: Response | Promise<Response>) => {
+      const result = await response
+      return { status: result.status, body: await result.json() }
+    }
+
+    expect((await call(ping.GET(new Request(base)))).status).toBe(401)
+    expect((await call(ping.GET(new Request(base, { headers: auth("np_" + "x".repeat(43)) })))).status).toBe(401)
+    const hello = await call(ping.GET(new Request(base, { headers: auth() })))
+    expect(hello.body).toMatchObject({ ok: true, key: "Sourcing app", uploads: true, schemaVersion: "1.0" })
+    expect(hello.body.collections.map((row: { handle: string }) => row.handle)).toContain("wall-mounts")
+
+    const files = { ...(await sampleFiles(8001)), ...(await sampleFiles(8002)) }
+    const zip = await buildPackage({
+      products: [
+        sampleProduct(8001),
+        sampleProduct(8002, { title: "Wall bracket for a home router", category: "Brackets", tags: ["router", "bracket"] }),
+      ],
+      files,
+      packageId: "sourcing-app-test",
+    })
+    const created = await call(batches.POST(new Request(`${base}/batches`, {
+      method: "POST",
+      headers: { ...auth(), "content-type": "application/json" },
+      body: JSON.stringify({ fileName: "sourcing-app-test.zip", size: zip.length }),
+    })))
+    expect(created.status).toBe(201)
+    expect(created.body.upload).toMatchObject({ method: "PUT", authorization: true })
+    const batchId = created.body.batchId as string
+    const params = Promise.resolve({ id: batchId })
+
+    const put = await call(upload.PUT(new Request(created.body.upload.url, {
+      method: "PUT",
+      headers: { ...auth(), "content-type": "application/zip" },
+      body: new Uint8Array(zip),
+    }), { params }))
+    expect(put.body).toMatchObject({ ok: true, size: zip.length })
+
+    expect((await call(report.GET(new Request(`${base}/batches/${batchId}`, { headers: auth(otherKey) }), { params }))).status).toBe(404)
+
+    const checked = await call(validate.POST(new Request(`${base}/batches/${batchId}/validate`, { method: "POST", headers: auth() }), { params }))
+    expect(checked.body).toMatchObject({ ok: true, status: "review", counts: { total: 2, invalid: 0 } })
+    expect(checked.body.items[1].warnings.join(" ")).toMatch(/added to Wall Mounts, matched automatically/)
+
+    const queued = await call(start.POST(new Request(`${base}/batches/${batchId}/import`, {
+      method: "POST",
+      headers: { ...auth(), "content-type": "application/json" },
+      body: JSON.stringify({ publish: true }),
+    }), { params }))
+    expect(queued.body).toMatchObject({ ok: true, approved: 2, queued: 2 })
+
+    let remaining = 2
+    for (let attempt = 0; attempt < 10 && remaining; attempt += 1) {
+      const result = await call(step.POST(new Request(`${base}/batches/${batchId}/step`, { method: "POST", headers: auth() }), { params }))
+      remaining = result.body.remaining
+    }
+    const done = await call(report.GET(new Request(`${base}/batches/${batchId}`, { headers: auth() }), { params }))
+    expect(done.body).toMatchObject({ status: "completed", counts: { imported: 2, failed: 0 } })
+    const [clip, bracket] = done.body.items
+    expect(clip).toMatchObject({ externalId: "model-8001", status: "imported", productStatus: "active", collections: ["Cable Management"] })
+    expect(bracket.collections).toEqual(["Wall Mounts"])
+    expect(bracket.handle).toBe("wall-bracket-for-a-home-router")
+    const [{ printFiles }] = await sql`select count(*)::int as "printFiles" from product_print_files where product_id = ${bracket.productId}`
+    expect(printFiles).toBe(2)
+
+    await revokeApiKey(keyId)
+    expect((await call(report.GET(new Request(`${base}/batches/${batchId}`, { headers: auth() }), { params }))).status).toBe(401)
+  })
+
+  it("archives previous listings and restores them exactly", async () => {
+    const { archivePreviousListings, previousListingSummary, restorePreviousListings } = await import("@/lib/bulk-import/archive")
+    await sql`
+      insert into products (id, handle, title, status) values
+        ('old-live', 'old-live', 'Old live listing', 'active'),
+        ('old-draft', 'old-draft', 'Old draft listing', 'draft'),
+        ('old-hidden', 'old-hidden', 'Already archived listing', 'archived')
+    `
+    const statuses = async () => Object.fromEntries((await sql<Array<{ id: string, status: string }>>`
+      select p.id, p.status from products p
+      where p.id like 'old-%' or exists (select 1 from product_sources s where s.product_id = p.id)
+    `).map((row) => [row.id, row.status]))
+    const before = await statuses()
+    const sourced = Object.keys(before).filter((id) => !id.startsWith("old-"))
+    expect(sourced.length).toBeGreaterThan(0)
+
+    const summary = await previousListingSummary()
+    expect(summary.archivedByTool).toBe(0)
+    const archived = await archivePreviousListings()
+    expect(archived).toBe(summary.active + summary.draft)
+    const after = await statuses()
+    expect(after).toMatchObject({ "old-live": "archived", "old-draft": "archived", "old-hidden": "archived" })
+    for (const id of sourced) expect(after[id]).toBe(before[id])
+    expect((await previousListingSummary()).archivedByTool).toBe(archived)
+
+    expect(await restorePreviousListings()).toBe(archived)
+    expect(await statuses()).toEqual(before)
+    const [{ leftovers }] = await sql`select count(*)::int as leftovers from products where metadata ? 'archivedPreviousStatus'`
+    expect(leftovers).toBe(0)
   })
 
   // Checks a package made by another tool: BULK_IMPORT_TEST_PACKAGE=/path/to/package.zip
