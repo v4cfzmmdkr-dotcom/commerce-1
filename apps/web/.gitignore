@@ -5,3 +5,4 @@ storage
 *.tsbuildinfo
 .neon
 node_modules/
+private-storage
