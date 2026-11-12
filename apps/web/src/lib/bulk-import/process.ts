@@ -330,7 +330,8 @@ async function writeProduct(
       }
     }
     const keepModels = new Set(models.map((model) => model.hash))
-    const dropModels = currentModels.filter((row) => !keepModels.has(row.hash))
+    // Packages without models keep the files already on the product.
+    const dropModels = models.length ? currentModels.filter((row) => !keepModels.has(row.hash)) : []
     if (dropModels.length) {
       await tx`delete from product_print_files where id = any(${textArrayLiteral(dropModels.map((row) => row.id))}::text[])`
     }

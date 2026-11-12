@@ -35,6 +35,15 @@ describe("analysePackage", () => {
     expect(result.items[0].data?.models[1].copies).toBe(1)
   })
 
+  it("accepts products without print files", () => {
+    const withoutField = sampleProduct(2) as Record<string, unknown>
+    delete withoutField.models
+    const files = filesFor(1, 2).filter((file) => file.kind !== "model")
+    const result = run([sampleProduct(1, { models: [] }), withoutField], files)
+    expect(result.errors).toEqual([])
+    expect(result.items.map((item) => [item.errors, item.data?.models])).toEqual([[[], []], [[], []]])
+  })
+
   it("rejects invalid JSON with a clear message", () => {
     const bad = analysePackage({ files: [], manifestText: manifest(1), productsText: "{\"products\": [", shopMaterials: [] })
     expect(bad.errors[0]).toMatch(/^products.json is not valid JSON/)

@@ -182,6 +182,25 @@ describe.skipIf(!url)("bulk import end to end", () => {
     expect(await sql`select 1 from product_print_files where product_id = ${productId}`).toHaveLength(1)
   })
 
+  it("imports products without print files and keeps files already on a product", async () => {
+    const files = Object.fromEntries(Object.entries({ ...(await sampleFiles(1)), ...(await sampleFiles(1501)) })
+      .filter(([name]) => !name.startsWith("models/")))
+    const zip = await buildPackage({
+      products: [sampleProduct(1, { title: "Cable Clip One", models: [] }), sampleProduct(1501, { models: [] })],
+      files,
+      packageId: "no-models",
+    })
+    const { id, result } = await upload(zip)
+    expect(result).toMatchObject({ ok: true, invalid: 0 })
+    expect((await importAll(id)).imported).toBe(2)
+    const printFiles = await sql<Array<{ externalId: string, count: number }>>`
+      select s.external_id as "externalId", count(f.id)::int as count from product_sources s
+      left join product_print_files f on f.product_id = s.product_id
+      where s.external_id in ('model-1', 'model-1501') group by s.external_id order by s.external_id
+    `
+    expect(printFiles).toEqual([{ externalId: "model-1", count: 1 }, { externalId: "model-1501", count: 0 }])
+  })
+
   it("imports 500 products in resumable steps", async () => {
     const numbers = Array.from({ length: 500 }, (_, index) => 1000 + index)
     const zip = await packageFor(numbers, { packageId: "five-hundred" })

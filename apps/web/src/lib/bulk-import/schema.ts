@@ -78,7 +78,7 @@ export const productSchema = z.object({
     path: packagePath,
     copies: z.number().int().min(1).max(100).optional().default(1),
     notes: safeText(500).optional().default(""),
-  })).min(1, "needs at least one STL or 3MF file").max(limits.modelsPerProduct),
+  })).max(limits.modelsPerProduct).optional().default([]),
 })
 
 export type PackageProduct = z.infer<typeof productSchema>
