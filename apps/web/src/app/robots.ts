@@ -3,8 +3,6 @@ import { siteUrl } from "@/lib/site"
 
 const aiCrawlers = [
   "GPTBot",
-  "ChatGPT-User",
-  "OAI-SearchBot",
   "ClaudeBot",
   "Claude-Web",
   "anthropic-ai",
@@ -33,7 +31,7 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: aiCrawlers, disallow: "/" },
       {
         userAgent: "*",
-        allow: "/",
+        allow: ["/", "/api/media/"],
         disallow: ["/admin", "/api/", "/checkout", "/cart", "/orders"],
       },
     ],
