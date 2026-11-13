@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { copyListing, createProduct, deleteProduct, runImport, setListed } from "@/app/admin/actions"
+import { copyListing, createProduct, deleteHiddenListings, deleteProduct, runImport, setListed } from "@/app/admin/actions"
 import { ImageDownload } from "@/components/image-download"
 import { PendingButton } from "@/components/pending-button"
 import { SwipeToDelete } from "@/components/swipe-to-delete"
@@ -12,7 +12,7 @@ export const maxDuration = 60
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, run?: string, collections?: string, collectionError?: string }>
+  searchParams: Promise<{ q?: string, show?: string, notice?: string, listingError?: string, run?: string, collections?: string, collectionError?: string, deleted?: string, kept?: string }>
 }) {
   const params = await searchParams
   const sql = getSql()
@@ -87,6 +87,29 @@ export default async function ProductsPage({
           Hidden ({counts[0].hidden})
         </Link>
       </nav>
+      {params.notice === "hidden-deleted" ? (
+        <p className="text-sm" role="status">
+          Deleted {params.deleted ?? 0} hidden {params.deleted === "1" ? "listing" : "listings"}.
+          {Number(params.kept) ? ` ${params.kept} on orders ${params.kept === "1" ? "was" : "were"} kept hidden.` : ""}
+        </p>
+      ) : null}
+      {params.notice === "confirm-delete" ? <p className="text-sm" role="alert">Tick the box to confirm before deleting.</p> : null}
+      {show === "hidden" && counts[0].hidden ? (
+        <form action={deleteHiddenListings} className="admin-card grid gap-3">
+          <div>
+            <h2>Delete hidden listings</h2>
+            <p className="admin-note mt-1 text-sm">
+              Permanently deletes every hidden listing, including drafts, with its photos and print files. Listings on an order
+              stay hidden so the order keeps its link. This can&apos;t be undone.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm normal-case">
+            <input type="checkbox" name="confirm" required />
+            Delete all {counts[0].hidden} hidden {counts[0].hidden === 1 ? "listing" : "listings"}
+          </label>
+          <div><PendingButton className="btn-ghost btn-tint-red" pendingText="Deleting…">Delete hidden listings</PendingButton></div>
+        </form>
+      ) : null}
       <p className="admin-note text-sm">{products.length} {products.length === 1 ? "product" : "products"}{term ? " found" : ""}</p>
       <ul className="admin-list">
         {products.map((product) => {

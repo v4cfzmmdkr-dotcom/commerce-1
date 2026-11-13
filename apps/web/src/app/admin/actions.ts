@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { getSql, textArrayLiteral } from "@/db/client"
 import { requireAdmin } from "@/lib/auth/current"
+import { deleteHiddenProducts } from "@/lib/delete-hidden-products"
 import { cleanHtml } from "@/lib/html"
 import { parseMoneyToCents } from "@/lib/money"
 import { sendOrderEmail, sendShippingEmail } from "@/lib/email"
@@ -293,6 +294,14 @@ export async function deleteProduct(formData: FormData) {
   for (const image of images) await deleteObject(image.storagePath)
   await sql`delete from products where id = ${id}`
   redirect(back("deleted"))
+}
+
+export async function deleteHiddenListings(formData: FormData) {
+  await requireAdmin()
+  if (text(formData, "confirm") !== "on") redirect("/admin/products?show=hidden&notice=confirm-delete")
+  const result = await deleteHiddenProducts()
+  revalidatePath("/", "layout")
+  redirect(`/admin/products?show=hidden&notice=hidden-deleted&deleted=${result.deleted}&kept=${result.kept}`)
 }
 
 export async function deleteOrder(formData: FormData) {

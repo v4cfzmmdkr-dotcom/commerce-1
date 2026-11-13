@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { rename } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -491,6 +491,47 @@ describe.skipIf(!url)("bulk import end to end", () => {
     expect(await statuses()).toEqual(before)
     const [{ leftovers }] = await sql`select count(*)::int as leftovers from products where metadata ? 'archivedPreviousStatus'`
     expect(leftovers).toBe(0)
+  })
+
+  it("deletes hidden listings, keeping ones on orders and files still in use", async () => {
+    const { deleteHiddenProducts } = await import("@/lib/delete-hidden-products")
+    const stored = (name: string) => {
+      const file = path.join(work, "storage", "products", name)
+      mkdirSync(path.dirname(file), { recursive: true })
+      writeFileSync(file, "image")
+      return file
+    }
+    const ownPhoto = stored("hidden-own.png")
+    const sharedPhoto = stored("hidden-shared.png")
+    await sql`
+      insert into products (id, handle, title, status) values
+        ('hidden-draft', 'hidden-draft', 'Hidden draft', 'draft'),
+        ('hidden-ordered', 'hidden-ordered', 'Hidden but ordered', 'draft'),
+        ('still-live', 'still-live', 'Still live', 'active')
+    `
+    await sql`
+      insert into product_images (id, product_id, url, storage_path) values
+        ('img-own', 'hidden-draft', '/storage/products/hidden-own.png', 'products/hidden-own.png'),
+        ('img-shared', 'hidden-draft', '/storage/products/hidden-shared.png', 'products/hidden-shared.png')
+    `
+    await sql`update collections set image_path = 'products/hidden-shared.png' where id = 'col-wall'`
+    await sql`insert into variants (id, product_id, price_cents) values ('var-ordered', 'hidden-ordered', 1000)`
+    await sql`
+      insert into orders (id, number, public_token, email, subtotal_cents, shipping_cents, tax_cents, total_cents, shipping_address)
+      values ('order-1', '9001', 'token-1', 'buyer@example.com', 1000, 0, 0, 1000, '{}'::jsonb)
+    `
+    await sql`insert into order_items (id, order_id, variant_id, product_title, quantity, unit_price_cents) values ('oi-1', 'order-1', 'var-ordered', 'Hidden but ordered', 1, 1000)`
+    const [{ hidden }] = await sql`select count(*)::int as hidden from products where status <> 'active'`
+
+    const result = await deleteHiddenProducts()
+    expect(result).toMatchObject({ deleted: hidden - 1, kept: 1, failedFiles: 0 })
+    const left = await sql<Array<{ id: string, status: string }>>`select id, status from products where status <> 'active'`
+    expect(left).toEqual([{ id: "hidden-ordered", status: "archived" }])
+    expect(await sql`select 1 from products where id = 'still-live'`).toHaveLength(1)
+    const [{ variantId }] = await sql`select variant_id as "variantId" from order_items where id = 'oi-1'`
+    expect(variantId).toBe("var-ordered")
+    expect(existsSync(ownPhoto)).toBe(false)
+    expect(existsSync(sharedPhoto)).toBe(true)
   })
 
   // Checks a package made by another tool: BULK_IMPORT_TEST_PACKAGE=/path/to/package.zip
